@@ -2116,7 +2116,7 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
   if (currentTab.autoAttachState === "awaiting_user_gesture") {
     return {
       tone: "watching",
-      badge: translate(currentCatalog, "laneBadgeInteraction"),
+      badge: translate(currentCatalog, "laneBadgeWatching"),
       title: translate(
         currentCatalog,
         currentTab.autoBoosterScope === "global"
@@ -2134,17 +2134,17 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
 
   if (currentTab.autoAttachState === "failed") {
     return {
-      tone: "failed",
-      badge: translate(currentCatalog, "laneBadgeFailed"),
-      title: translate(currentCatalog, "laneFailedTitle"),
-      detail: translate(currentCatalog, "laneFailedDetail")
+      tone: "unsupported",
+      badge: translate(currentCatalog, "laneBadgeUnavailable"),
+      title: translate(currentCatalog, "laneUnsupportedTitle"),
+      detail: translate(currentCatalog, "laneUnsupportedDetail")
     };
   }
 
   if (currentTab.autoAttachState === "unsupported") {
     return {
       tone: "unsupported",
-      badge: translate(currentCatalog, "laneBadgeFailed"),
+      badge: translate(currentCatalog, "laneBadgeUnavailable"),
       title: translate(currentCatalog, "laneUnsupportedTitle"),
       detail: translate(currentCatalog, "laneUnsupportedDetail")
     };

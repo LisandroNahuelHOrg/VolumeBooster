@@ -55,7 +55,19 @@ describe("automation main entrypoint", () => {
     });
     await expect(window.__PRISM_AUTOMATION__?.hasGlobalPermission()).resolves.toBe(true);
     await expect(window.__PRISM_AUTOMATION__?.getState()).resolves.toEqual({ sessions: [] });
+    await expect(window.__PRISM_AUTOMATION__?.getStateDetailed()).resolves.toEqual({
+      ok: true,
+      data: { sessions: [] }
+    });
     await expect(window.__PRISM_AUTOMATION__?.getDebugState(2)).resolves.toEqual({ attachState: "attached" });
+    await expect(window.__PRISM_AUTOMATION__?.getDebugStateDetailed(2)).resolves.toEqual({
+      ok: true,
+      data: { attachState: "attached" }
+    });
+    await expect(window.__PRISM_AUTOMATION__?.sendCommandDetailed({ type: "GET_STATE" })).resolves.toEqual({
+      ok: true,
+      data: { sessions: [] }
+    });
     await expect(window.__PRISM_AUTOMATION__?.getActiveTab()).resolves.toEqual({
       id: 1,
       url: "https://one.test",

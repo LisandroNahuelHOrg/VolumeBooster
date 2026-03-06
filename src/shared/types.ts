@@ -27,6 +27,8 @@ export type AutoAttachReason =
   | "source_conflict";
 export type EngineLane = "manual_tab_capture" | "auto_media_element";
 export type AutoBoosterScope = "site" | "global";
+export type AutoActiveStrategy = "none" | "media_element" | "web_audio_bridge" | "hybrid";
+export type AutoRecoveryReason = "late_boot_missed" | "hot_attach_failed";
 
 export interface AdvancedAudioSettings {
   qualityPreset: QualityPreset;
@@ -65,8 +67,12 @@ export interface CaptureSessionState {
   gainPercent: number;
   engineLane: EngineLane;
   autoBoosterScope?: AutoBoosterScope;
+  autoActiveStrategy?: AutoActiveStrategy;
   autoAttachState: AutoAttachState;
   autoAttachReason?: AutoAttachReason;
+  recoveryPending?: boolean;
+  recoveryUsed?: boolean;
+  recoveryReason?: AutoRecoveryReason;
   streamState: SessionStreamState;
   engineStatus: AudioEngineStatus;
   level: number;
@@ -91,8 +97,12 @@ export interface TabSummary {
   hasStoredPreference: boolean;
   activeLane?: EngineLane;
   autoBoosterScope?: AutoBoosterScope;
+  autoActiveStrategy?: AutoActiveStrategy;
   autoAttachState: AutoAttachState;
   autoAttachReason?: AutoAttachReason;
+  recoveryPending?: boolean;
+  recoveryUsed?: boolean;
+  recoveryReason?: AutoRecoveryReason;
 }
 
 export interface WorkerState {
@@ -174,6 +184,10 @@ export interface AutoBoosterTabState {
   autoAttachState: AutoAttachState;
   autoAttachReason?: AutoAttachReason;
   autoBoosterScope?: AutoBoosterScope;
+  autoActiveStrategy?: AutoActiveStrategy;
+  recoveryPending?: boolean;
+  recoveryUsed?: boolean;
+  recoveryReason?: AutoRecoveryReason;
 }
 
 export interface AutoBoosterConfigPayload {
@@ -191,6 +205,8 @@ export interface AutoSessionStatusPayload extends AutoBoosterTabState {
   engineStatus: AudioEngineStatus;
   engineLane: "auto_media_element";
   lastError?: LocalizedMessage;
+  bridgeContextCount?: number;
+  bridgeAttachedNodeCount?: number;
 }
 
 export interface AutoSessionLevelPayload {
@@ -210,6 +226,8 @@ export interface AutoSessionAttachFailedPayload extends AutoBoosterTabState {
   engineStatus: AudioEngineStatus;
   streamState: SessionStreamState;
   lastError?: LocalizedMessage;
+  bridgeContextCount?: number;
+  bridgeAttachedNodeCount?: number;
 }
 
 export interface AutoSessionToastRequestedPayload {
@@ -225,10 +243,16 @@ export interface AutoBoosterDebugState {
   scope: AutoBoosterScope | null;
   attachState: AutoAttachState;
   attachReason?: AutoAttachReason;
+  activeStrategy?: AutoActiveStrategy;
   audioContextState: AudioContextState | "none";
   autoplayPolicy?: string;
   mediaElementCount: number;
   attachedElementCount: number;
+  bridgeContextCount?: number;
+  bridgeAttachedNodeCount?: number;
+  recoveryPending?: boolean;
+  recoveryUsed?: boolean;
+  recoveryReason?: AutoRecoveryReason;
   lastTelemetryAt: number | null;
   lastLevel: number;
   lastError?: LocalizedMessage;

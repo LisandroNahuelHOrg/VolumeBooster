@@ -7,6 +7,7 @@ describe("AutoBoosterClient", () => {
   const requestPermission = vi.fn();
   const containsPermission = vi.fn();
   const queryTabs = vi.fn();
+  const unregisterContentScripts = vi.fn();
   const getUrl = vi.fn((path: string) => `chrome-extension://test/${path}`);
 
   beforeEach(() => {
@@ -15,6 +16,7 @@ describe("AutoBoosterClient", () => {
     requestPermission.mockReset();
     containsPermission.mockReset();
     queryTabs.mockReset();
+    unregisterContentScripts.mockReset();
     getUrl.mockClear();
 
     vi.stubGlobal(
@@ -24,7 +26,8 @@ describe("AutoBoosterClient", () => {
           getURL: getUrl
         },
         scripting: {
-          executeScript
+          executeScript,
+          unregisterContentScripts
         },
         tabs: {
           sendMessage,
@@ -57,12 +60,12 @@ describe("AutoBoosterClient", () => {
     });
 
     expect(executeScript).toHaveBeenCalledTimes(1);
-    expect(executeScript).toHaveBeenCalledWith({
+    expect(executeScript).toHaveBeenNthCalledWith(1, {
       target: { tabId: 14 },
       func: expect.any(Function),
       args: ["chrome-extension://test/assets/auto-booster.js"]
     });
-    expect(sendMessage).toHaveBeenCalledWith(14, {
+    expect(sendMessage).toHaveBeenNthCalledWith(1, 14, {
       type: "AUTO_BOOSTER_CONFIGURE",
       payload: {
         tabId: 14,
@@ -181,7 +184,7 @@ describe("AutoBoosterClient", () => {
     containsPermission.mockResolvedValueOnce(true);
     queryTabs.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
     executeScript.mockResolvedValueOnce(undefined);
-    sendMessage.mockResolvedValueOnce({ attachState: "attached" });
+    sendMessage.mockResolvedValueOnce({ ready: true }).mockResolvedValueOnce({ attachState: "attached" });
 
     await expect(client.requestGlobalPermission()).resolves.toBe(true);
     await expect(client.hasGlobalPermission()).resolves.toBe(true);
@@ -202,35 +205,19 @@ describe("AutoBoosterClient", () => {
     });
   });
 
-  it("loads and caches the injected content module inside the page runtime", async () => {
+  it("registers and unregisters the global content scripts for isolated and main worlds", async () => {
     const client = new AutoBoosterClient();
-    sendMessage.mockResolvedValueOnce(undefined);
 
-    await client.configure(14, {
-      tabId: 14,
-      scope: "global",
-      enabled: true,
-      suspended: false,
-      gainPercent: 230,
-      advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
+    await client.registerGlobalContentScripts();
+    await client.unregisterGlobalContentScripts();
+
+    expect(unregisterContentScripts).toHaveBeenNthCalledWith(1, {
+      ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
     });
-
-    const [{ func, args }] = executeScript.mock.calls[0] as Array<{
-      func: (moduleUrl: string) => Promise<void>;
-      args: string[];
-    }>;
-    const runtimeWindow = {} as Window & {
-      __PRISM_AUTO_BOOSTER_IMPORT_PROMISE__?: Promise<unknown>;
-    };
-    vi.stubGlobal("window", runtimeWindow);
-    const moduleUrl = "data:text/javascript,export default 1";
-
-    await func(moduleUrl);
-    const cachedPromise = runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__;
-    await func(moduleUrl);
-
-    expect(cachedPromise).toBeInstanceOf(Promise);
-    expect(args[0]).toContain("assets/auto-booster.js");
-    expect(runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__).toBe(cachedPromise);
+    expect(unregisterContentScripts).toHaveBeenNthCalledWith(2, {
+      ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
+    });
+    expect(executeScript).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 });

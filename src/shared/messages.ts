@@ -44,6 +44,7 @@ export type OffscreenCommand =
   | { type: "OFFSCREEN_UPDATE_METADATA"; payload: OffscreenMetadataPayload };
 
 export type ContentCommand =
+  | { type: "AUTO_BOOSTER_PING" }
   | { type: "AUTO_BOOSTER_CONFIGURE"; payload: AutoBoosterConfigPayload }
   | { type: "AUTO_BOOSTER_DISABLE"; payload: { tabId: number } }
   | { type: "AUTO_BOOSTER_GET_DEBUG_STATE" };
@@ -117,7 +118,7 @@ export function isContentCommand(message: unknown): message is ContentCommand {
     return false;
   }
 
-  return ["AUTO_BOOSTER_CONFIGURE", "AUTO_BOOSTER_DISABLE", "AUTO_BOOSTER_GET_DEBUG_STATE"].includes(
+  return ["AUTO_BOOSTER_PING", "AUTO_BOOSTER_CONFIGURE", "AUTO_BOOSTER_DISABLE", "AUTO_BOOSTER_GET_DEBUG_STATE"].includes(
     (message as { type: string }).type
   );
 }

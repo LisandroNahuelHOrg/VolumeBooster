@@ -176,8 +176,8 @@
     "description": "User-visible error shown when the automatic media-element booster fails to attach."
   },
   "errorAutoAwaitingGesture": {
-    "message": "This page needs a click, key press, touch, or play action before the automatic booster can start processing audio.",
-    "description": "User-visible message shown when the automatic booster is blocked by autoplay policy until the user interacts with the page."
+    "message": "Automatic boosting is still retrying audio attach on this page.",
+    "description": "User-visible message shown while the automatic booster keeps retrying audio attach on the current page."
   },
   "errorAutoGlobalPermissionDenied": {
     "message": "Global auto-booster permission was not granted.",
@@ -350,8 +350,8 @@
     "description": "Badge shown when the site automatic lane is armed or active."
   },
   "laneBadgeFailed": {
-    "message": "Fallback",
-    "description": "Badge shown when the automatic lane failed and the user should use the manual booster."
+    "message": "Issue",
+    "description": "Badge shown when the automatic lane hit a real issue on the current page."
   },
   "laneBadgeIdle": {
     "message": "Ready",
@@ -370,15 +370,23 @@
     "description": "Badge shown when the automatic lane is waiting for playable media."
   },
   "laneBadgeInteraction": {
-    "message": "Action needed",
-    "description": "Badge shown when the automatic lane is waiting for user interaction before Web Audio can resume."
+    "message": "Starting",
+    "description": "Badge shown while the automatic lane keeps retrying audio attach in the background."
+  },
+  "laneBadgeLimited": {
+    "message": "Limited",
+    "description": "Badge shown when global mode stays active but the current page remains partially compatible after recovery."
+  },
+  "laneBadgeRecovering": {
+    "message": "Recovering",
+    "description": "Badge shown when global mode is reloading the current page once to attach earlier."
   },
   "laneFailedDetail": {
-    "message": "This page did not expose usable media elements. Use the robust manual booster for guaranteed capture.",
+    "message": "Automatic boosting could not attach on this page right now. The page may still be loading media or blocking automatic access.",
     "description": "Detail shown when the automatic booster failed on the current page."
   },
   "laneFailedTitle": {
-    "message": "Automatic lane failed",
+    "message": "Automatic boosting hit an issue",
     "description": "Title shown when the automatic booster failed on the current page."
   },
   "laneGlobalArmedDetail": {
@@ -388,6 +396,14 @@
   "laneGlobalArmedTitle": {
     "message": "Global mode is ready",
     "description": "Title shown when global auto mode is enabled but the current page is not yet attached."
+  },
+  "laneLimitedGlobalDetail": {
+    "message": "Global mode is still on, but this page is limiting automatic boosting even after one automatic recovery attempt. Other compatible websites can still start automatically.",
+    "description": "Detail shown when global mode remains enabled but the current page stayed limited after an automatic recovery reload."
+  },
+  "laneLimitedGlobalTitle": {
+    "message": "Global mode is limited on this page",
+    "description": "Title shown when global mode remains enabled but the current page stayed limited after recovery."
   },
   "laneIdleDetail": {
     "message": "Choose how the booster should work: Single Tab boosts only this tab, while Global tries to boost this page and all other compatible websites automatically.",
@@ -418,24 +434,40 @@
     "description": "Title shown when the current page does not support the automatic lane."
   },
   "laneInteractionGlobalDetail": {
-    "message": "Global mode is ready, but this page still needs a click, key press, touch, or play action before automatic boosting can start.",
-    "description": "Detail shown when the global automatic lane is blocked by autoplay policy and is waiting for user interaction."
+    "message": "Global mode is still trying to attach automatically on this page. The extension keeps retrying in the background as playback becomes available.",
+    "description": "Detail shown while the global automatic lane keeps retrying audio attach on the current page."
   },
   "laneInteractionGlobalTitle": {
-    "message": "Global mode is waiting for interaction",
-    "description": "Title shown when the global automatic mode is blocked by autoplay policy until the user interacts with the page."
+    "message": "Global mode is still starting on this page",
+    "description": "Title shown while the global automatic mode keeps retrying audio attach on the current page."
   },
   "laneInteractionSiteDetail": {
-    "message": "This site mode is ready, but this page still needs a click, key press, touch, or play action before boosting can start.",
-    "description": "Detail shown when the site automatic lane is blocked by autoplay policy and is waiting for user interaction."
+    "message": "This site mode is still trying to attach automatically on this page. The extension keeps retrying in the background as playback becomes available.",
+    "description": "Detail shown while the site automatic lane keeps retrying audio attach on the current page."
   },
   "laneInteractionSiteTitle": {
-    "message": "This site mode is waiting for interaction",
-    "description": "Title shown when the site automatic mode is blocked by autoplay policy until the user interacts with the page."
+    "message": "This site mode is still starting on this page",
+    "description": "Title shown while the site automatic mode keeps retrying audio attach on the current page."
   },
   "laneInteractionTitle": {
     "message": "Waiting for page interaction",
     "description": "Title shown when the automatic lane is armed but blocked by autoplay policy until the user interacts with the page."
+  },
+  "laneRecoveringGlobalDetail": {
+    "message": "Global mode is recovering this page automatically. The extension will reload it once so the booster can attach earlier, while keeping Global mode active for other compatible websites too.",
+    "description": "Detail shown when global mode is performing a one-shot automatic recovery reload for the current page."
+  },
+  "laneRecoveringGlobalTitle": {
+    "message": "Global mode is recovering this page",
+    "description": "Title shown when global mode is performing a one-shot automatic recovery reload for the current page."
+  },
+  "laneAutomaticGlobalBridgeDetail": {
+    "message": "Global mode is on. This page is already being boosted through its Web Audio pipeline, and other compatible websites will start automatically too.",
+    "description": "Detail shown when the global automatic mode is attached through the Web Audio bridge."
+  },
+  "laneAutomaticGlobalHybridDetail": {
+    "message": "Global mode is on. This page is already being boosted through both media detection and Web Audio detection for maximum compatibility.",
+    "description": "Detail shown when the global automatic mode is attached through both automatic strategies at the same time."
   },
   "laneWatchingGlobalDetail": {
     "message": "Global mode is ready and waiting for playable audio or video on this page before it starts boosting automatically.",

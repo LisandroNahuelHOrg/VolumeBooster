@@ -1,19 +1,22 @@
 import { sendMessageSafe } from "../shared/messages";
 import type { PopupCommand } from "../shared/messages";
-import type { AutoBoosterDebugState, WorkerState } from "../shared/types";
+import type { AutoBoosterDebugState, RuntimeResponse, WorkerState } from "../shared/types";
 
 declare global {
   interface Window {
     __PRISM_AUTOMATION__?: {
       requestGlobalPermission(): Promise<WorkerState | null>;
       hasGlobalPermission(): Promise<boolean>;
-    sendCommand<T = unknown>(command: PopupCommand): Promise<T | null>;
-    getState(): Promise<WorkerState | null>;
-    getDebugState(tabId: number): Promise<AutoBoosterDebugState | null>;
-    getActiveTab(): Promise<{ id: number; url?: string; title?: string } | null>;
-    getTabsByUrl(urlPattern: string): Promise<Array<{ id: number; url?: string; title?: string }>>;
-  };
-}
+      sendCommand<T = unknown>(command: PopupCommand): Promise<T | null>;
+      sendCommandDetailed<T = unknown>(command: PopupCommand): Promise<RuntimeResponse<T>>;
+      getState(): Promise<WorkerState | null>;
+      getStateDetailed(): Promise<RuntimeResponse<WorkerState>>;
+      getDebugState(tabId: number): Promise<AutoBoosterDebugState | null>;
+      getDebugStateDetailed(tabId: number): Promise<RuntimeResponse<AutoBoosterDebugState | null>>;
+      getActiveTab(): Promise<{ id: number; url?: string; title?: string } | null>;
+      getTabsByUrl(urlPattern: string): Promise<Array<{ id: number; url?: string; title?: string }>>;
+    };
+  }
 }
 
 const root = document.querySelector<HTMLDivElement>("#app");
@@ -57,8 +60,11 @@ window.__PRISM_AUTOMATION__ = {
   requestGlobalPermission,
   hasGlobalPermission,
   sendCommand,
+  sendCommandDetailed,
   getState,
+  getStateDetailed,
   getDebugState,
+  getDebugStateDetailed,
   getActiveTab,
   getTabsByUrl
 };
@@ -73,16 +79,30 @@ async function hasGlobalPermission(): Promise<boolean> {
 }
 
 async function sendCommand<T = unknown>(command: PopupCommand): Promise<T | null> {
-  const response = await sendMessageSafe<T>(command);
+  const response = await sendCommandDetailed<T>(command);
   return response.ok ? response.data ?? null : null;
 }
 
+async function sendCommandDetailed<T = unknown>(command: PopupCommand): Promise<RuntimeResponse<T>> {
+  return sendMessageSafe<T>(command);
+}
+
 async function getState(): Promise<WorkerState | null> {
-  return sendCommand<WorkerState>({ type: "GET_STATE" });
+  const response = await getStateDetailed();
+  return response.ok ? response.data ?? null : null;
+}
+
+async function getStateDetailed(): Promise<RuntimeResponse<WorkerState>> {
+  return sendCommandDetailed<WorkerState>({ type: "GET_STATE" });
 }
 
 async function getDebugState(tabId: number): Promise<AutoBoosterDebugState | null> {
-  return sendCommand<AutoBoosterDebugState | null>({
+  const response = await getDebugStateDetailed(tabId);
+  return response.ok ? response.data ?? null : null;
+}
+
+async function getDebugStateDetailed(tabId: number): Promise<RuntimeResponse<AutoBoosterDebugState | null>> {
+  return sendCommandDetailed<AutoBoosterDebugState | null>({
     type: "GET_DEBUG_STATE",
     payload: { tabId }
   });
@@ -98,15 +118,25 @@ async function getTabsByUrl(urlPattern: string): Promise<Array<{ id: number; url
 }
 
 async function getActiveTab(): Promise<{ id: number; url?: string; title?: string } | null> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 
-  if (!tab || typeof tab.id !== "number") {
+  if (tab && typeof tab.id === "number") {
+    return {
+      id: tab.id,
+      url: tab.url,
+      title: tab.title
+    };
+  }
+
+  const [fallbackTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!fallbackTab || typeof fallbackTab.id !== "number") {
     return null;
   }
 
   return {
-    id: tab.id,
-    url: tab.url,
-    title: tab.title
+    id: fallbackTab.id,
+    url: fallbackTab.url,
+    title: fallbackTab.title
   };
 }

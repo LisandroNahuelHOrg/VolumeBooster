@@ -14,6 +14,7 @@ export default defineConfig({
         offscreen: resolve(__dirname, "offscreen.html"),
         background: resolve(__dirname, "src/background/main.ts"),
         "auto-booster": resolve(__dirname, "src/content/main.ts"),
+        "auto-booster-main": resolve(__dirname, "src/content/main-world.ts"),
         "faust-mono-worklet": resolve(__dirname, "src/offscreen/faust-mono-worklet.ts"),
         "faust-stereo-worklet": resolve(__dirname, "src/offscreen/faust-stereo-worklet.ts")
       },

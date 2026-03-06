@@ -20,6 +20,11 @@ if (!window.__PRISM_AUTO_BOOSTER_BOOTED__) {
 
     void (async () => {
       try {
+        if (incomingMessage.type === "AUTO_BOOSTER_PING") {
+          sendResponse({ ready: true });
+          return;
+        }
+
         if (incomingMessage.type === "AUTO_BOOSTER_CONFIGURE") {
           await controller.configure(incomingMessage.payload);
           sendResponse(undefined);

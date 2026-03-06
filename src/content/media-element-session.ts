@@ -83,25 +83,6 @@ export class MediaElementSession {
     gainPercent: number,
     advancedAudioSettings: AdvancedAudioSettings
   ): Promise<MediaElementSession> {
-    const initialAutoplayPolicy = getAudioContextAutoplayPolicyHint();
-    const hasUserActivation = hasPageUserActivation();
-
-    if (!hasUserActivation || (initialAutoplayPolicy && initialAutoplayPolicy !== "allowed")) {
-      const technicalMessage =
-        initialAutoplayPolicy && initialAutoplayPolicy !== "allowed"
-          ? `AudioContext creation is blocked until the page receives a user gesture (${initialAutoplayPolicy}).`
-          : "AudioContext creation is blocked until the page receives a user gesture.";
-
-      throw new MediaElementSessionError(
-        "autoplay_blocked",
-        technicalMessage,
-        {
-          audioContextState: "none",
-          autoplayPolicy: initialAutoplayPolicy
-        }
-      );
-    }
-
     const audioContext = new AudioContext();
     const autoplayPolicy = getAutoplayPolicy(audioContext);
     await audioContext.resume().catch(() => undefined);
@@ -324,37 +305,6 @@ function getAutoplayPolicy(audioContext: BaseAudioContext): string | undefined {
       return undefined;
     }
   }
-}
-
-function getAudioContextAutoplayPolicyHint(): string | undefined {
-  const policyApi = (
-    navigator as Navigator & {
-      getAutoplayPolicy?: (target?: string | BaseAudioContext | HTMLMediaElement) => string;
-    }
-  ).getAutoplayPolicy;
-
-  if (typeof policyApi !== "function") {
-    return undefined;
-  }
-
-  try {
-    return policyApi("audiocontext");
-  } catch {
-    return undefined;
-  }
-}
-
-function hasPageUserActivation(): boolean {
-  const activationState = (
-    navigator as Navigator & {
-      userActivation?: {
-        hasBeenActive?: boolean;
-        isActive?: boolean;
-      };
-    }
-  ).userActivation;
-
-  return Boolean(activationState?.hasBeenActive || activationState?.isActive);
 }
 
 function getSampleSize(meta: { compile_options: string }): 4 | 8 {

@@ -171,7 +171,7 @@ describe("MediaElementSession", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not create an AudioContext when autoplay policy still blocks web audio", async () => {
+  it("attempts to create an AudioContext before reporting autoplay_blocked", async () => {
     vi.stubGlobal("navigator", {
       getAutoplayPolicy: vi.fn(() => "disallowed"),
       userActivation: {
@@ -179,19 +179,22 @@ describe("MediaElementSession", () => {
         isActive: false
       }
     } as unknown as Navigator);
+    FakeAudioContext.nextState = "suspended";
+    FakeAudioContext.keepStateOnResume = true;
 
     await expect(
       MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
     ).rejects.toMatchObject({
       reason: "autoplay_blocked",
       debugState: {
-        audioContextState: "none",
+        audioContextState: "suspended",
         autoplayPolicy: "disallowed"
       },
-      technicalMessage: "AudioContext creation is blocked until the page receives a user gesture (disallowed)."
+      technicalMessage: "AudioContext remained suspended after resume()."
     });
 
-    expect(FakeAudioContext.instances).toHaveLength(0);
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    expect(FakeAudioContext.instances[0]?.resume).toHaveBeenCalledTimes(1);
   });
 
   it("reports autoplay_blocked when resume leaves the context suspended", async () => {

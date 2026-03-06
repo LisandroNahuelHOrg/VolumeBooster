@@ -73,6 +73,12 @@ export class WorkerOrchestrator {
       this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("off");
     }
 
+    if (this.autoBoosterMode === "global") {
+      await this.registerGlobalContentScripts();
+    } else {
+      await this.unregisterGlobalContentScripts();
+    }
+
     await this.syncFromOffscreen();
 
     if (this.autoBoosterMode === "global") {
@@ -164,6 +170,7 @@ export class WorkerOrchestrator {
       scope: autoState.autoBoosterScope ?? null,
       attachState: autoState.autoAttachState,
       attachReason: autoState.autoAttachReason,
+      activeStrategy: autoState.autoActiveStrategy,
       audioContextState: "none",
       autoplayPolicy: undefined,
       mediaElementCount: 0,
@@ -386,6 +393,7 @@ export class WorkerOrchestrator {
       ...summary,
       activeLane: activeSession?.engineLane,
       autoBoosterScope: activeSession?.autoBoosterScope ?? autoTabState?.autoBoosterScope,
+      autoActiveStrategy: activeSession?.autoActiveStrategy ?? autoTabState?.autoActiveStrategy,
       autoAttachState:
         activeSession?.engineLane === "auto_media_element"
           ? activeSession.autoAttachState
@@ -618,6 +626,7 @@ export class WorkerOrchestrator {
       autoAttachState: update.autoAttachState,
       autoAttachReason: update.autoAttachReason,
       autoBoosterScope: update.autoBoosterScope,
+      autoActiveStrategy: update.autoActiveStrategy,
       gainPercent: update.gainPercent,
       lastError: update.lastError
     });
@@ -634,6 +643,7 @@ export class WorkerOrchestrator {
         gainPercent: update.gainPercent,
         engineLane: "auto_media_element",
         autoBoosterScope: update.autoBoosterScope,
+        autoActiveStrategy: update.autoActiveStrategy,
         autoAttachState: update.autoAttachState,
         autoAttachReason: update.autoAttachReason,
         streamState: update.streamState,
@@ -682,6 +692,7 @@ export class WorkerOrchestrator {
       autoAttachState: "failed",
       autoAttachReason: update.autoAttachReason,
       autoBoosterScope: update.autoBoosterScope,
+      autoActiveStrategy: update.autoActiveStrategy,
       gainPercent: update.gainPercent,
       lastError: update.lastError
     });
@@ -709,6 +720,7 @@ export class WorkerOrchestrator {
       gainPercent: update.gainPercent,
       engineLane: "auto_media_element",
       autoBoosterScope: update.autoBoosterScope,
+      autoActiveStrategy: update.autoActiveStrategy,
       autoAttachState: update.autoAttachState,
       autoAttachReason: update.autoAttachReason,
       streamState: update.streamState,
@@ -761,6 +773,7 @@ export class WorkerOrchestrator {
     }
 
     await this.disableAllSiteAutoTabs();
+    await this.registerGlobalContentScripts();
 
     if (this.manualSessions.has(currentTabId)) {
       await this.stopManualCapture(currentTabId);
@@ -789,6 +802,7 @@ export class WorkerOrchestrator {
   private async deactivateGlobalAutoBooster(): Promise<void> {
     this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("off");
     this.autoSuppressedTabs.clear();
+    await this.unregisterGlobalContentScripts();
 
     const globalTabIds = new Set<number>();
 
@@ -814,6 +828,7 @@ export class WorkerOrchestrator {
   }
 
   private async syncGlobalAutoBoosterAcrossTabs(): Promise<void> {
+    await this.registerGlobalContentScripts();
     const injectableTabs = await this.autoBoosterClient.queryInjectableTabs();
 
     for (const tab of injectableTabs) {
@@ -893,6 +908,7 @@ export class WorkerOrchestrator {
       autoAttachState: "observing",
       autoAttachReason: "no_media",
       autoBoosterScope: scope,
+      autoActiveStrategy: "none",
       gainPercent
     };
 
@@ -1061,6 +1077,7 @@ export class WorkerOrchestrator {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: scope,
+      autoActiveStrategy: "none",
       gainPercent: DEFAULT_GAIN_PERCENT,
       lastError: message("errorAutoUnsupportedSite")
     });
@@ -1077,6 +1094,18 @@ export class WorkerOrchestrator {
     this.autoTabStates.delete(tabId);
     this.audibleTabs.delete(tabId);
     this.rebuildEffectiveSessions();
+  }
+
+  private async registerGlobalContentScripts(): Promise<void> {
+    if (typeof this.autoBoosterClient.registerGlobalContentScripts === "function") {
+      await this.autoBoosterClient.registerGlobalContentScripts();
+    }
+  }
+
+  private async unregisterGlobalContentScripts(): Promise<void> {
+    if (typeof this.autoBoosterClient.unregisterGlobalContentScripts === "function") {
+      await this.autoBoosterClient.unregisterGlobalContentScripts();
+    }
   }
 
   private getAutoScopeForTab(tabId: number): AutoBoosterScope | undefined {

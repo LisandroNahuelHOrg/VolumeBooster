@@ -1,6 +1,8 @@
 import stereoMeta from "../generated/faust/stereo/dsp-meta.json";
 import { PROCESSOR_NAMES } from "./faust-runtime";
 
+const typedStereoMeta = stereoMeta as { name: string };
+
 const stereoHoisted = vi.hoisted(() => ({
   getFaustAudioWorkletProcessor: vi.fn(),
   FaustBaseWebAudioDsp: { tag: "base" },
@@ -58,7 +60,7 @@ describe("faust-stereo-worklet", () => {
     });
     expect(config).toEqual({
       processorName: PROCESSOR_NAMES.stereo,
-      dspName: stereoMeta.name,
+      dspName: typedStereoMeta.name,
       dspMeta: stereoMeta,
       poly: false
     });
