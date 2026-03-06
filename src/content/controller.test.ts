@@ -67,7 +67,7 @@ function createFakeSession(overrides: Partial<FakeSession> = {}): FakeSession {
 describe("AutoBoosterController", () => {
   const runtimeSendMessage = vi.fn();
   const i18nGetMessage = vi.fn();
-  const fakeMediaElement = {} as HTMLMediaElement;
+  let fakeMediaElement: HTMLMediaElement;
   const intervalCallbacks = new Map<number, () => void>();
   let nextIntervalId = 1;
   let documentQuerySelectorAll = vi.fn<() => HTMLMediaElement[]>();
@@ -94,6 +94,19 @@ describe("AutoBoosterController", () => {
       };
       return dictionary[key] ?? key;
     });
+    fakeMediaElement = {
+      currentSrc: "https://cdn.example.com/audio.mp4",
+      srcObject: null,
+      paused: false,
+      ended: false,
+      readyState: 2,
+      currentTime: 1,
+      played: {
+        length: 1
+      } as TimeRanges,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    } as unknown as HTMLMediaElement;
     documentQuerySelectorAll = vi.fn(() => [fakeMediaElement]);
     documentContains = vi.fn(() => true);
     documentQuerySelector = vi.fn(() => null);

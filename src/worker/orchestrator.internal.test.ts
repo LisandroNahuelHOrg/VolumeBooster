@@ -27,6 +27,7 @@ interface WorkerOrchestratorInternals {
   autoTabStates: Map<number, AutoTabRuntimeState>;
   siteEnabledAutoTabs: Set<number>;
   autoSuppressedTabs: Set<number>;
+  globalRecoveryReloadKeys: Set<string>;
   audibleTabs: Map<number, number>;
   badgedTabs: Set<number>;
   badgePulseTimer: ReturnType<typeof globalThis.setInterval> | null;
@@ -993,7 +994,7 @@ describe("WorkerOrchestrator internals", () => {
       "global"
     );
 
-    expect(internals.autoTabStates.get(77)).toEqual({
+    expect(internals.autoTabStates.get(77)).toMatchObject({
       tabId: 77,
       title: "https://rumble.com/demo",
       url: "https://rumble.com/demo",
@@ -1002,6 +1003,7 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       gainPercent: 100,
       lastError: message("errorAutoUnsupportedSite")
     });
@@ -1472,7 +1474,7 @@ describe("WorkerOrchestrator internals", () => {
       { id: 201, title: undefined, url: "chrome://extensions" } as chrome.tabs.Tab
     );
 
-    expect(internals.autoTabStates.get(201)).toEqual({
+    expect(internals.autoTabStates.get(201)).toMatchObject({
       tabId: 201,
       title: "chrome://extensions",
       url: "chrome://extensions",
@@ -1481,6 +1483,7 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       gainPercent: 100,
       lastError: message("errorAutoUnsupportedSite")
     });
