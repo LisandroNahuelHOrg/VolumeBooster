@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fixture: SPA Media</title>
+    <script src="/media-fixture.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>SPA-style media fixture</h1>
+      <p>No media exists at first. The audio element is inserted later to simulate lazy SPA rendering.</p>
+      <div id="fixture-target"></div>
+      <button id="start-playback" type="button">Start inserted playback</button>
+    </main>
+    <script>
+      window.PrismFixture.insertAudioLater("fixture-target", "fixture-audio", 1200);
+
+      document.getElementById("start-playback").addEventListener("click", async () => {
+        const started = await window.PrismFixture.playElementById("fixture-audio");
+        document.body.dataset.playing = String(started);
+      });
+    </script>
+  </body>
+</html>

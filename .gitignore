@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.codex/
+.stryker-tmp/
+coverage/
+dist-test/
+output/
+reports/

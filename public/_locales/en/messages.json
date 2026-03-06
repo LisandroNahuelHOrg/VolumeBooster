@@ -1,0 +1,778 @@
+{
+  "activateBooster": {
+    "message": "Activate booster",
+    "description": "Localized UI copy for activateBooster."
+  },
+  "advancedGlobalHint": {
+    "message": "Applied to every active session instantly.",
+    "description": "Advanced DSP settings copy for advancedGlobalHint."
+  },
+  "autoBoosterFailureToast": {
+    "message": "Automatic booster could not hook this page. Use the manual booster from the popup.",
+    "description": "Toast shown inside the page when the global automatic booster fails to attach."
+  },
+  "advancedSubtitle": {
+    "message": "Fine-tune the global premium DSP engine applied to every live booster session.",
+    "description": "Advanced DSP settings copy for advancedSubtitle."
+  },
+  "advancedTitle": {
+    "message": "Sound Mode",
+    "description": "Advanced DSP settings copy for advancedTitle."
+  },
+  "boostingCount": {
+    "message": "$COUNT$ active sessions",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_few": {
+    "message": "$COUNT$ booster sessions are active right now.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_many": {
+    "message": "$COUNT$ booster sessions are active right now.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "11"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_one": {
+    "message": "1 booster session is active right now.",
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_other": {
+    "message": "$COUNT$ booster sessions are active right now.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_two": {
+    "message": "$COUNT$ booster sessions are active right now.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "2"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCount_zero": {
+    "message": "No booster sessions are active right now.",
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCountMany": {
+    "message": "$COUNT$ booster sessions are active right now.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    },
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCountNone": {
+    "message": "No booster sessions are active right now.",
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostingCountOne": {
+    "message": "1 booster session is active right now.",
+    "description": "Pluralized session count summary shown in the Active booster sessions header."
+  },
+  "boostLabel": {
+    "message": "Boost",
+    "description": "Label text for boostLabel."
+  },
+  "ceilingLabel": {
+    "message": "Ceiling",
+    "description": "Label text for ceilingLabel."
+  },
+  "ceilingHelpLabel": {
+    "message": "Learn what Ceiling means",
+    "description": "Accessible label for the Ceiling help trigger."
+  },
+  "ceilingHelpText": {
+    "message": "Sets the output ceiling that the sound mode aims to stay under before clipping.",
+    "description": "Tooltip copy that explains the Ceiling control."
+  },
+  "clipEventsLabel": {
+    "message": "Clip events",
+    "description": "Label text for clipEventsLabel."
+  },
+  "clipEventsHelpLabel": {
+    "message": "Learn what Clip events means",
+    "description": "Accessible label for the Clip events help trigger."
+  },
+  "clipEventsHelpText": {
+    "message": "Shows how many clipping events were detected during the current session.",
+    "description": "Tooltip copy that explains the Clip events stat."
+  },
+  "clippingSafetyIdle": {
+    "message": "Idle",
+    "description": "Value shown for clipping safety when there is no meaningful audio signal."
+  },
+  "clippingSafetyLabel": {
+    "message": "Clipping Safety",
+    "description": "Label text for clippingSafetyLabel."
+  },
+  "clippingSafetyHelpLabel": {
+    "message": "Learn what Clipping Safety means",
+    "description": "Accessible label for the Clipping Safety help trigger."
+  },
+  "clippingSafetyHelpText": {
+    "message": "Shows how much safe headroom remains before the output reaches clipping.",
+    "description": "Tooltip copy that explains the Clipping Safety stat."
+  },
+  "clippingSafetyMax": {
+    "message": "9.9+ dB",
+    "description": "Value shown for clipping safety when the available margin exceeds the compact UI threshold."
+  },
+  "clipPeakLabel": {
+    "message": "Clip peak",
+    "description": "Label text for clipPeakLabel."
+  },
+  "clipPeakHelpLabel": {
+    "message": "Learn what Clip peak means",
+    "description": "Accessible label for the Clip peak help trigger."
+  },
+  "clipPeakHelpText": {
+    "message": "Shows the highest clipping peak detected during the current session.",
+    "description": "Tooltip copy that explains the Clip peak stat."
+  },
+  "clipPeakNone": {
+    "message": "Clean",
+    "description": "Localized UI copy for clipPeakNone."
+  },
+  "currentTabLabel": {
+    "message": "Current tab",
+    "description": "Label text for currentTabLabel."
+  },
+  "disableBooster": {
+    "message": "Disable booster",
+    "description": "Localized UI copy for disableBooster."
+  },
+  "errorAudioPipelineStart": {
+    "message": "The audio pipeline could not start.",
+    "description": "User-visible error message for errorAudioPipelineStart."
+  },
+  "errorAutoAttachFailed": {
+    "message": "The automatic site booster could not hook this page.",
+    "description": "User-visible error shown when the automatic media-element booster fails to attach."
+  },
+  "errorAutoAwaitingGesture": {
+    "message": "This page needs a click, key press, touch, or play action before the automatic booster can start processing audio.",
+    "description": "User-visible message shown when the automatic booster is blocked by autoplay policy until the user interacts with the page."
+  },
+  "errorAutoGlobalPermissionDenied": {
+    "message": "Global auto-booster permission was not granted.",
+    "description": "User-visible error shown when the user denies all-sites host permissions."
+  },
+  "errorAutoPermissionMissing": {
+    "message": "This page does not grant the permissions needed for automatic boosting.",
+    "description": "User-visible error shown when the automatic content script cannot be injected into the page."
+  },
+  "errorAutoUnsupportedSite": {
+    "message": "This page cannot be hooked automatically. Use the robust manual booster instead.",
+    "description": "User-visible error shown when the current page is not compatible with the automatic booster lane."
+  },
+  "errorAutoSourceConflict": {
+    "message": "This page already owns the media source graph in a way that prevents automatic hooking. Use the robust manual booster instead.",
+    "description": "User-visible error shown when a media element cannot be connected because another graph already owns it."
+  },
+  "errorCaptureStopped": {
+    "message": "The tab capture session stopped.",
+    "description": "User-visible error message for errorCaptureStopped."
+  },
+  "errorExtensionActionFailed": {
+    "message": "The extension action could not be completed.",
+    "description": "User-visible error message for errorExtensionActionFailed."
+  },
+  "errorForgetUnavailable": {
+    "message": "This site cannot remove a remembered boost.",
+    "description": "User-visible error message for errorForgetUnavailable."
+  },
+  "errorGetState": {
+    "message": "Unable to get the current extension state.",
+    "description": "User-visible error message for errorGetState."
+  },
+  "errorNoRunningSession": {
+    "message": "No running session was found for that tab.",
+    "description": "User-visible error message for errorNoRunningSession."
+  },
+  "errorOffscreenMessageUndeliverable": {
+    "message": "The offscreen message could not be delivered.",
+    "description": "User-visible error message for errorOffscreenMessageUndeliverable."
+  },
+  "errorOffscreenSetAudioSettings": {
+    "message": "The offscreen document could not update the audio settings.",
+    "description": "User-visible error message for errorOffscreenSetAudioSettings."
+  },
+  "errorOffscreenSetGain": {
+    "message": "The offscreen document could not update the gain.",
+    "description": "User-visible error message for errorOffscreenSetGain."
+  },
+  "errorOffscreenStartSession": {
+    "message": "The offscreen document could not start the session.",
+    "description": "User-visible error message for errorOffscreenStartSession."
+  },
+  "errorOffscreenStopAll": {
+    "message": "The offscreen document could not stop all sessions.",
+    "description": "User-visible error message for errorOffscreenStopAll."
+  },
+  "errorOffscreenStopSession": {
+    "message": "The offscreen document could not stop the session.",
+    "description": "User-visible error message for errorOffscreenStopSession."
+  },
+  "errorOffscreenUpdateMetadata": {
+    "message": "The offscreen metadata could not be updated.",
+    "description": "User-visible error message for errorOffscreenUpdateMetadata."
+  },
+  "errorPrefix": {
+    "message": "Issue",
+    "description": "User-visible error message for errorPrefix."
+  },
+  "errorRememberUnavailable": {
+    "message": "This site cannot store a remembered boost.",
+    "description": "User-visible error message for errorRememberUnavailable."
+  },
+  "errorRuntimeMessageUndeliverable": {
+    "message": "The extension message could not be delivered.",
+    "description": "User-visible error message for errorRuntimeMessageUndeliverable."
+  },
+  "errorRuntimeNoResponse": {
+    "message": "The extension runtime did not return a response.",
+    "description": "User-visible error message for errorRuntimeNoResponse."
+  },
+  "errorTabNoLongerExists": {
+    "message": "The requested tab no longer exists.",
+    "description": "User-visible error message for errorTabNoLongerExists."
+  },
+  "errorTabNotCapturable": {
+    "message": "This tab cannot be captured. Try a regular https:// page.",
+    "description": "User-visible error message for errorTabNotCapturable."
+  },
+  "extActionTitle": {
+    "message": "Open Prism Volume Booster",
+    "description": "Tooltip for the toolbar action button."
+  },
+  "extDescription": {
+    "message": "Boost any Chrome tab beyond the default max volume with a polished real-time audio pipeline.",
+    "description": "Extension description shown in Chrome."
+  },
+  "extName": {
+    "message": "Prism Volume Booster",
+    "description": "Extension name shown in Chrome."
+  },
+  "forgetSite": {
+    "message": "Forget my settings for $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "youtube.com"
+      }
+    },
+    "description": "Localized UI copy for forgetSite."
+  },
+  "disableBoosterInAllSites": {
+    "message": "Disable booster in all sites",
+    "description": "Label for turning off the automatic global booster."
+  },
+  "disableBoosterInThisSite": {
+    "message": "Disable booster in this site",
+    "description": "Label for turning off the automatic booster in the current site session."
+  },
+  "enableBoosterInAllSites": {
+    "message": "Enable booster in all sites",
+    "description": "Label for turning on the automatic booster across all compatible sites."
+  },
+  "enableBoosterInThisSite": {
+    "message": "Enable booster in this site",
+    "description": "Label for turning on the automatic booster only in the current site session."
+  },
+  "languageEnglish": {
+    "message": "English",
+    "description": "Localized UI copy for languageEnglish."
+  },
+  "languageLabel": {
+    "message": "Language",
+    "description": "Label text for languageLabel."
+  },
+  "languageSpanish": {
+    "message": "Spanish",
+    "description": "Localized UI copy for languageSpanish."
+  },
+  "levelLabel": {
+    "message": "Live activity",
+    "description": "Label text for levelLabel."
+  },
+  "laneAutomaticGlobalDetail": {
+    "message": "Global mode is on. This page is already being boosted, and other compatible websites will start automatically too.",
+    "description": "Detail text shown when the automatic global lane is attached in the current tab."
+  },
+  "laneAutomaticGlobalTitle": {
+    "message": "Global mode is active",
+    "description": "Title shown when the global automatic mode is actively boosting the current page."
+  },
+  "laneAutomaticSiteDetail": {
+    "message": "This site mode is on. Only this tab is being boosted right now, and other pages will not turn on automatically.",
+    "description": "Detail text shown when the automatic site lane is attached in the current tab."
+  },
+  "laneAutomaticSiteTitle": {
+    "message": "This site mode is active",
+    "description": "Title shown when the site automatic mode is actively boosting the current page."
+  },
+  "laneAutomaticTitle": {
+    "message": "Automatic lane",
+    "description": "Title shown in the lane status card when the automatic lane is active."
+  },
+  "laneBadgeAutomaticGlobal": {
+    "message": "Global",
+    "description": "Badge shown when the global automatic lane is armed or active."
+  },
+  "laneBadgeAutomaticSite": {
+    "message": "This site",
+    "description": "Badge shown when the site automatic lane is armed or active."
+  },
+  "laneBadgeFailed": {
+    "message": "Fallback",
+    "description": "Badge shown when the automatic lane failed and the user should use the manual booster."
+  },
+  "laneBadgeIdle": {
+    "message": "Ready",
+    "description": "Badge shown when no booster lane is active yet."
+  },
+  "laneBadgeManual": {
+    "message": "Single Tab",
+    "description": "Badge shown when the robust manual tab capture lane is active."
+  },
+  "laneBadgeUnavailable": {
+    "message": "Unavailable",
+    "description": "Badge shown when the page cannot use the automatic lane."
+  },
+  "laneBadgeWatching": {
+    "message": "Preparing",
+    "description": "Badge shown when the automatic lane is waiting for playable media."
+  },
+  "laneBadgeInteraction": {
+    "message": "Action needed",
+    "description": "Badge shown when the automatic lane is waiting for user interaction before Web Audio can resume."
+  },
+  "laneFailedDetail": {
+    "message": "This page did not expose usable media elements. Use the robust manual booster for guaranteed capture.",
+    "description": "Detail shown when the automatic booster failed on the current page."
+  },
+  "laneFailedTitle": {
+    "message": "Automatic lane failed",
+    "description": "Title shown when the automatic booster failed on the current page."
+  },
+  "laneGlobalArmedDetail": {
+    "message": "Global mode is ready. This page and other compatible websites will start boosting automatically as soon as playable media is available.",
+    "description": "Detail shown when global auto mode is enabled but the current page is not yet attached."
+  },
+  "laneGlobalArmedTitle": {
+    "message": "Global mode is ready",
+    "description": "Title shown when global auto mode is enabled but the current page is not yet attached."
+  },
+  "laneIdleDetail": {
+    "message": "Choose how the booster should work: Single Tab boosts only this tab, while Global tries to boost this page and all other compatible websites automatically.",
+    "description": "Detail shown when no booster lane is active in the current tab."
+  },
+  "laneIdleTitle": {
+    "message": "Choose a booster mode",
+    "description": "Title shown when no booster lane is active in the current tab."
+  },
+  "laneManualDetail": {
+    "message": "Single Tab mode is on. Audio is being boosted only in this tab, and other pages will stay unchanged until you activate them manually.",
+    "description": "Detail shown when the robust manual lane is active."
+  },
+  "laneManualTitle": {
+    "message": "Single Tab mode is active",
+    "description": "Title shown when the robust manual lane is active."
+  },
+  "laneStatusTitle": {
+    "message": "Booster Mode",
+    "description": "Section title shown above the current lane status in the popup."
+  },
+  "laneUnsupportedDetail": {
+    "message": "This page cannot be hooked automatically. Use the robust manual booster when available.",
+    "description": "Detail shown when the current page does not support the automatic lane."
+  },
+  "laneUnsupportedTitle": {
+    "message": "Automatic lane unavailable",
+    "description": "Title shown when the current page does not support the automatic lane."
+  },
+  "laneInteractionGlobalDetail": {
+    "message": "Global mode is ready, but this page still needs a click, key press, touch, or play action before automatic boosting can start.",
+    "description": "Detail shown when the global automatic lane is blocked by autoplay policy and is waiting for user interaction."
+  },
+  "laneInteractionGlobalTitle": {
+    "message": "Global mode is waiting for interaction",
+    "description": "Title shown when the global automatic mode is blocked by autoplay policy until the user interacts with the page."
+  },
+  "laneInteractionSiteDetail": {
+    "message": "This site mode is ready, but this page still needs a click, key press, touch, or play action before boosting can start.",
+    "description": "Detail shown when the site automatic lane is blocked by autoplay policy and is waiting for user interaction."
+  },
+  "laneInteractionSiteTitle": {
+    "message": "This site mode is waiting for interaction",
+    "description": "Title shown when the site automatic mode is blocked by autoplay policy until the user interacts with the page."
+  },
+  "laneInteractionTitle": {
+    "message": "Waiting for page interaction",
+    "description": "Title shown when the automatic lane is armed but blocked by autoplay policy until the user interacts with the page."
+  },
+  "laneWatchingGlobalDetail": {
+    "message": "Global mode is ready and waiting for playable audio or video on this page before it starts boosting automatically.",
+    "description": "Detail shown when the global automatic lane is observing the current page."
+  },
+  "laneWatchingGlobalTitle": {
+    "message": "Global mode is waiting for media",
+    "description": "Title shown when the global automatic mode is waiting for playable media on the current page."
+  },
+  "laneWatchingSiteDetail": {
+    "message": "This site mode is ready and waiting for playable audio or video in this tab before it starts boosting automatically.",
+    "description": "Detail shown when the site automatic lane is observing the current page."
+  },
+  "laneWatchingSiteTitle": {
+    "message": "This site mode is waiting for media",
+    "description": "Title shown when the site automatic mode is waiting for playable media on the current page."
+  },
+  "laneWatchingTitle": {
+    "message": "Waiting for media",
+    "description": "Title shown when the automatic lane is observing the current page but not yet attached."
+  },
+  "loadingLabel": {
+    "message": "Loading…",
+    "description": "Short loading text shown while popup state is being resolved."
+  },
+  "localeSaved": {
+    "message": "Language saved",
+    "description": "Localized UI copy for localeSaved."
+  },
+  "lookaheadLabel": {
+    "message": "Lookahead",
+    "description": "Label text for lookaheadLabel."
+  },
+  "lookaheadHelpLabel": {
+    "message": "Learn what Lookahead means",
+    "description": "Accessible label for the Lookahead help trigger."
+  },
+  "lookaheadHelpText": {
+    "message": "Controls how early the processor reacts before sudden peaks hit the output.",
+    "description": "Tooltip copy that explains the Lookahead control."
+  },
+  "multibandDepthLabel": {
+    "message": "Multiband Depth",
+    "description": "Label text for multibandDepthLabel."
+  },
+  "multibandDepthHelpLabel": {
+    "message": "Learn what Multiband Depth means",
+    "description": "Accessible label for the Multiband Depth help trigger."
+  },
+  "multibandDepthHelpText": {
+    "message": "Controls how strongly the sound mode shapes the audio across low, mid, and high ranges.",
+    "description": "Tooltip copy that explains the Multiband Depth control."
+  },
+  "noOtherSessions": {
+    "message": "No active booster sessions right now.",
+    "description": "Localized UI copy for noOtherSessions."
+  },
+  "notRememberedForDomain": {
+    "message": "No saved boost for this domain yet",
+    "description": "Localized UI copy for notRememberedForDomain."
+  },
+  "offscreenDocumentTitle": {
+    "message": "Prism Volume Booster Audio Processor",
+    "description": "Document title for the hidden offscreen page."
+  },
+  "otherSessionsTitle": {
+    "message": "Active booster sessions",
+    "description": "Heading text for otherSessionsTitle."
+  },
+  "popupDocumentTitle": {
+    "message": "Prism Volume Booster",
+    "description": "Document title for the popup page."
+  },
+  "popupSubtitle": {
+    "message": "Real-time gain control for every capturable tab.",
+    "description": "Supporting description text for popupSubtitle."
+  },
+  "popupTitle": {
+    "message": "Prism Volume Booster",
+    "description": "Heading text for popupTitle."
+  },
+  "presetBalanced": {
+    "message": "Balanced",
+    "description": "Preset label used by the popup for presetBalanced."
+  },
+  "presetBassBoost": {
+    "message": "Bass Boost",
+    "description": "Preset label used by the popup for presetBassBoost."
+  },
+  "presetCustom": {
+    "message": "Custom",
+    "description": "Preset label used by the popup for presetCustom."
+  },
+  "presetMaximumClarity": {
+    "message": "Maximum Clarity",
+    "description": "Preset label used by the popup for presetMaximumClarity."
+  },
+  "presetMaximumLoudness": {
+    "message": "Maximum Loudness",
+    "description": "Preset label used by the popup for presetMaximumLoudness."
+  },
+  "presetsLabel": {
+    "message": "Quick Presets in Percentage (%)",
+    "description": "Preset label used by the popup for presetsLabel."
+  },
+  "protectionActionBypassed": {
+    "message": "Bypassed",
+    "description": "Localized UI copy for protectionActionBypassed."
+  },
+  "protectionActionLabel": {
+    "message": "Protection Action",
+    "description": "Label text for protectionActionLabel."
+  },
+  "protectionActionHelpLabel": {
+    "message": "Learn what Protection Action means",
+    "description": "Accessible label for the Protection Action help trigger."
+  },
+  "protectionActionHelpText": {
+    "message": "Shows how much reduction or processing the protector is applying to avoid distortion.",
+    "description": "Tooltip copy that explains the Protection Action stat."
+  },
+  "protectionLoadLabel": {
+    "message": "Protection Load",
+    "description": "Label text for protectionLoadLabel."
+  },
+  "protectionLoadHelpLabel": {
+    "message": "Learn what Protection Load means",
+    "description": "Accessible label for the Protection Load help trigger."
+  },
+  "protectionLoadHelpText": {
+    "message": "Shows how hard the protector is working right now to keep the audio stable.",
+    "description": "Tooltip copy that explains the Protection Load stat."
+  },
+  "qualityProtectorBalanced": {
+    "message": "Balanced",
+    "description": "Audio Quality Protector copy for qualityProtectorBalanced."
+  },
+  "qualityProtectorBalancedSubtitle": {
+    "message": "Neutral everyday protection with a balanced tone.",
+    "description": "Audio Quality Protector copy for qualityProtectorBalancedSubtitle."
+  },
+  "qualityProtectorBassAware": {
+    "message": "Bass-Aware",
+    "description": "Audio Quality Protector copy for qualityProtectorBassAware."
+  },
+  "qualityProtectorBassAwareSubtitle": {
+    "message": "Preserves more bass while shifting protection work away from the low-end.",
+    "description": "Audio Quality Protector copy for qualityProtectorBassAwareSubtitle."
+  },
+  "qualityProtectorBypassedState": {
+    "message": "Unprotected",
+    "description": "Audio Quality Protector copy for qualityProtectorBypassedState."
+  },
+  "qualityProtectorClarity": {
+    "message": "Clarity",
+    "description": "Audio Quality Protector copy for qualityProtectorClarity."
+  },
+  "qualityProtectorClaritySubtitle": {
+    "message": "Tightens the low-end and favors vocal and instrument clarity.",
+    "description": "Audio Quality Protector copy for qualityProtectorClaritySubtitle."
+  },
+  "qualityProtectorMaximumProtection": {
+    "message": "Maximum Protection",
+    "description": "Audio Quality Protector copy for qualityProtectorMaximumProtection."
+  },
+  "qualityProtectorMaximumProtectionSubtitle": {
+    "message": "The most controlled mode for aggressive boost levels.",
+    "description": "Audio Quality Protector copy for qualityProtectorMaximumProtectionSubtitle."
+  },
+  "qualityProtectorOff": {
+    "message": "Off",
+    "description": "Audio Quality Protector copy for qualityProtectorOff."
+  },
+  "qualityProtectorOffSubtitle": {
+    "message": "No quality protection. Distortion can occur.",
+    "description": "Audio Quality Protector copy for qualityProtectorOffSubtitle."
+  },
+  "qualityProtectorProtectedState": {
+    "message": "Protected",
+    "description": "Audio Quality Protector copy for qualityProtectorProtectedState."
+  },
+  "qualityProtectorSubtitle": {
+    "message": "Choose how the DSP protects quality when boost is pushed harder.",
+    "description": "Audio Quality Protector copy for qualityProtectorSubtitle."
+  },
+  "qualityProtectorTitle": {
+    "message": "Audio Quality Protector",
+    "description": "Audio Quality Protector copy for qualityProtectorTitle."
+  },
+  "globalAutoWarningBody": {
+    "message": "This tries to auto-boost every compatible website from now on. Some pages may still fail because of how they are built, not because the extension lacks the capability. When that happens, use the robust manual booster.",
+    "description": "Confirmation body shown before enabling the automatic booster across all sites."
+  },
+  "globalAutoSwitchWarningBody": {
+    "message": "This will switch the extension to Global mode and turn off Single Tab mode first. From then on, every compatible website will try to auto-boost. Some pages may still fail because of how they are built, not because the extension lacks the capability. When that happens, use the robust manual booster.",
+    "description": "Confirmation body shown before enabling global auto mode while single-tab auto mode is active."
+  },
+  "globalAutoWarningTitle": {
+    "message": "Enable automatic booster in all sites?",
+    "description": "Confirmation title shown before enabling the automatic booster across all sites."
+  },
+  "releaseLabel": {
+    "message": "Release",
+    "description": "Label text for releaseLabel."
+  },
+  "releaseHelpLabel": {
+    "message": "Learn what Release means",
+    "description": "Accessible label for the Release help trigger."
+  },
+  "releaseHelpText": {
+    "message": "Controls how quickly the processor relaxes after it has reduced a loud peak.",
+    "description": "Tooltip copy that explains the Release control."
+  },
+  "rememberedForDomain": {
+    "message": "Remembered for $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "youtube.com"
+      }
+    },
+    "description": "Localized UI copy for rememberedForDomain."
+  },
+  "rememberSite": {
+    "message": "Remember my settings for $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "youtube.com"
+      }
+    },
+    "description": "Localized UI copy for rememberSite."
+  },
+  "savedForSite": {
+    "message": "Saved for $DOMAIN$",
+    "placeholders": {
+      "domain": {
+        "content": "$1",
+        "example": "youtube.com"
+      }
+    },
+    "description": "Localized UI copy for savedForSite."
+  },
+  "siteLabel": {
+    "message": "this site",
+    "description": "Generic fallback label when a site domain is unavailable."
+  },
+  "siteAutoWarningBody": {
+    "message": "This only enables the automatic booster for the current tab session. If you reload this page or open another tab, you will need to enable it again manually.",
+    "description": "Confirmation body shown before enabling the automatic booster only in the current site session."
+  },
+  "siteAutoSwitchWarningBody": {
+    "message": "This will switch the extension to Single Tab mode and turn off Global mode first. The automatic booster will only stay active for the current tab session. If you reload this page or open another tab, you will need to enable it again manually.",
+    "description": "Confirmation body shown before enabling single-tab auto mode while global auto mode is active."
+  },
+  "siteAutoWarningTitle": {
+    "message": "Enable automatic booster in this site?",
+    "description": "Confirmation title shown before enabling the automatic booster only in the current site session."
+  },
+  "softClipMixLabel": {
+    "message": "Soft Clip Mix",
+    "description": "Label text for softClipMixLabel."
+  },
+  "softClipMixHelpLabel": {
+    "message": "Learn what Soft Clip Mix means",
+    "description": "Accessible label for the Soft Clip Mix help trigger."
+  },
+  "softClipMixHelpText": {
+    "message": "Controls how much gentle saturation is blended in to smooth harsh peaks at high boost levels.",
+    "description": "Tooltip copy that explains the Soft Clip Mix control."
+  },
+  "statusActive": {
+    "message": "Boosting",
+    "description": "Status label used by the popup for statusActive."
+  },
+  "statusError": {
+    "message": "Needs attention",
+    "description": "Status label used by the popup for statusError."
+  },
+  "statusIdle": {
+    "message": "Ready",
+    "description": "Status label used by the popup for statusIdle."
+  },
+  "statusLabel": {
+    "message": "Status",
+    "description": "Status label used by the popup for statusLabel."
+  },
+  "statusPending": {
+    "message": "Connecting",
+    "description": "Status label used by the popup for statusPending."
+  },
+  "statusUnsupported": {
+    "message": "Unsupported",
+    "description": "Status label used by the popup for statusUnsupported."
+  },
+  "stopAll": {
+    "message": "Stop all",
+    "description": "Localized UI copy for stopAll."
+  },
+  "stopSession": {
+    "message": "Stop",
+    "description": "Localized UI copy for stopSession."
+  },
+  "tabUnavailable": {
+    "message": "No active tab was found.",
+    "description": "Localized UI copy for tabUnavailable."
+  },
+  "tabUntitled": {
+    "message": "Untitled tab",
+    "description": "Fallback title for a tab with no readable title."
+  },
+  "unsupportedDetail": {
+    "message": "Chrome only allows capture on regular web pages like https:// sites.",
+    "description": "Localized UI copy for unsupportedDetail."
+  },
+  "unsupportedTitle": {
+    "message": "This tab cannot be boosted",
+    "description": "Heading text for unsupportedTitle."
+  },
+  "warningDanger": {
+    "message": "High",
+    "description": "Risk indicator label used by the popup for warningDanger."
+  },
+  "warningHigh": {
+    "message": "Managed",
+    "description": "Risk indicator label used by the popup for warningHigh."
+  },
+  "warningLabel": {
+    "message": "Sound Distortion Risk",
+    "description": "Risk indicator label used by the popup for warningLabel."
+  },
+  "warningNone": {
+    "message": "Low",
+    "description": "Risk indicator label used by the popup for warningNone."
+  },
+  "webLabel": {
+    "message": "Web",
+    "description": "Generic fallback label for a web session with no domain."
+  }
+}
