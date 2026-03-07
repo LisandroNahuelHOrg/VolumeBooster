@@ -30,11 +30,11 @@ const faustAssetsHoisted = vi.hoisted(() => {
   return { fakeMeta };
 });
 
-vi.mock("../generated/faust/mono/dsp-meta.json", () => ({
+vi.mock("../generated/faust/mono/dsp-meta", () => ({
   default: faustAssetsHoisted.fakeMeta
 }));
 
-vi.mock("../generated/faust/stereo/dsp-meta.json", () => ({
+vi.mock("../generated/faust/stereo/dsp-meta", () => ({
   default: faustAssetsHoisted.fakeMeta
 }));
 
@@ -205,13 +205,13 @@ describe("faust-assets", () => {
 
   it("fails loudly when a required control path is missing from the dsp metadata", async () => {
     vi.resetModules();
-    vi.doMock("../generated/faust/mono/dsp-meta.json", () => ({
+    vi.doMock("../generated/faust/mono/dsp-meta", () => ({
       default: {
         name: "broken-mono",
         ui: []
       }
     }));
-    vi.doMock("../generated/faust/stereo/dsp-meta.json", () => ({
+    vi.doMock("../generated/faust/stereo/dsp-meta", () => ({
       default: faustAssetsHoisted.fakeMeta
     }));
 
@@ -220,7 +220,7 @@ describe("faust-assets", () => {
 
   it("walks nested metadata groups and ignores controls with incomplete addresses", async () => {
     vi.resetModules();
-    vi.doMock("../generated/faust/mono/dsp-meta.json", () => ({
+    vi.doMock("../generated/faust/mono/dsp-meta", () => ({
       default: {
         name: "nested-mono",
         ui: [
@@ -255,7 +255,7 @@ describe("faust-assets", () => {
         ]
       }
     }));
-    vi.doMock("../generated/faust/stereo/dsp-meta.json", () => ({
+    vi.doMock("../generated/faust/stereo/dsp-meta", () => ({
       default: faustAssetsHoisted.fakeMeta
     }));
 

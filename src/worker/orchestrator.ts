@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Orquestador central del service worker MV3. Coordina captura
+ * manual, auto-booster global, offscreen, badges y estado del popup.
+ */
 import { DEFAULT_GAIN_PERCENT } from "../shared/constants";
 import { isProtectionBypassedSettings, sanitizeAdvancedAudioSettings } from "../shared/audio-settings";
 import { buildTabSummary, getDomainFromUrl, isSupportedTabUrl } from "../shared/domain";
@@ -46,6 +50,10 @@ interface AutoTabRuntimeState extends AutoBoosterTabState {
   lastError?: LocalizedMessage;
 }
 
+/**
+ * Coordina todos los modos de booster y mantiene el estado consolidado de la
+ * extensión.
+ */
 export class WorkerOrchestrator {
   private readonly sessions = new Map<number, CaptureSessionState>();
   private readonly manualSessions = new Map<number, CaptureSessionState>();
@@ -66,6 +74,10 @@ export class WorkerOrchestrator {
     private readonly autoBoosterClient = new AutoBoosterClient()
   ) {}
 
+  /**
+   * Restaura el estado persistido y vuelve a sincronizar offscreen, auto lane y
+   * badges al levantar el worker.
+   */
   async bootstrap(): Promise<void> {
     this.autoBoosterMode = await this.settingsRepository.getAutoBoosterMode();
 
@@ -88,6 +100,9 @@ export class WorkerOrchestrator {
     await this.syncActionBadges();
   }
 
+  /**
+   * Punto único de entrada para comandos enviados desde el popup.
+   */
   async handlePopupCommand(
     command: PopupCommand
   ): Promise<RuntimeResponse<WorkerState | AutoBoosterDebugState | null>> {
@@ -183,6 +198,10 @@ export class WorkerOrchestrator {
     };
   }
 
+  /**
+   * Reenvía eventos del documento offscreen y del content script automático al
+   * handler interno correspondiente.
+   */
   async handleBackgroundEvent(incomingMessage: unknown): Promise<void> {
     if (isOffscreenEvent(incomingMessage)) {
       await this.handleOffscreenEvent(incomingMessage);
@@ -194,6 +213,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Reacciona a navegación/recarga de tabs y re-sincroniza el lane correcto.
+   */
   async handleTabUpdated(
     tabId: number,
     changeInfo: { status?: string; url?: string },
@@ -240,6 +262,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Re-sincroniza el modo global al cambiar la pestaña activa.
+   */
   async handleTabActivated(activeInfo: { tabId: number }): Promise<void> {
     if (this.autoBoosterMode === "global") {
       const activeTab = await chrome.tabs.get(activeInfo.tabId);
@@ -252,6 +277,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Limpia por completo el estado asociado a una pestaña cerrada.
+   */
   async handleTabRemoved(tabId: number): Promise<void> {
     if (this.manualSessions.has(tabId)) {
       await this.stopManualCapture(tabId);
@@ -265,6 +293,10 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Actualiza el estado de una captura manual cuando `chrome.tabCapture`
+   * reporta cambios.
+   */
   async handleCaptureStatusChanged(info: chrome.tabCapture.CaptureInfo): Promise<void> {
     if (typeof info.tabId !== "number" || !this.manualSessions.has(info.tabId)) {
       return;
@@ -346,6 +378,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Devuelve el estado agregado consumido por el popup.
+   */
   private async getState(): Promise<WorkerState> {
     await this.syncFromOffscreen();
     const currentTab = await this.getCurrentTabSummary();
@@ -405,6 +440,9 @@ export class WorkerOrchestrator {
     };
   }
 
+  /**
+   * Inicia una captura robusta manual usando `tabCapture`.
+   */
   private async startCapture(tabId: number, gainPercent: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
 
@@ -469,6 +507,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Actualiza el gain del lane activo correspondiente para la pestaña.
+   */
   private async setGain(tabId: number, gainPercent: number): Promise<void> {
     const nextGain = clampGainPercent(gainPercent);
     const autoScope = this.getAutoScopeForTab(tabId);
@@ -496,6 +537,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Persiste un gain por dominio para el sitio actual.
+   */
   private async saveDomainGain(tabId: number, gainPercent: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
     const domain = getDomainFromUrl(targetTab.url);
@@ -508,6 +552,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Elimina la preferencia de gain guardada para el sitio actual.
+   */
   private async removeDomainGain(tabId: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
     const domain = getDomainFromUrl(targetTab.url);
@@ -520,6 +567,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Persiste y propaga los advanced settings globales a todos los lanes activos.
+   */
   private async setAdvancedAudioSettings(partialSettings: Partial<AdvancedAudioSettings>): Promise<void> {
     const persistedSettings = await this.settingsRepository.setAdvancedAudioSettings(
       sanitizeAdvancedAudioSettings({
@@ -545,6 +595,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Detiene la captura o auto-sesión efectiva de una pestaña concreta.
+   */
   private async stopCapture(tabId: number): Promise<void> {
     if (this.manualSessions.has(tabId)) {
       await this.stopManualCapture(tabId);
@@ -752,6 +805,9 @@ export class WorkerOrchestrator {
     this.syncBadgePulseTimer();
   }
 
+  /**
+   * Activa el modo `Single Tab` garantizado para la pestaña actual.
+   */
   private async enableCurrentTabBooster(tabId: number, gainPercent: number): Promise<void> {
     if (this.autoBoosterMode === "global") {
       await this.deactivateGlobalAutoBooster();
@@ -765,6 +821,9 @@ export class WorkerOrchestrator {
     await this.stopCapture(tabId);
   }
 
+  /**
+   * Activa el modo global `All sites` y configura la pestaña actual y futuras.
+   */
   private async enableGlobalAutoBooster(currentTabId: number, gainPercent: number): Promise<void> {
     const granted = await this.autoBoosterClient.requestGlobalPermission();
 
@@ -799,6 +858,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Desactiva por completo el modo global y limpia sus tabs asociadas.
+   */
   private async deactivateGlobalAutoBooster(): Promise<void> {
     this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("off");
     this.autoSuppressedTabs.clear();
@@ -871,6 +933,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Activa o reconfigura el auto-booster sobre una pestaña compatible.
+   */
   private async activateAutoBoosterForTab(
     tab: chrome.tabs.Tab,
     scope: AutoBoosterScope,
@@ -1132,6 +1197,10 @@ export class WorkerOrchestrator {
     return message("errorExtensionActionFailed");
   }
 
+  /**
+   * Sincroniza el badge de la action con el estado audible real de cada tab
+   * boosteada.
+   */
   private async syncActionBadges(): Promise<void> {
     if (!chrome.action) {
       return;

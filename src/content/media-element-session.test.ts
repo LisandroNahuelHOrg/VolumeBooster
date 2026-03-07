@@ -143,6 +143,22 @@ class FakeAudioContext {
   }
 }
 
+function makeMediaElement(overrides: Partial<HTMLMediaElement> = {}): HTMLMediaElement {
+  return {
+    currentSrc: "https://cdn.example.com/audio.mp4",
+    srcObject: null,
+    paused: false,
+    ended: false,
+    readyState: 2,
+    currentTime: 1,
+    played: { length: 1 } as TimeRanges,
+    muted: false,
+    defaultMuted: false,
+    volume: 1,
+    ...overrides
+  } as HTMLMediaElement;
+}
+
 describe("MediaElementSession", () => {
   beforeEach(() => {
     faustNodeInstances.length = 0;
@@ -171,7 +187,7 @@ describe("MediaElementSession", () => {
     vi.unstubAllGlobals();
   });
 
-  it("attempts to create an AudioContext before reporting autoplay_blocked", async () => {
+  it("defers AudioContext creation when autoplay policy still disallows audible playback", async () => {
     vi.stubGlobal("navigator", {
       getAutoplayPolicy: vi.fn(() => "disallowed"),
       userActivation: {
@@ -179,22 +195,19 @@ describe("MediaElementSession", () => {
         isActive: false
       }
     } as unknown as Navigator);
-    FakeAudioContext.nextState = "suspended";
-    FakeAudioContext.keepStateOnResume = true;
 
     await expect(
-      MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
     ).rejects.toMatchObject({
       reason: "autoplay_blocked",
       debugState: {
-        audioContextState: "suspended",
+        audioContextState: "none",
         autoplayPolicy: "disallowed"
       },
-      technicalMessage: "AudioContext remained suspended after resume()."
+      technicalMessage: "Deferred AudioContext creation until audible playback is allowed."
     });
 
-    expect(FakeAudioContext.instances).toHaveLength(1);
-    expect(FakeAudioContext.instances[0]?.resume).toHaveBeenCalledTimes(1);
+    expect(FakeAudioContext.instances).toHaveLength(0);
   });
 
   it("reports autoplay_blocked when resume leaves the context suspended", async () => {
@@ -202,7 +215,7 @@ describe("MediaElementSession", () => {
     FakeAudioContext.keepStateOnResume = true;
 
     await expect(
-      MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
     ).rejects.toMatchObject({
       reason: "autoplay_blocked",
       technicalMessage: expect.stringContaining("suspended")
@@ -215,7 +228,7 @@ describe("MediaElementSession", () => {
     FakeAudioContext.sourceError = new Error("already connected");
 
     await expect(
-      MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
     ).rejects.toMatchObject({
       reason: "source_conflict",
       technicalMessage: "already connected"
@@ -226,7 +239,7 @@ describe("MediaElementSession", () => {
     FakeAudioContext.sourceError = "already connected elsewhere" as unknown as Error;
 
     await expect(
-      MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
     ).rejects.toMatchObject({
       reason: "source_conflict",
       technicalMessage: "MediaElementAudioSourceNode could not be created."
@@ -241,7 +254,7 @@ describe("MediaElementSession", () => {
       }
     } as unknown as Navigator);
     const firstSession = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       200,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -267,7 +280,7 @@ describe("MediaElementSession", () => {
     } as unknown as Navigator);
 
     const secondSession = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       220,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -319,7 +332,7 @@ describe("MediaElementSession", () => {
       }
     } as unknown as Navigator);
 
-    await MediaElementSession.create({} as HTMLMediaElement, 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS });
+    await MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS });
 
     expect(faustNodeInstances.at(-1)?.options).toMatchObject({
       processorOptions: expect.objectContaining({
@@ -329,7 +342,7 @@ describe("MediaElementSession", () => {
   });
 
   it("creates a processing session, applies runtime params and samples telemetry", async () => {
-    const mediaElement = {} as HTMLMediaElement;
+    const mediaElement = makeMediaElement();
     const session = await MediaElementSession.create(
       mediaElement,
       260,
@@ -368,7 +381,7 @@ describe("MediaElementSession", () => {
 
   it("reapplies settings and toggles wet/bypass output when processing state changes", async () => {
     const session = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       180,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -403,7 +416,7 @@ describe("MediaElementSession", () => {
 
   it("resumes and stops the audio graph cleanly", async () => {
     const session = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       200,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -438,7 +451,7 @@ describe("MediaElementSession", () => {
     expect(context.audioWorklet.addModule).toHaveBeenCalledTimes(1);
 
     const session = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       200,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -452,7 +465,7 @@ describe("MediaElementSession", () => {
 
   it("returns false when resumeProcessing cannot move the context back to running", async () => {
     const session = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       200,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );
@@ -487,7 +500,7 @@ describe("MediaElementSession", () => {
     } as unknown as Navigator);
 
     const session = await MediaElementSession.create(
-      {} as HTMLMediaElement,
+      makeMediaElement(),
       200,
       { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     );

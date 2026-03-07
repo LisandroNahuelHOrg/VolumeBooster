@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Renderiza y sincroniza el popup principal de la extensión,
+ * incluyendo controles de boost, modo global, métricas, tooltips e i18n.
+ */
 import "./popup.css";
 
 import {
@@ -232,6 +236,10 @@ function startStatePolling(): void {
   }, STATE_POLL_MS);
 }
 
+/**
+ * Recupera estado periódico del worker sin interrumpir la interacción actual
+ * del popup.
+ */
 async function refreshStateSilently(): Promise<void> {
   const response = await sendMessageSafe<WorkerState>({ type: "GET_STATE" });
 
@@ -242,6 +250,10 @@ async function refreshStateSilently(): Promise<void> {
   await applyState(response.data);
 }
 
+/**
+ * Aplica el nuevo estado del worker y decide qué partes del view model deben
+ * refrescarse o preservarse.
+ */
 async function applyState(nextState: WorkerState): Promise<void> {
   const previousState = currentState;
   currentState = nextState;
@@ -284,6 +296,10 @@ async function applyState(nextState: WorkerState): Promise<void> {
   render();
 }
 
+/**
+ * Re-renderiza el popup cuando cambió la firma visual base y sincroniza los
+ * fragmentos dinámicos en caliente.
+ */
 function render(): void {
   let shouldRestoreUiState = false;
   let preservedScrollTop = 0;
@@ -342,6 +358,9 @@ function render(): void {
   handleRootTooltipViewportChange();
 }
 
+/**
+ * Genera el markup estático del popup a partir del view model actual.
+ */
 function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (!currentCatalog) {
     return "";
@@ -403,39 +422,6 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
         }
 
         <div class="slider-card">
-          <div class="slider-head">
-            <div>
-              <div class="slider-label">${escapeHtml(translate(currentCatalog, "boostLabel"))}</div>
-            </div>
-            <div class="slider-head__actions">
-              ${
-                currentTab?.supported && currentTab.domain
-                  ? `<button
-                      class="button button--memory ${currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent ? "is-saved" : ""}"
-                      data-role="remember-site"
-                      data-action="toggle-current-site"
-                      title="${escapeHtml(rememberSiteCopy(currentTab))}"
-                      aria-label="${escapeHtml(rememberSiteCopy(currentTab))}"
-                      aria-pressed="${
-                        currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent
-                      }"
-                      type="button"
-                    >
-                      <span class="button__content">
-                        <span class="button__status-dot" aria-hidden="true"></span>
-                        <span class="button__emoji" data-role="remember-site-emoji" aria-hidden="true">
-                          ${escapeHtml(rememberSiteEmoji(currentTab))}
-                        </span>
-                        <span class="button__label" data-role="remember-site-label">
-                          ${escapeHtml(rememberSiteCopy(currentTab))}
-                        </span>
-                      </span>
-                    </button>`
-                  : ""
-              }
-            </div>
-          </div>
-
           <div class="booster-lane-grid">
             <section class="booster-lane-status" data-role="lane-status" data-tone="${laneStatus.tone}">
               <div class="booster-lane-status__meta">
@@ -1495,27 +1481,6 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
   if (statusPill) {
     statusPill.dataset.state = currentStatus;
     statusPill.textContent = statusCopy(currentStatus);
-  }
-
-  const rememberButton = rootElement.querySelector<HTMLButtonElement>("[data-role='remember-site']");
-
-  if (rememberButton && currentTab?.domain) {
-    const isRemembered = currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent;
-    const rememberLabel = rememberSiteCopy(currentTab);
-    rememberButton.classList.toggle(
-      "is-saved",
-      isRemembered
-    );
-    rememberButton.setAttribute("aria-pressed", String(isRemembered));
-    rememberButton.title = rememberLabel;
-    rememberButton.setAttribute("aria-label", rememberLabel);
-    const rememberButtonEmoji = rememberButton.querySelector<HTMLElement>("[data-role='remember-site-emoji']");
-    if (rememberButtonEmoji) {
-      rememberButtonEmoji.textContent = rememberSiteEmoji(currentTab);
-    }
-    const rememberButtonLabel =
-      rememberButton.querySelector<HTMLElement>("[data-role='remember-site-label']") || rememberButton;
-    rememberButtonLabel.textContent = rememberLabel;
   }
 
   const toggleButton = rootElement.querySelector<HTMLButtonElement>("[data-role='toggle-current']");

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Registro del AudioWorklet Faust mono usado por el engine
+ * premium en el documento offscreen.
+ */
 import {
   type FaustDspMeta,
   FaustBaseWebAudioDsp,
@@ -5,11 +9,14 @@ import {
   FaustWasmInstantiator,
   getFaustAudioWorkletProcessor
 } from "@grame/faustwasm";
-import monoMeta from "../generated/faust/mono/dsp-meta.json";
+import monoMeta from "../generated/faust/mono/dsp-meta";
 import { PROCESSOR_NAMES } from "./faust-runtime";
 
 const monoDspMeta = monoMeta as unknown as FaustDspMeta;
 
+/**
+ * Comunicador mínimo requerido por Faust para worklets sin sensores.
+ */
 class NoopFaustAudioWorkletProcessorCommunicator {
   constructor(_port: MessagePort) {}
 

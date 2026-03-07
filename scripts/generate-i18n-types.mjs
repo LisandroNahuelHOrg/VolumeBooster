@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Generación tipada de claves, placeholders y bases plurales a
+ * partir del catálogo canónico de i18n.
+ */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 

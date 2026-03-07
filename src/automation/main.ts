@@ -1,9 +1,17 @@
+/**
+ * @fileoverview Expone un puente interno para la automatización E2E y el
+ * diagnóstico del estado del worker desde una página de extensión dedicada.
+ */
 import { sendMessageSafe } from "../shared/messages";
 import type { PopupCommand } from "../shared/messages";
 import type { AutoBoosterDebugState, RuntimeResponse, WorkerState } from "../shared/types";
 
 declare global {
   interface Window {
+    /**
+     * API de automatización consumida por Playwright y otras herramientas de
+     * smoke testing para interactuar con la extensión sin usar el popup real.
+     */
     __PRISM_AUTOMATION__?: {
       requestGlobalPermission(): Promise<WorkerState | null>;
       hasGlobalPermission(): Promise<boolean>;
@@ -74,33 +82,58 @@ async function requestGlobalPermission(): Promise<WorkerState | null> {
   return response.ok ? response.data ?? null : null;
 }
 
+/**
+ * Comprueba si la extensión ya dispone del permiso global de host para
+ * auto-boosting en todos los sitios.
+ */
 async function hasGlobalPermission(): Promise<boolean> {
   return chrome.permissions.contains({ origins: ["<all_urls>"] });
 }
 
+/**
+ * Envía un comando del popup al worker y devuelve solo la carga útil en caso
+ * de éxito.
+ */
 async function sendCommand<T = unknown>(command: PopupCommand): Promise<T | null> {
   const response = await sendCommandDetailed<T>(command);
   return response.ok ? response.data ?? null : null;
 }
 
+/**
+ * Envía un comando del popup al worker y conserva el contrato completo de
+ * respuesta para escenarios de diagnóstico.
+ */
 async function sendCommandDetailed<T = unknown>(command: PopupCommand): Promise<RuntimeResponse<T>> {
   return sendMessageSafe<T>(command);
 }
 
+/**
+ * Lee el estado visible de la extensión desde el worker.
+ */
 async function getState(): Promise<WorkerState | null> {
   const response = await getStateDetailed();
   return response.ok ? response.data ?? null : null;
 }
 
+/**
+ * Lee el estado completo de la extensión incluyendo metadatos de error.
+ */
 async function getStateDetailed(): Promise<RuntimeResponse<WorkerState>> {
   return sendCommandDetailed<WorkerState>({ type: "GET_STATE" });
 }
 
+/**
+ * Solicita el estado de depuración del auto-booster para una pestaña
+ * específica.
+ */
 async function getDebugState(tabId: number): Promise<AutoBoosterDebugState | null> {
   const response = await getDebugStateDetailed(tabId);
   return response.ok ? response.data ?? null : null;
 }
 
+/**
+ * Solicita el estado de depuración completo del auto-booster para una pestaña.
+ */
 async function getDebugStateDetailed(tabId: number): Promise<RuntimeResponse<AutoBoosterDebugState | null>> {
   return sendCommandDetailed<AutoBoosterDebugState | null>({
     type: "GET_DEBUG_STATE",
@@ -108,6 +141,10 @@ async function getDebugStateDetailed(tabId: number): Promise<RuntimeResponse<Aut
   });
 }
 
+/**
+ * Devuelve las pestañas cuyo patrón de URL coincide con el indicado para
+ * escenarios automáticos de verificación.
+ */
 async function getTabsByUrl(urlPattern: string): Promise<Array<{ id: number; url?: string; title?: string }>> {
   const tabs = await chrome.tabs.query({ url: urlPattern });
   return tabs.filter((tab): tab is chrome.tabs.Tab & { id: number } => typeof tab.id === "number").map((tab) => ({
@@ -117,6 +154,10 @@ async function getTabsByUrl(urlPattern: string): Promise<Array<{ id: number; url
   }));
 }
 
+/**
+ * Recupera la pestaña activa del navegador con un fallback entre la ventana
+ * enfocada y la ventana actual.
+ */
 async function getActiveTab(): Promise<{ id: number; url?: string; title?: string } | null> {
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 

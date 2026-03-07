@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Controlador principal del modo `All sites`, responsable de
+ * descubrir media elements, adjuntar sesiones automáticas y publicar estado y
+ * telemetría al worker.
+ */
 import {
   AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE,
   AUTO_BOOSTER_FAILURE_TOAST_MS,
@@ -33,6 +38,7 @@ import {
 import {
   MediaElementSession,
   MediaElementSessionError,
+  shouldAttemptAutomaticMediaAttach,
   type MediaElementTelemetry
 } from "./media-element-session";
 
@@ -51,11 +57,18 @@ interface ControllerState {
   recoveryUsed: boolean;
 }
 
+/**
+ * Sesión de media element activa junto con su última telemetría muestreada.
+ */
 type TrackedSession = {
   session: MediaElementSession;
   lastTelemetry: MediaElementTelemetry;
 };
 
+/**
+ * Orquesta el auto-booster basado en `audio`/`video` dentro de la página
+ * actual y mantiene sincronizado el estado con el worker.
+ */
 export class AutoBoosterController {
   private readonly trackedSessions = new Map<HTMLMediaElement, TrackedSession>();
   private readonly processedElements = new WeakSet<HTMLMediaElement>();
@@ -246,6 +259,9 @@ export class AutoBoosterController {
     });
   }
 
+  /**
+   * Devuelve el estado de depuración agregado del auto-booster en la pestaña.
+   */
   getDebugState(): AutoBoosterDebugState {
     const attachedElementCount = this.trackedSessions.size + this.bridgeStatus.attachedNodeCount;
 
@@ -291,6 +307,10 @@ export class AutoBoosterController {
     await this.runRefreshMediaTracking();
   }
 
+  /**
+   * Vuelve a escanear la página buscando media elements adjuntables y
+   * reintenta automáticamente si aparecen tarde.
+   */
   private async refreshMediaTracking(): Promise<void> {
     await this.scanForMediaElements();
     this.syncTrackedSessionsConfiguration();
@@ -313,6 +333,10 @@ export class AutoBoosterController {
     }
   }
 
+  /**
+   * Busca elementos `audio` y `video` utilizables y crea sesiones automáticas
+   * cuando la reproducción ya está realmente en curso.
+   */
   private async scanForMediaElements(): Promise<void> {
     if (!this.state.enabled || !this.state.advancedAudioSettings) {
       return;
@@ -443,6 +467,9 @@ export class AutoBoosterController {
     }
   }
 
+  /**
+   * Publica nivel, warning y métricas del lane automático al worker.
+   */
   private publishTelemetry(): void {
     if (
       !this.state.enabled ||
@@ -501,6 +528,10 @@ export class AutoBoosterController {
     });
   }
 
+  /**
+   * Deriva el estado visible de attach a partir de las sesiones activas y del
+   * contexto de bloqueo actual.
+   */
   private syncAttachState(): void {
     if (!this.state.enabled) {
       this.state.attachState = "idle";
@@ -533,6 +564,10 @@ export class AutoBoosterController {
     this.state.activeStrategy = "none";
   }
 
+  /**
+   * Publica el estado resumido de la pestaña al worker para reflejarlo en el
+   * popup.
+   */
   private reportStatus(): void {
     if (this.state.tabId === null) {
       return;
@@ -561,6 +596,9 @@ export class AutoBoosterController {
     });
   }
 
+  /**
+   * Notifica al worker que el attach automático falló de forma real.
+   */
   private reportAttachFailure(): void {
     if (this.state.tabId === null) {
       return;
@@ -589,6 +627,9 @@ export class AutoBoosterController {
     });
   }
 
+  /**
+   * Muestra un toast local de fallo de auto-attach una sola vez por URL.
+   */
   private requestFailureToast(): void {
     if (
       this.state.scope !== "global" ||
@@ -642,6 +683,10 @@ export class AutoBoosterController {
     }, AUTO_BOOSTER_FAILURE_TOAST_MS);
   }
 
+  /**
+   * Reacciona a cambios de navegación SPA y mantiene el lane automático en
+   * reintento cuando todavía no hay media lista.
+   */
   private syncLocationState(): void {
     if (window.location.href === this.lastLocationHref) {
       if (
@@ -679,6 +724,10 @@ export class AutoBoosterController {
     void this.runRefreshMediaTracking();
   }
 
+  /**
+   * Instala listeners de gesto para reintentar attach cuando Chrome bloquea
+   * temporalmente Web Audio por autoplay policy.
+   */
   private armGestureRetry(): void {
     if (this.gestureRetryAbortController) {
       return;
@@ -738,6 +787,10 @@ export class AutoBoosterController {
     }
   }
 
+  /**
+   * Registra listeners temporales sobre un media element no listo todavía para
+   * reintentar el attach cuando empiece a reproducir realmente.
+   */
   private ensurePendingMediaRetryListeners(mediaElement: HTMLMediaElement): void {
     if (this.pendingMediaRetryControllers.has(mediaElement)) {
       return;
@@ -759,7 +812,14 @@ export class AutoBoosterController {
       }
     };
 
-    for (const eventName of ["play", "playing", "canplay", "loadedmetadata", "timeupdate"]) {
+    for (const eventName of [
+      "play",
+      "playing",
+      "canplay",
+      "loadedmetadata",
+      "timeupdate",
+      "volumechange"
+    ]) {
       mediaElement.addEventListener(eventName, retry, {
         signal: abortController.signal
       });
@@ -856,6 +916,9 @@ export class AutoBoosterController {
   }
 }
 
+/**
+ * Devuelve el favicon más útil disponible para la página actual.
+ */
 function getPageFaviconUrl(): string | undefined {
   const explicitFavicon =
     document.querySelector<HTMLLinkElement>('link[rel~="icon"][href]')?.href ??
@@ -868,11 +931,19 @@ function getPageFaviconUrl(): string | undefined {
   return getDuckDuckGoFaviconUrl(getDomainFromUrl(window.location.href));
 }
 
+/**
+ * Redondea un valor numérico a la precisión indicada.
+ */
 function roundTo(value: number, precision: number): number {
   const factor = Math.pow(10, precision);
   return Math.round(value * factor) / factor;
 }
 
+/**
+ * Determina si un media element ya tiene suficiente información y reproducción
+ * real como para adjuntarle una sesión Web Audio sin caer en errores de
+ * autoplay prematuros.
+ */
 function isMediaElementReadyForAttach(mediaElement: HTMLMediaElement): boolean {
   const haveCurrentData =
     typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2;
@@ -887,10 +958,14 @@ function isMediaElementReadyForAttach(mediaElement: HTMLMediaElement): boolean {
   return (
     !mediaElement.paused &&
     hasPlaybackActivity &&
-    mediaElement.readyState >= haveCurrentData
+    mediaElement.readyState >= haveCurrentData &&
+    shouldAttemptAutomaticMediaAttach(mediaElement)
   );
 }
 
+/**
+ * Elige el warning más severo dentro de un conjunto de warnings muestreados.
+ */
 function pickHighestWarning(values: LevelWarning[]): LevelWarning {
   if (values.includes("danger")) {
     return "danger";

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Auditoría estática de strings visibles hardcodeados que deben
+ * vivir en el sistema i18n del proyecto.
+ */
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import ts from "typescript";

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Sesión robusta de captura por pestaña usando `tabCapture` y el
+ * engine premium Faust dentro del documento offscreen.
+ */
 import { FaustMonoAudioWorkletNode } from "@grame/faustwasm";
 import { METER_SAMPLE_MS } from "../shared/constants";
 import {
@@ -28,10 +32,17 @@ export interface AudioTelemetryPayload {
   metrics: DspRuntimeMetrics;
 }
 
+/**
+ * Callbacks emitidos por la sesión robusta para reportar telemetría al
+ * manager.
+ */
 export interface AudioSessionCallbacks {
   onTelemetry: (payload: AudioTelemetryPayload) => void;
 }
 
+/**
+ * Encapsula una captura robusta de audio de pestaña basada en `tabCapture`.
+ */
 export class AudioSession {
   private static readonly loadedWorkletModules = new WeakMap<BaseAudioContext, Set<string>>();
   private stream: MediaStream | null = null;
@@ -56,6 +67,9 @@ export class AudioSession {
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(advancedAudioSettings));
   }
 
+  /**
+   * Inicia la captura a partir de un `streamId` emitido por `chrome.tabCapture`.
+   */
   async start(streamId: string): Promise<void> {
     const mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -106,6 +120,9 @@ export class AudioSession {
     this.startMeter();
   }
 
+  /**
+   * Actualiza el boost actual y reaplica la configuración DSP.
+   */
   setGainPercent(gainPercent: number): void {
     this.currentGainPercent = gainPercent;
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(this.currentSettings));
@@ -113,6 +130,9 @@ export class AudioSession {
     this.emitCurrentTelemetry();
   }
 
+  /**
+   * Actualiza los ajustes avanzados del engine premium.
+   */
   setAdvancedAudioSettings(settings: AdvancedAudioSettings): void {
     this.currentSettings = settings;
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(settings));
@@ -120,6 +140,9 @@ export class AudioSession {
     this.emitCurrentTelemetry();
   }
 
+  /**
+   * Detiene la captura, libera tracks y cierra el `AudioContext`.
+   */
   async stop(): Promise<void> {
     if (this.meterIntervalId !== null) {
       window.clearInterval(this.meterIntervalId);
@@ -145,6 +168,9 @@ export class AudioSession {
     this.latestMetrics = createDefaultMetrics();
   }
 
+  /**
+   * Aplica el runtime DSP actual al nodo Faust activo de la sesión.
+   */
   private applyRuntimeParameters(): void {
     if (!this.faustNode) {
       return;
@@ -183,6 +209,9 @@ export class AudioSession {
     this.faustNode.setParamValue(this.currentAsset.controlPaths.toneMidBandGainDb, runtime.toneMidBandGainDb);
   }
 
+  /**
+   * Publica la telemetría actual sin esperar al próximo tick del medidor.
+   */
   private emitCurrentTelemetry(): void {
     if (!this.inputAnalyserNode || !this.outputAnalyserNode) {
       return;
@@ -191,6 +220,9 @@ export class AudioSession {
     this.publishTelemetry(this.inputAnalyserNode, this.outputAnalyserNode);
   }
 
+  /**
+   * Arranca el muestreo periódico del nivel de audio de la sesión.
+   */
   private startMeter(): void {
     if (!this.inputAnalyserNode || !this.outputAnalyserNode) {
       return;
@@ -204,6 +236,9 @@ export class AudioSession {
     }, METER_SAMPLE_MS);
   }
 
+  /**
+   * Deriva telemetría de entrada/salida y la envía al callback del manager.
+   */
   private publishTelemetry(inputAnalyserNode: AnalyserNode, outputAnalyserNode: AnalyserNode): void {
     const runtime = applyQualityProtector(
       buildDspRuntimeParameters(this.currentGainPercent, this.currentSettings)
@@ -242,6 +277,9 @@ export class AudioSession {
   }
 }
 
+/**
+ * Crea un analyser con la calibración usada por el popup en tiempo real.
+ */
 function createAnalyser(audioContext: AudioContext): AnalyserNode {
   const analyser = audioContext.createAnalyser();
   analyser.fftSize = 1024;
@@ -249,10 +287,16 @@ function createAnalyser(audioContext: AudioContext): AnalyserNode {
   return analyser;
 }
 
+/**
+ * Determina el sample size esperado por el worklet Faust compilado.
+ */
 function getSampleSize(meta: { compile_options: string }): 4 | 8 {
   return meta.compile_options.includes("-double") ? 8 : 4;
 }
 
+/**
+ * Lee el pico actual absoluto de un analyser de dominio temporal.
+ */
 function readPeak(analyserNode: AnalyserNode): number {
   const buffer = new Float32Array(analyserNode.fftSize);
   analyserNode.getFloatTimeDomainData(buffer);
@@ -266,6 +310,9 @@ function readPeak(analyserNode: AnalyserNode): number {
   return roundTo(peak, 4);
 }
 
+/**
+ * Redondea un valor con la precisión dada.
+ */
 function roundTo(value: number, precision: number): number {
   const factor = Math.pow(10, precision);
   return Math.round(value * factor) / factor;

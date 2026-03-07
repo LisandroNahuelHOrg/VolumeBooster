@@ -1,8 +1,16 @@
+/**
+ * @fileoverview Entry point del content script aislado que expone el
+ * controlador automático del modo `All sites`.
+ */
 import { isContentCommand } from "../shared/messages";
 import { AutoBoosterController } from "./controller";
 
 declare global {
   interface Window {
+    /**
+     * Instancia singleton del controlador automático para depuración en tiempo
+     * de ejecución.
+     */
     __PRISM_AUTO_BOOSTER_CONTROLLER__?: AutoBoosterController;
     __PRISM_AUTO_BOOSTER_BOOTED__?: boolean;
   }

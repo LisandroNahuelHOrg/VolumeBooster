@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Lanzador de Stryker orientado a un único archivo source bajo
+ * `src/`, con validaciones previas del target solicitado.
+ */
 import path from "node:path";
 import { spawn } from "node:child_process";
 

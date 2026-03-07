@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Entry point del service worker MV3 que conecta eventos de
+ * Chrome con el orquestador central de sesiones y modos de booster.
+ */
 import { isContentEvent, isOffscreenEvent, isPopupCommand } from "../shared/messages";
 import { WorkerOrchestrator } from "../worker/orchestrator";
 

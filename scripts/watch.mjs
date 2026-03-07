@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Watcher combinado para recompilar assets Faust y mantener Vite
+ * en modo watch durante el desarrollo local.
+ */
 import { watch } from "node:fs";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";

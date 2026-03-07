@@ -1,6 +1,10 @@
+/**
+ * @fileoverview Resolución de assets Faust precompilados y mapping de sus
+ * controles a nombres tipados usados por el engine premium.
+ */
 import type { FaustDspMeta, LooseFaustDspFactory } from "@grame/faustwasm";
-import monoMeta from "../generated/faust/mono/dsp-meta.json";
-import stereoMeta from "../generated/faust/stereo/dsp-meta.json";
+import monoMeta from "../generated/faust/mono/dsp-meta";
+import stereoMeta from "../generated/faust/stereo/dsp-meta";
 import {
   FACTORY_ASSET_PATHS,
   PROCESSOR_NAMES,
@@ -26,6 +30,9 @@ export type DspControlKey =
   | "toneLowBandGainDb"
   | "toneMidBandGainDb";
 
+/**
+ * Descriptor tipado del asset DSP necesario para construir un worklet Faust.
+ */
 export interface FaustAssetDescriptor {
   readonly meta: FaustDspMeta;
   readonly processorName: string;
@@ -41,10 +48,16 @@ const stereoDspMeta = stereoMeta as unknown as FaustDspMeta;
 export const MONO_FAUST_ASSET = createFaustAsset("mono", monoDspMeta);
 export const STEREO_FAUST_ASSET = createFaustAsset("stereo", stereoDspMeta);
 
+/**
+ * Selecciona el asset Faust adecuado según el número de canales del stream.
+ */
 export function selectFaustAsset(channelCount: number | undefined): FaustAssetDescriptor {
   return channelCount && channelCount <= 1 ? MONO_FAUST_ASSET : STEREO_FAUST_ASSET;
 }
 
+/**
+ * Construye un descriptor de asset a partir del metadata Faust generado.
+ */
 function createFaustAsset(variant: DspVariant, meta: FaustDspMeta): FaustAssetDescriptor {
   return {
     meta,
@@ -55,6 +68,10 @@ function createFaustAsset(variant: DspVariant, meta: FaustDspMeta): FaustAssetDe
   };
 }
 
+/**
+ * Recorre recursivamente la UI de Faust para resolver todas las direcciones de
+ * control exigidas por el runtime.
+ */
 function buildControlPaths(meta: FaustDspMeta): Record<DspControlKey, string> {
   const addressByShortName = new Map<string, string>();
   const visitItems = (items: Array<{ items?: unknown; shortname?: string; address?: string }>) => {
@@ -104,6 +121,10 @@ function buildControlPaths(meta: FaustDspMeta): Record<DspControlKey, string> {
   };
 }
 
+/**
+ * Exige la presencia de una ruta de control específica dentro del metadata
+ * Faust.
+ */
 function requireControlPath(map: Map<string, string>, shortName: string, dspName: string): string {
   const address = map.get(shortName);
 
@@ -114,6 +135,9 @@ function requireControlPath(map: Map<string, string>, shortName: string, dspName
   return address;
 }
 
+/**
+ * Carga y cachea la factoría WASM correspondiente a una variante DSP.
+ */
 function loadFactory(variant: DspVariant): Promise<Required<LooseFaustDspFactory>> {
   const cached = factoryCache.get(variant);
 
@@ -126,6 +150,10 @@ function loadFactory(variant: DspVariant): Promise<Required<LooseFaustDspFactory
   return next;
 }
 
+/**
+ * Descarga y compila en runtime los assets WASM/JSON empaquetados por la
+ * extensión.
+ */
 async function loadFactoryFromRuntimeAssets(paths: {
   wasm: string;
   json: string;
@@ -158,6 +186,9 @@ async function loadFactoryFromRuntimeAssets(paths: {
   };
 }
 
+/**
+ * Extrae las opciones de compilación Faust desde el metadata serializado.
+ */
 function parseCompileOptions(json: string): string {
   const parsed = JSON.parse(json) as { compile_options?: unknown };
   return typeof parsed.compile_options === "string" ? parsed.compile_options : "";

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Bridge experimental en MAIN world que intercepta conexiones de
+ * Web Audio y publica estado/telemetría hacia el content script aislado.
+ */
 import {
   applyQualityProtector,
   buildDspRuntimeParameters,
@@ -21,6 +25,9 @@ import {
 
 declare global {
   interface Window {
+    /**
+     * Marca de boot del bridge para evitar parchear el entorno más de una vez.
+     */
     __PRISM_AUTO_BOOSTER_MAIN_WORLD_BOOTED__?: boolean;
     __PRISM_AUTO_BOOSTER_MAIN_IMPORT_PROMISE__?: Promise<unknown>;
     webkitAudioContext?: typeof AudioContext;
@@ -47,6 +54,9 @@ interface BridgeContextState {
   lastMetrics: DspRuntimeMetrics;
 }
 
+/**
+ * Estado global del controlador del bridge para la pestaña actual.
+ */
 interface BridgeControllerState {
   enabled: boolean;
   suspended: boolean;
@@ -61,6 +71,10 @@ const MID_PEAK_Q = 0.82;
 const PROTECTION_DEPTH_ATTACK_FLOOR_SEC = 0.003;
 const MAX_OUTPUT_GAIN_DB = 0;
 
+/**
+ * Controla el bridge del MAIN world, parcheando AudioContext/AudioNode y
+ * reportando telemetría agregada.
+ */
 class WebAudioBridgeController {
   private readonly bridgeStates = new WeakMap<AudioContext, BridgeContextState>();
   private readonly bridgeStateList: BridgeContextState[] = [];
@@ -548,6 +562,9 @@ function createBridgeState(context: AudioContext, id: number): BridgeContextStat
   };
 }
 
+/**
+ * Crea un analyser calibrado para medir nivel y picos del bridge.
+ */
 function createAnalyser(context: AudioContext): AnalyserNode {
   const analyser = context.createAnalyser();
   analyser.fftSize = 1024;
@@ -555,6 +572,10 @@ function createAnalyser(context: AudioContext): AnalyserNode {
   return analyser;
 }
 
+/**
+ * Genera una curva simple de soft clipping en función de la intensidad
+ * requerida.
+ */
 function createSoftClipCurve(intensity: number): Float32Array {
   const curve = new Float32Array(1024);
   const drive = 1 + intensity / 6;
@@ -567,6 +588,9 @@ function createSoftClipCurve(intensity: number): Float32Array {
   return curve;
 }
 
+/**
+ * Lee el pico absoluto instantáneo de un analyser de dominio temporal.
+ */
 function readPeak(analyser: AnalyserNode): number {
   const buffer = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buffer);
@@ -579,6 +603,10 @@ function readPeak(analyser: AnalyserNode): number {
   return roundTo(peak, 4);
 }
 
+/**
+ * Intenta consultar la autoplay policy asociada al contexto actual cuando la
+ * API está disponible.
+ */
 function getAutoplayPolicy(audioContext: AudioContext): string | undefined {
   const policyApi = (
     navigator as Navigator & {
@@ -601,19 +629,31 @@ function getAutoplayPolicy(audioContext: AudioContext): string | undefined {
   }
 }
 
+/**
+ * Convierte decibeles a ganancia lineal.
+ */
 function dbToGain(decibels: number): number {
   return Math.pow(10, decibels / 20);
 }
 
+/**
+ * Limita un número a un rango dado.
+ */
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/**
+ * Redondea un valor numérico con la precisión solicitada.
+ */
 function roundTo(value: number, precision: number): number {
   const factor = Math.pow(10, precision);
   return Math.round(value * factor) / factor;
 }
 
+/**
+ * Devuelve el warning más severo entre dos niveles de alerta.
+ */
 function pickHighestWarning(current: LevelWarning, next: LevelWarning): LevelWarning {
   if (current === "danger" || next === "danger") {
     return "danger";

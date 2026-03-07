@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Contrato de mensajería y payloads del bridge experimental de
+ * Web Audio en MAIN world.
+ */
 import type { AdvancedAudioSettings, AutoAttachReason, AutoAttachState, AutoBoosterConfigPayload, LevelWarning } from "../shared/types";
 
 export const BRIDGE_SOURCE = "prism-auto-booster-bridge";
@@ -5,9 +9,15 @@ export const BRIDGE_COMMAND_EVENT = "prism:auto-booster:command";
 export const BRIDGE_STATUS_EVENT = "prism:auto-booster:status";
 export const BRIDGE_TELEMETRY_EVENT = "prism:auto-booster:telemetry";
 
+/**
+ * Estrategia activa reportada por el bridge del MAIN world.
+ */
 export type BridgeActiveStrategy = "none" | "web_audio_bridge";
 export type BridgeRecoveryReason = "late_boot_missed" | "hot_attach_failed";
 
+/**
+ * Métricas resumidas que el bridge envía al controlador aislado.
+ */
 export interface BridgeRuntimeMetrics {
   protectorActionDb: number;
   clipEvents: number;
@@ -16,6 +26,9 @@ export interface BridgeRuntimeMetrics {
   outputPeak: number;
 }
 
+/**
+ * Estado operacional reportado por el bridge para una pestaña.
+ */
 export interface BridgeStatusPayload {
   enabled: boolean;
   suspended: boolean;
@@ -34,6 +47,9 @@ export interface BridgeStatusPayload {
   currentUrl: string;
 }
 
+/**
+ * Telemetría en tiempo real producida por el bridge del MAIN world.
+ */
 export interface BridgeTelemetryPayload {
   activeStrategy: BridgeActiveStrategy;
   level: number;
@@ -44,6 +60,10 @@ export interface BridgeTelemetryPayload {
   lastTelemetryAt: number;
 }
 
+/**
+ * Comandos emitidos desde el content script aislado hacia el bridge del MAIN
+ * world.
+ */
 export type BridgeCommandPayload =
   | {
       type: "configure";
@@ -54,11 +74,17 @@ export type BridgeCommandPayload =
       payload: { tabId: number };
     };
 
+/**
+ * Envoltorio estándar para transportar eventos del bridge con un source fijo.
+ */
 export interface BridgeCustomEventDetail<T> {
   source: typeof BRIDGE_SOURCE;
   payload: T;
 }
 
+/**
+ * Crea el evento DOM usado para configurar o desactivar el bridge.
+ */
 export function createBridgeCommandEvent(payload: BridgeCommandPayload): CustomEvent<BridgeCustomEventDetail<BridgeCommandPayload>> {
   return new CustomEvent(BRIDGE_COMMAND_EVENT, {
     detail: {
@@ -68,6 +94,9 @@ export function createBridgeCommandEvent(payload: BridgeCommandPayload): CustomE
   });
 }
 
+/**
+ * Crea el evento DOM usado para publicar cambios de estado del bridge.
+ */
 export function createBridgeStatusEvent(payload: BridgeStatusPayload): CustomEvent<BridgeCustomEventDetail<BridgeStatusPayload>> {
   return new CustomEvent(BRIDGE_STATUS_EVENT, {
     detail: {
@@ -77,6 +106,9 @@ export function createBridgeStatusEvent(payload: BridgeStatusPayload): CustomEve
   });
 }
 
+/**
+ * Crea el evento DOM usado para publicar telemetría del bridge.
+ */
 export function createBridgeTelemetryEvent(
   payload: BridgeTelemetryPayload
 ): CustomEvent<BridgeCustomEventDetail<BridgeTelemetryPayload>> {
@@ -88,6 +120,9 @@ export function createBridgeTelemetryEvent(
   });
 }
 
+/**
+ * Verifica que un detail de evento corresponda al protocolo del bridge.
+ */
 export function isBridgeEventDetail<T>(detail: unknown): detail is BridgeCustomEventDetail<T> {
   return Boolean(
     detail &&
@@ -98,6 +133,9 @@ export function isBridgeEventDetail<T>(detail: unknown): detail is BridgeCustomE
   );
 }
 
+/**
+ * Devuelve un objeto base de métricas para inicializar o resetear el bridge.
+ */
 export function createBridgeDefaultMetrics(
   protectionBypassed = false
 ): BridgeRuntimeMetrics {

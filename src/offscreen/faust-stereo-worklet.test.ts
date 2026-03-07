@@ -1,4 +1,12 @@
-import stereoMeta from "../generated/faust/stereo/dsp-meta.json";
+const stereoWorkletMetaHoisted = vi.hoisted(() => ({
+  default: {
+    name: "prism-premium-stereo-test"
+  }
+}));
+
+vi.mock("../generated/faust/stereo/dsp-meta", () => stereoWorkletMetaHoisted);
+
+import stereoMeta from "../generated/faust/stereo/dsp-meta";
 import { PROCESSOR_NAMES } from "./faust-runtime";
 
 const typedStereoMeta = stereoMeta as { name: string };

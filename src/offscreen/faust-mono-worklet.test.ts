@@ -1,4 +1,12 @@
-import monoMeta from "../generated/faust/mono/dsp-meta.json";
+const monoWorkletMetaHoisted = vi.hoisted(() => ({
+  default: {
+    name: "prism-premium-mono-test"
+  }
+}));
+
+vi.mock("../generated/faust/mono/dsp-meta", () => monoWorkletMetaHoisted);
+
+import monoMeta from "../generated/faust/mono/dsp-meta";
 import { PROCESSOR_NAMES } from "./faust-runtime";
 
 const typedMonoMeta = monoMeta as { name: string };

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Entry point del documento offscreen que delega el control de
+ * sesiones capturadas al session manager.
+ */
 import { isOffscreenCommand } from "../shared/messages";
 import { setDocumentLocaleAttributes, t } from "../shared/runtime-i18n";
 import { OffscreenSessionManager } from "./session-manager";
