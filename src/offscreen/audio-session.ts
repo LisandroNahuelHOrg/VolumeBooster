@@ -575,13 +575,15 @@ function applyNativeFallbackRuntimeParameters(
     0.2
   );
   fallbackGraph.compressor.release.value = clampNumber(runtime.releaseMs / 1000, 0.06, 1.2);
-  fallbackGraph.shaper.curve = createSoftClipCurve(runtime.outputSoftClipMix) as unknown as Float32Array;
+  fallbackGraph.shaper.curve = createSoftClipCurve(runtime.outputSoftClipMix);
   fallbackGraph.wetGain.gain.value = dbToGain(Math.min(MAX_OUTPUT_GAIN_DB, runtime.outputCeilingDb));
   fallbackGraph.dryGain.gain.value = 0;
 }
 
-function createSoftClipCurve(intensity: number): Float32Array {
-  const curve = new Float32Array(1024);
+function createSoftClipCurve(intensity: number): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(
+    new ArrayBuffer(1024 * Float32Array.BYTES_PER_ELEMENT)
+  ) as Float32Array<ArrayBuffer>;
   const drive = 1 + intensity / 6;
 
   for (let index = 0; index < curve.length; index += 1) {
