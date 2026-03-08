@@ -17,6 +17,11 @@ const viteWatch = spawn("npm", ["run", "watch:vite"], {
   stdio: "inherit",
   shell: true
 });
+const registeredContentScriptsWatch = spawn("npm", ["run", "watch:registered-content-scripts"], {
+  cwd: repoRoot,
+  stdio: "inherit",
+  shell: true
+});
 
 let rebuildTimer = null;
 
@@ -34,6 +39,12 @@ watch(faustDir, { recursive: true }, () => {
 });
 
 viteWatch.on("exit", (code) => {
+  registeredContentScriptsWatch.kill();
+  process.exit(code ?? 0);
+});
+
+registeredContentScriptsWatch.on("exit", (code) => {
+  viteWatch.kill();
   process.exit(code ?? 0);
 });
 

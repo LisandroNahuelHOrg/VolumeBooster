@@ -18,6 +18,7 @@ import type {
   LevelWarning
 } from "../shared/types";
 import { selectFaustAsset, type FaustAssetDescriptor } from "../offscreen/faust-assets";
+import { getRuntimeUrlSafe } from "./runtime-api";
 
 export interface MediaElementTelemetry {
   level: number;
@@ -321,7 +322,13 @@ export class MediaElementSession {
       return;
     }
 
-    await audioContext.audioWorklet.addModule(chrome.runtime.getURL(modulePath));
+    const moduleUrl = getRuntimeUrlSafe(modulePath);
+
+    if (!moduleUrl) {
+      throw new MediaElementSessionError("attach_failed", "Extension context invalidated.");
+    }
+
+    await audioContext.audioWorklet.addModule(moduleUrl);
     loadedModules.add(modulePath);
     MediaElementSession.loadedWorkletModules.set(audioContext, loadedModules);
   }
@@ -417,8 +424,7 @@ function hasAttachablePlayback(mediaElement: HTMLMediaElement): boolean {
     !mediaElement.ended &&
     Boolean(mediaElement.currentSrc || mediaElement.srcObject) &&
     mediaElement.readyState >=
-      (typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2) &&
-    (mediaElement.currentTime > 0 || (mediaElement.played?.length ?? 0) > 0)
+    (typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2)
   );
 }
 

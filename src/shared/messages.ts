@@ -8,10 +8,13 @@ import type {
   AdvancedAudioSettings,
   AutoBoosterDebugState,
   AutoBoosterConfigPayload,
+  AutoBoosterFrameReadyPayload,
+  AutoFallbackToastCommandPayload,
+  AutoFallbackToastDismissedPayload,
+  AutoManualFallbackRequestPayload,
   AutoSessionAttachFailedPayload,
   AutoSessionLevelPayload,
   AutoSessionStatusPayload,
-  AutoSessionToastRequestedPayload,
   LevelUpdatePayload,
   LocalizedMessage,
   OffscreenMetadataPayload,
@@ -56,6 +59,8 @@ export type ContentCommand =
   | { type: "AUTO_BOOSTER_PING" }
   | { type: "AUTO_BOOSTER_CONFIGURE"; payload: AutoBoosterConfigPayload }
   | { type: "AUTO_BOOSTER_DISABLE"; payload: { tabId: number } }
+  | { type: "AUTO_BOOSTER_SHOW_FALLBACK_TOAST"; payload: AutoFallbackToastCommandPayload }
+  | { type: "AUTO_BOOSTER_HIDE_FALLBACK_TOAST"; payload: { tabId: number; documentId?: string } }
   | { type: "AUTO_BOOSTER_GET_DEBUG_STATE" };
 
 /** Events emitted by the worker back to popup listeners. */
@@ -71,10 +76,12 @@ export type OffscreenEvent =
 
 /** Events emitted by the content script toward the worker. */
 export type ContentEvent =
+  | { type: "AUTO_BOOSTER_FRAME_READY"; payload: AutoBoosterFrameReadyPayload }
   | { type: "AUTO_SESSION_STATUS_UPDATE"; payload: AutoSessionStatusPayload }
   | { type: "AUTO_SESSION_LEVEL_UPDATE"; payload: AutoSessionLevelPayload }
   | { type: "AUTO_SESSION_ATTACH_FAILED"; payload: AutoSessionAttachFailedPayload }
-  | { type: "AUTO_SESSION_TOAST_REQUESTED"; payload: AutoSessionToastRequestedPayload };
+  | { type: "AUTO_MANUAL_FALLBACK_REQUESTED"; payload: AutoManualFallbackRequestPayload }
+  | { type: "AUTO_FALLBACK_TOAST_DISMISSED"; payload: AutoFallbackToastDismissedPayload };
 
 export type ExtensionMessage =
   | PopupCommand
@@ -133,9 +140,14 @@ export function isContentCommand(message: unknown): message is ContentCommand {
     return false;
   }
 
-  return ["AUTO_BOOSTER_PING", "AUTO_BOOSTER_CONFIGURE", "AUTO_BOOSTER_DISABLE", "AUTO_BOOSTER_GET_DEBUG_STATE"].includes(
-    (message as { type: string }).type
-  );
+  return [
+    "AUTO_BOOSTER_PING",
+    "AUTO_BOOSTER_CONFIGURE",
+    "AUTO_BOOSTER_DISABLE",
+    "AUTO_BOOSTER_SHOW_FALLBACK_TOAST",
+    "AUTO_BOOSTER_HIDE_FALLBACK_TOAST",
+    "AUTO_BOOSTER_GET_DEBUG_STATE"
+  ].includes((message as { type: string }).type);
 }
 
 /** Detects events emitted by the offscreen document. */
@@ -156,10 +168,12 @@ export function isContentEvent(message: unknown): message is ContentEvent {
   }
 
   return [
+    "AUTO_BOOSTER_FRAME_READY",
     "AUTO_SESSION_STATUS_UPDATE",
     "AUTO_SESSION_LEVEL_UPDATE",
     "AUTO_SESSION_ATTACH_FAILED",
-    "AUTO_SESSION_TOAST_REQUESTED"
+    "AUTO_MANUAL_FALLBACK_REQUESTED",
+    "AUTO_FALLBACK_TOAST_DISMISSED"
   ].includes((message as { type: string }).type);
 }
 

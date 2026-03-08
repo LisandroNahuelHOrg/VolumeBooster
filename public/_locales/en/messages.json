@@ -11,6 +11,26 @@
     "message": "Automatic booster could not hook this page. Use the manual booster from the popup.",
     "description": "Toast shown inside the page when the global automatic booster fails to attach."
   },
+  "autoBoosterFallbackToastTitle": {
+    "message": "Automatic boosting could not finish on this page.",
+    "description": "Title shown in the persistent in-page fallback toast."
+  },
+  "autoBoosterFallbackToastBody": {
+    "message": "This page did not expose a hookable audio path. Switch to manual mode for the most reliable result.",
+    "description": "Body shown in the persistent in-page fallback toast when automatic attach failed."
+  },
+  "autoBoosterFallbackToastPermissionBody": {
+    "message": "This page blocked the automatic booster runtime. You can still boost this tab with the manual lane.",
+    "description": "Body shown in the persistent in-page fallback toast when permissions or page constraints block the automatic lane."
+  },
+  "autoBoosterFallbackToastManualAction": {
+    "message": "Switch to manual mode",
+    "description": "Primary action shown in the persistent in-page fallback toast."
+  },
+  "autoBoosterFallbackToastDismissAction": {
+    "message": "Dismiss",
+    "description": "Secondary dismiss action shown in the persistent in-page fallback toast."
+  },
   "advancedSubtitle": {
     "message": "Fine-tune the global premium DSP engine applied to every live booster session.",
     "description": "Advanced DSP settings copy for advancedSubtitle."
@@ -301,6 +321,10 @@
     "message": "Enable booster in all sites",
     "description": "Label for turning on the automatic booster across all compatible sites."
   },
+  "grantGlobalAutoPermission": {
+    "message": "Grant all-sites permission",
+    "description": "Label for requesting the optional all-sites permission required before global automatic mode can be enabled."
+  },
   "enableBoosterInThisSite": {
     "message": "Enable booster in this site",
     "description": "Label for turning on the automatic booster only in the current site session."
@@ -397,13 +421,13 @@
     "message": "Global mode is ready",
     "description": "Title shown when global auto mode is enabled but the current page is not yet attached."
   },
-  "laneLimitedGlobalDetail": {
-    "message": "Global mode is still on, but this page is limiting automatic boosting even after one automatic recovery attempt. Other compatible websites can still start automatically.",
-    "description": "Detail shown when global mode remains enabled but the current page stayed limited after an automatic recovery reload."
+  "laneGlobalPermissionTitle": {
+    "message": "Global mode needs permission",
+    "description": "Title shown when the user has not granted all-sites permission yet."
   },
-  "laneLimitedGlobalTitle": {
-    "message": "Global mode is limited on this page",
-    "description": "Title shown when global mode remains enabled but the current page stayed limited after recovery."
+  "laneGlobalPermissionDetail": {
+    "message": "Grant all-sites permission first. After that, Global mode will auto-boost compatible websites as a best-effort lane and fall back to manual when needed.",
+    "description": "Detail shown when the user has not granted all-sites permission yet."
   },
   "laneIdleDetail": {
     "message": "Choose how the booster should work: Single Tab boosts only this tab, while Global tries to boost this page and all other compatible websites automatically.",
@@ -452,14 +476,6 @@
   "laneInteractionTitle": {
     "message": "Waiting for page interaction",
     "description": "Title shown when the automatic lane is armed but blocked by autoplay policy until the user interacts with the page."
-  },
-  "laneRecoveringGlobalDetail": {
-    "message": "Global mode is recovering this page automatically. The extension will reload it once so the booster can attach earlier, while keeping Global mode active for other compatible websites too.",
-    "description": "Detail shown when global mode is performing a one-shot automatic recovery reload for the current page."
-  },
-  "laneRecoveringGlobalTitle": {
-    "message": "Global mode is recovering this page",
-    "description": "Title shown when global mode is performing a one-shot automatic recovery reload for the current page."
   },
   "laneAutomaticGlobalBridgeDetail": {
     "message": "Global mode is on. This page is already being boosted through its Web Audio pipeline, and other compatible websites will start automatically too.",

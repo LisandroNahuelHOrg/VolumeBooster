@@ -4,8 +4,6 @@
  * telemetría al worker.
  */
 import {
-  AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE,
-  AUTO_BOOSTER_FAILURE_TOAST_MS,
   METER_SAMPLE_MS
 } from "../shared/constants";
 import { getDomainFromUrl, getDuckDuckGoFaviconUrl } from "../shared/domain";
@@ -35,12 +33,15 @@ import {
   type BridgeStatusPayload,
   type BridgeTelemetryPayload
 } from "./bridge-protocol";
+import { getCurrentFrameContext } from "./frame-runtime";
 import {
   MediaElementSession,
   MediaElementSessionError,
   shouldAttemptAutomaticMediaAttach,
   type MediaElementTelemetry
 } from "./media-element-session";
+import { discoverMediaElements } from "./media-discovery";
+import { getI18nMessageSafe, sendRuntimeMessageSafe } from "./runtime-api";
 
 interface ControllerState {
   tabId: number | null;
@@ -53,8 +54,6 @@ interface ControllerState {
   attachReason?: AutoAttachReason;
   lastError?: CaptureSessionState["lastError"];
   activeStrategy: AutoActiveStrategy;
-  recoveryPending: boolean;
-  recoveryUsed: boolean;
 }
 
 /**
@@ -70,6 +69,7 @@ type TrackedSession = {
  * actual y mantiene sincronizado el estado con el worker.
  */
 export class AutoBoosterController {
+  private readonly frameContext = getCurrentFrameContext();
   private readonly trackedSessions = new Map<HTMLMediaElement, TrackedSession>();
   private readonly processedElements = new WeakSet<HTMLMediaElement>();
   private readonly pendingMediaRetryControllers = new Map<HTMLMediaElement, AbortController>();
@@ -108,25 +108,21 @@ export class AutoBoosterController {
     gainPercent: 100,
     advancedAudioSettings: null,
     attachState: "idle",
-    activeStrategy: "none",
-    recoveryPending: false,
-    recoveryUsed: false
+    activeStrategy: "none"
   };
   private lastLocationHref = window.location.href;
-  private toastShownForHref: string | null = null;
   private lastTelemetryAt: number | null = null;
   private lastLevel = 0;
   private lastAudioContextState: AudioContextState | "none" = "none";
   private lastAutoplayPolicy: string | undefined;
   private lastTechnicalError: string | undefined;
   private refreshInFlight = false;
+  private refreshQueued = false;
   private bridgeListenersBound = false;
   private lastAutoRetryAt = 0;
 
   async configure(payload: AutoBoosterConfigPayload): Promise<void> {
-    if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE) {
-      this.ensureBridgeListeners();
-    }
+    this.ensureBridgeListeners();
     this.state = {
       ...this.state,
       tabId: payload.tabId,
@@ -138,8 +134,7 @@ export class AutoBoosterController {
       attachState: payload.enabled ? "observing" : "idle",
       attachReason: payload.enabled ? "no_media" : undefined,
       lastError: undefined,
-      activeStrategy: "none",
-      recoveryPending: false
+      activeStrategy: "none"
     };
     this.lastTelemetryAt = null;
     this.lastLevel = 0;
@@ -149,12 +144,10 @@ export class AutoBoosterController {
     this.lastAutoRetryAt = 0;
 
     if (!payload.enabled) {
-      if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE) {
-        this.postBridgeCommand({
-          type: "disable",
-          payload: { tabId: payload.tabId }
-        });
-      }
+      this.postBridgeCommand({
+        type: "disable",
+        payload: { tabId: payload.tabId }
+      });
       this.disarmGestureRetry();
       this.clearAllPendingMediaRetryListeners();
       this.setProcessingEnabled(false);
@@ -169,13 +162,12 @@ export class AutoBoosterController {
     this.ensureObserver();
 
     if (payload.suspended) {
-      if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE) {
-        this.postBridgeCommand({
-          type: "configure",
-          payload
-        });
-      }
+      this.postBridgeCommand({
+        type: "configure",
+        payload
+      });
       this.disarmGestureRetry();
+      this.syncTrackedSessionsConfiguration();
       this.setProcessingEnabled(false);
       this.stopTelemetryLoop();
       this.state.attachState = "observing";
@@ -185,12 +177,13 @@ export class AutoBoosterController {
     }
 
     this.startTelemetryLoop();
-    if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE) {
-      this.postBridgeCommand({
-        type: "configure",
-        payload
-      });
-    }
+    this.syncTrackedSessionsConfiguration();
+    this.setProcessingEnabled(true);
+    this.postBridgeCommand({
+      type: "configure",
+      payload
+    });
+    this.syncAttachState();
     this.reportStatus();
     void this.runRefreshMediaTracking();
   }
@@ -207,13 +200,10 @@ export class AutoBoosterController {
     this.state.attachReason = undefined;
     this.state.lastError = undefined;
     this.state.activeStrategy = "none";
-    this.state.recoveryPending = false;
-    if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE) {
-      this.postBridgeCommand({
-        type: "disable",
-        payload: { tabId }
-      });
-    }
+    this.postBridgeCommand({
+      type: "disable",
+      payload: { tabId }
+    });
     this.disarmGestureRetry();
     this.clearAllPendingMediaRetryListeners();
     this.setProcessingEnabled(false);
@@ -262,8 +252,9 @@ export class AutoBoosterController {
   /**
    * Devuelve el estado de depuración agregado del auto-booster en la pestaña.
    */
-  getDebugState(): AutoBoosterDebugState {
+  getDebugState(toastVisible = false): AutoBoosterDebugState {
     const attachedElementCount = this.trackedSessions.size + this.bridgeStatus.attachedNodeCount;
+    const attachedFrameCount = this.state.attachState === "attached" ? 1 : 0;
 
     return {
       tabId: this.state.tabId,
@@ -276,18 +267,15 @@ export class AutoBoosterController {
       ...(this.state.activeStrategy !== "none" ? { activeStrategy: this.state.activeStrategy } : {}),
       audioContextState: this.lastAudioContextState,
       autoplayPolicy: this.lastAutoplayPolicy,
-      mediaElementCount: document.querySelectorAll("audio, video").length,
+      mediaElementCount: discoverMediaElements().length,
       attachedElementCount,
-      ...(AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE && this.bridgeStatus.audioContextCount > 0
-        ? { bridgeContextCount: this.bridgeStatus.audioContextCount }
-        : {}),
-      ...(AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE && this.bridgeStatus.attachedNodeCount > 0
+      frameCount: 1,
+      readyFrameCount: 1,
+      attachedFrameCount,
+      toastVisible,
+      ...(this.bridgeStatus.audioContextCount > 0 ? { bridgeContextCount: this.bridgeStatus.audioContextCount } : {}),
+      ...(this.bridgeStatus.attachedNodeCount > 0
         ? { bridgeAttachedNodeCount: this.bridgeStatus.attachedNodeCount }
-        : {}),
-      ...(this.state.recoveryPending ? { recoveryPending: true } : {}),
-      ...(this.state.recoveryUsed ? { recoveryUsed: true } : {}),
-      ...(AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE && this.bridgeStatus.recoveryReason
-        ? { recoveryReason: this.bridgeStatus.recoveryReason }
         : {}),
       lastTelemetryAt: Math.max(this.lastTelemetryAt ?? 0, this.bridgeTelemetry.lastTelemetryAt || 0) || null,
       lastLevel: Math.max(this.lastLevel, this.bridgeTelemetry.level),
@@ -321,13 +309,17 @@ export class AutoBoosterController {
 
   private async runRefreshMediaTracking(): Promise<void> {
     if (this.refreshInFlight) {
+      this.refreshQueued = true;
       return;
     }
 
     this.refreshInFlight = true;
 
     try {
-      await this.refreshMediaTracking();
+      do {
+        this.refreshQueued = false;
+        await this.refreshMediaTracking();
+      } while (this.refreshQueued);
     } finally {
       this.refreshInFlight = false;
     }
@@ -342,7 +334,7 @@ export class AutoBoosterController {
       return;
     }
 
-    const mediaElements = [...document.querySelectorAll<HTMLMediaElement>("audio, video")];
+    const mediaElements = discoverMediaElements();
 
     for (const mediaElement of mediaElements) {
       if (this.processedElements.has(mediaElement)) {
@@ -392,13 +384,15 @@ export class AutoBoosterController {
           }
 
           if (error.reason === "source_conflict") {
-            this.processedElements.add(mediaElement);
+            // No marcar como procesado: el conflicto puede resolverse si la
+            // fuente se recrea o el otro AudioContext se cierra (SPAs, players dinámicos).
             this.clearPendingMediaRetryListeners(mediaElement);
-            this.state.attachState = "failed";
-            this.state.attachReason = "source_conflict";
-            this.state.lastError = message("errorAutoSourceConflict");
-            this.reportAttachFailure();
-            this.requestFailureToast();
+            this.ensurePendingMediaRetryListeners(mediaElement);
+            if (this.state.attachState !== "attached") {
+              this.state.attachState = "observing";
+              this.state.attachReason = "no_media";
+            }
+
             continue;
           }
         }
@@ -408,7 +402,6 @@ export class AutoBoosterController {
         this.state.lastError = message("errorAutoAttachFailed");
         this.lastTechnicalError = error instanceof Error ? error.message : String(error);
         this.reportAttachFailure();
-        this.requestFailureToast();
       }
     }
   }
@@ -485,7 +478,7 @@ export class AutoBoosterController {
       return trackedSession.lastTelemetry;
     });
 
-    if (AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE && this.bridgeTelemetry.activeStrategy === "web_audio_bridge") {
+    if (this.bridgeTelemetry.activeStrategy !== "none") {
       telemetryValues.push({
         level: this.bridgeTelemetry.level,
         warning: this.bridgeTelemetry.warning,
@@ -508,6 +501,8 @@ export class AutoBoosterController {
 
     const payload: AutoSessionLevelPayload = {
       tabId: this.state.tabId,
+      isTopFrame: this.frameContext.isTopFrame,
+      frameUrl: this.frameContext.frameUrl,
       level: roundTo(Math.max(...telemetryValues.map((telemetry) => telemetry.level)), 4),
       warning: pickHighestWarning(telemetryValues.map((telemetry) => telemetry.warning)),
       protectorActionDb: roundTo(
@@ -540,21 +535,35 @@ export class AutoBoosterController {
       return;
     }
 
-    if (this.trackedSessions.size > 0) {
+    const hasMediaStrategy = this.trackedSessions.size > 0;
+    const hasBridgeStrategy =
+      this.bridgeStatus.attachState === "attached" && this.bridgeStatus.activeStrategy === "web_audio_bridge";
+
+    if (hasMediaStrategy || hasBridgeStrategy) {
       this.state.attachState = "attached";
       this.state.attachReason = undefined;
-      this.state.activeStrategy = "media_element";
+      this.state.activeStrategy =
+        hasMediaStrategy && hasBridgeStrategy
+          ? "hybrid"
+          : hasBridgeStrategy
+            ? "web_audio_bridge"
+            : "media_element";
       return;
     }
 
-    if (this.state.attachState === "awaiting_user_gesture") {
+    if (
+      this.state.attachState === "awaiting_user_gesture" ||
+      this.bridgeStatus.attachState === "awaiting_user_gesture"
+    ) {
       this.state.attachState = "awaiting_user_gesture";
       this.state.attachReason = "autoplay_blocked";
       this.state.activeStrategy = "none";
       return;
     }
 
-    if (this.state.attachState === "failed") {
+    if (this.state.attachState === "failed" || this.bridgeStatus.attachState === "failed") {
+      this.state.attachState = "failed";
+      this.state.attachReason = this.state.attachReason ?? this.bridgeStatus.attachReason ?? "attach_failed";
       this.state.activeStrategy = "none";
       return;
     }
@@ -575,10 +584,12 @@ export class AutoBoosterController {
 
     const payload: AutoSessionStatusPayload = {
       tabId: this.state.tabId,
-      title: document.title || chrome.i18n.getMessage("tabUntitled") || "Untitled tab",
+      title: document.title || getI18nMessageSafe("tabUntitled") || "Untitled tab",
       url: window.location.href,
       domain: getDomainFromUrl(window.location.href),
       favIconUrl: getPageFaviconUrl(),
+      isTopFrame: this.frameContext.isTopFrame,
+      frameUrl: this.frameContext.frameUrl,
       autoAttachState: this.state.attachState,
       autoAttachReason: this.state.attachReason,
       autoBoosterScope: this.state.scope ?? undefined,
@@ -606,10 +617,12 @@ export class AutoBoosterController {
 
     const payload: AutoSessionAttachFailedPayload = {
       tabId: this.state.tabId,
-      title: document.title || chrome.i18n.getMessage("tabUntitled") || "Untitled tab",
+      title: document.title || getI18nMessageSafe("tabUntitled") || "Untitled tab",
       url: window.location.href,
       domain: getDomainFromUrl(window.location.href),
       favIconUrl: getPageFaviconUrl(),
+      isTopFrame: this.frameContext.isTopFrame,
+      frameUrl: this.frameContext.frameUrl,
       autoAttachState: "failed",
       autoAttachReason: this.state.attachReason,
       autoBoosterScope: this.state.scope ?? undefined,
@@ -625,62 +638,6 @@ export class AutoBoosterController {
       type: "AUTO_SESSION_ATTACH_FAILED",
       payload
     });
-  }
-
-  /**
-   * Muestra un toast local de fallo de auto-attach una sola vez por URL.
-   */
-  private requestFailureToast(): void {
-    if (
-      this.state.scope !== "global" ||
-      this.state.tabId === null ||
-      this.toastShownForHref === window.location.href
-    ) {
-      return;
-    }
-
-    this.toastShownForHref = window.location.href;
-    this.showFailureToast();
-
-    void this.postRuntimeMessage({
-      type: "AUTO_SESSION_TOAST_REQUESTED",
-      payload: {
-        tabId: this.state.tabId,
-        reason: this.state.attachReason ?? "attach_failed"
-      }
-    });
-  }
-
-  private showFailureToast(): void {
-    const toast = document.createElement("div");
-    toast.className = "prism-auto-booster-toast";
-    toast.textContent =
-      chrome.i18n.getMessage("autoBoosterFailureToast") ||
-      "Automatic booster could not hook this page. Use the manual booster from the popup.";
-
-    Object.assign(toast.style, {
-      position: "fixed",
-      right: "20px",
-      bottom: "20px",
-      zIndex: "2147483647",
-      maxWidth: "360px",
-      padding: "14px 16px",
-      borderRadius: "16px",
-      background:
-        "linear-gradient(135deg, rgba(20,26,34,0.96), rgba(30,12,12,0.94))",
-      border: "1px solid rgba(245,113,113,0.4)",
-      boxShadow: "0 18px 45px rgba(0,0,0,0.35)",
-      color: "#f6f0eb",
-      fontFamily: "\"Segoe UI\", sans-serif",
-      fontSize: "13px",
-      lineHeight: "1.45"
-    } satisfies Partial<CSSStyleDeclaration>);
-
-    document.documentElement.appendChild(toast);
-
-    window.setTimeout(() => {
-      toast.remove();
-    }, AUTO_BOOSTER_FAILURE_TOAST_MS);
   }
 
   /**
@@ -714,8 +671,6 @@ export class AutoBoosterController {
     }
 
     this.lastLocationHref = window.location.href;
-    this.toastShownForHref = null;
-    this.state.recoveryPending = false;
     this.lastAutoRetryAt = 0;
     this.pruneDetachedSessions();
     this.lastTechnicalError = undefined;
@@ -780,11 +735,7 @@ export class AutoBoosterController {
   }
 
   private async postRuntimeMessage(message: unknown): Promise<void> {
-    try {
-      await chrome.runtime.sendMessage(message);
-    } catch {
-      // The worker may be temporarily asleep; the next poll will reconcile state.
-    }
+    await sendRuntimeMessageSafe(message);
   }
 
   /**
@@ -858,8 +809,6 @@ export class AutoBoosterController {
     this.lastAudioContextState = this.bridgeStatus.audioContextState;
     this.lastAutoplayPolicy = this.bridgeStatus.autoplayPolicy;
     this.lastTechnicalError = this.bridgeStatus.lastTechnicalError ?? this.lastTechnicalError;
-    this.state.recoveryPending = Boolean(this.bridgeStatus.recoveryPending);
-    this.state.recoveryUsed = Boolean(this.bridgeStatus.recoveryUsed);
 
     if (this.bridgeStatus.attachState === "awaiting_user_gesture") {
       this.state.lastError = message("errorAutoAwaitingGesture");

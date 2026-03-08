@@ -1,164 +1,186 @@
 /**
- * @fileoverview Cliente del worker para inyectar, configurar y consultar el
- * content script automático del modo `All sites`.
+ * @fileoverview Cliente del worker para registrar, inyectar y mensajear el
+ * runtime automático del modo `All sites`.
  */
 import {
   AUTO_BOOSTER_CONTENT_SCRIPT_PATH,
   AUTO_BOOSTER_ISOLATED_SCRIPT_ID,
-  AUTO_BOOSTER_MAIN_WORLD_SCRIPT_ID
+  AUTO_BOOSTER_MAIN_WORLD_SCRIPT_ID,
+  AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH,
+  AUTO_BOOSTER_REGISTERED_MATCHES
 } from "../shared/constants";
 import { message, type ContentCommand } from "../shared/messages";
-import type { AutoBoosterConfigPayload, AutoBoosterDebugState, LocalizedMessage } from "../shared/types";
+import type {
+  AutoBoosterConfigPayload,
+  AutoBoosterDebugState,
+  AutoFrameTarget,
+  LocalizedMessage
+} from "../shared/types";
 
 /**
- * Encapsula la inyección del content script automático y la mensajería con la
- * pestaña objetivo.
+ * Encapsula el registro temprano de content scripts y la mensajería dirigida
+ * a frames concretos del lane automático.
  */
 export class AutoBoosterClient {
-  /**
-   * Inyecta y configura el auto-booster en una pestaña concreta.
-   */
-  async configure(tabId: number, payload: AutoBoosterConfigPayload): Promise<void> {
-    await this.ensureInjected(tabId);
-    await this.sendMessageToTab(tabId, {
+  async configure(tabId: number, payload: AutoBoosterConfigPayload, target?: AutoFrameTarget): Promise<void> {
+    const command: ContentCommand = {
       type: "AUTO_BOOSTER_CONFIGURE",
       payload
-    });
+    };
+
+    if (target) {
+      await this.sendMessageToFrame(tabId, target, command);
+      return;
+    }
+
+    await this.injectRegisteredScriptsIntoTab(tabId);
+    await this.sendMessageToTab(tabId, command, 2);
   }
 
-  /**
-   * Desactiva el auto-booster en una pestaña concreta.
-   */
-  async disable(tabId: number): Promise<void> {
+  async disable(tabId: number, target?: AutoFrameTarget): Promise<void> {
+    const command: ContentCommand = {
+      type: "AUTO_BOOSTER_DISABLE",
+      payload: { tabId }
+    };
+
     try {
-      await this.sendMessageToTab(tabId, {
-        type: "AUTO_BOOSTER_DISABLE",
-        payload: { tabId }
-      });
+      if (target) {
+        await this.sendMessageToFrame(tabId, target, command);
+        return;
+      }
+
+      await this.sendMessageToTab(tabId, command);
     } catch {
       // Missing receiver or navigated tab is fine during teardown.
     }
   }
 
-  /**
-   * Pide el estado de depuración del auto-booster a una pestaña concreta.
-   */
-  async getDebugState(tabId: number): Promise<AutoBoosterDebugState | null> {
+  async getDebugState(tabId: number, target?: AutoFrameTarget): Promise<AutoBoosterDebugState | null> {
     try {
-      await this.ensureInjected(tabId);
-      await this.ensureReceiverReady(tabId);
+      if (target) {
+        return (
+          (await this.sendMessageToFrame<AutoBoosterDebugState | null>(tabId, target, {
+            type: "AUTO_BOOSTER_GET_DEBUG_STATE"
+          })) ?? null
+        );
+      }
+
+      return (
+        (await this.sendMessageToTab<AutoBoosterDebugState | null>(tabId, {
+          type: "AUTO_BOOSTER_GET_DEBUG_STATE"
+        }, 2)) ?? null
+      );
     } catch {
       return null;
     }
-
-    return (
-      (await this.sendMessageToTab<AutoBoosterDebugState | null>(tabId, {
-        type: "AUTO_BOOSTER_GET_DEBUG_STATE"
-      })) ?? null
-    );
   }
 
-  /**
-   * Solicita el permiso global de host necesario para el modo `All sites`.
-   */
   async requestGlobalPermission(): Promise<boolean> {
+    if (!chrome.permissions?.request) {
+      return false;
+    }
+
     return chrome.permissions.request({
       origins: ["<all_urls>"]
     });
   }
 
-  /**
-   * Comprueba si el permiso global de host ya fue concedido.
-   */
   async hasGlobalPermission(): Promise<boolean> {
+    if (!chrome.permissions?.contains) {
+      return false;
+    }
+
     return chrome.permissions.contains({
       origins: ["<all_urls>"]
     });
   }
 
-  /**
-   * Devuelve las pestañas potencialmente inyectables para el modo global.
-   */
   async queryInjectableTabs(): Promise<chrome.tabs.Tab[]> {
     return chrome.tabs.query({
-      url: ["http://*/*", "https://*/*"]
+      url: [...AUTO_BOOSTER_REGISTERED_MATCHES]
     });
   }
 
-  /**
-   * Limpia scripts registrados de implementaciones automáticas anteriores.
-   */
   async registerGlobalContentScripts(): Promise<void> {
-    await unregisterLegacyRegisteredScripts();
+    await unregisterRegisteredScripts();
+
+    if (typeof chrome.scripting?.registerContentScripts !== "function") {
+      return;
+    }
+
+    await chrome.scripting.registerContentScripts([
+      {
+        id: AUTO_BOOSTER_ISOLATED_SCRIPT_ID,
+        js: [AUTO_BOOSTER_CONTENT_SCRIPT_PATH],
+        matches: [...AUTO_BOOSTER_REGISTERED_MATCHES],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "ISOLATED"
+      },
+      {
+        id: AUTO_BOOSTER_MAIN_WORLD_SCRIPT_ID,
+        js: [AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH],
+        matches: [...AUTO_BOOSTER_REGISTERED_MATCHES],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "MAIN"
+      }
+    ]);
   }
 
   async unregisterGlobalContentScripts(): Promise<void> {
-    await unregisterLegacyRegisteredScripts();
+    await unregisterRegisteredScripts();
   }
 
-  /**
-   * Inyecta el módulo del content script automático en la pestaña destino.
-   */
-  private async ensureInjected(tabId: number): Promise<void> {
+  async injectRegisteredScriptsIntoTab(tabId: number): Promise<void> {
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        func: injectAutoBoosterModule,
-        args: [chrome.runtime.getURL(AUTO_BOOSTER_CONTENT_SCRIPT_PATH)]
-      });
+      await Promise.all([
+        chrome.scripting.executeScript({
+          target: { tabId, allFrames: true },
+          files: [AUTO_BOOSTER_CONTENT_SCRIPT_PATH]
+        }),
+        chrome.scripting.executeScript({
+          target: { tabId, allFrames: true },
+          files: [AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH],
+          world: "MAIN"
+        })
+      ]);
     } catch (error) {
       throw normalizeContentScriptError(error);
     }
   }
 
-  /**
-   * Espera a que el receptor del content script esté listo para recibir
-   * mensajes.
-   */
-  private async ensureReceiverReady(tabId: number, attempts = 100): Promise<void> {
-    let lastError: unknown = new Error("Content receiver did not acknowledge readiness.");
-
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
-      try {
-        const response = await chrome.tabs.sendMessage(tabId, {
-          type: "AUTO_BOOSTER_PING"
-        });
-
-        if ((response as { ready?: boolean } | undefined)?.ready) {
-          return;
-        }
-
-        lastError = new Error("Content receiver did not acknowledge readiness.");
-      } catch (error) {
-        lastError = error;
-
-        if (!isMissingReceiverError(error)) {
-          break;
-        }
-      }
-
-      if (attempt === attempts - 1) {
-        break;
-      }
-
-      if ((attempt + 1) % 10 === 0) {
-        await this.ensureInjected(tabId);
-      }
-
-      await delay(50);
+  async sendMessageToFrame<T = void>(
+    tabId: number,
+    target: AutoFrameTarget,
+    command: ContentCommand
+  ): Promise<T | undefined> {
+    try {
+      return (await chrome.tabs.sendMessage(tabId, command, {
+        frameId: target.frameId,
+        ...(target.documentId ? { documentId: target.documentId } : {})
+      })) as T | undefined;
+    } catch (error) {
+      throw normalizeContentScriptError(error);
     }
-
-    throw normalizeContentScriptError(lastError);
   }
 
-  /**
-   * Envía un comando al content script con un único reintento de inyección si
-   * el receiver todavía no existe.
-   */
   private async sendMessageToTab<T = void>(
     tabId: number,
     command: ContentCommand,
-    attempts = 2
+    attempts = 1
+  ): Promise<T | undefined> {
+    return this.sendMessageToTabWithAttempts(tabId, command, attempts);
+  }
+
+  private async sendMessageToTabWithAttempts<T = void>(
+    tabId: number,
+    command: ContentCommand,
+    attempts: number
   ): Promise<T | undefined> {
     let lastError: unknown;
 
@@ -172,7 +194,7 @@ export class AutoBoosterClient {
           break;
         }
 
-        await this.ensureInjected(tabId);
+        await this.injectRegisteredScriptsIntoTab(tabId);
         await delay(50);
       }
     }
@@ -181,17 +203,6 @@ export class AutoBoosterClient {
   }
 }
 
-/**
- * Detecta el error típico de `Receiving end does not exist`.
- */
-function isMissingReceiverError(error: unknown): boolean {
-  return error instanceof Error && /Receiving end does not exist/i.test(error.message);
-}
-
-/**
- * Normaliza errores de scripting/mensajería a mensajes localizados de
- * producto.
- */
 function normalizeContentScriptError(error: unknown): LocalizedMessage {
   if (
     error instanceof Error &&
@@ -203,19 +214,17 @@ function normalizeContentScriptError(error: unknown): LocalizedMessage {
   return message("errorAutoAttachFailed");
 }
 
-/**
- * Espera el número de milisegundos indicado.
- */
+function isMissingReceiverError(error: unknown): boolean {
+  return error instanceof Error && /Receiving end does not exist/i.test(error.message);
+}
+
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
 }
 
-/**
- * Elimina scripts registrados legados de lanes automáticos experimentales.
- */
-async function unregisterLegacyRegisteredScripts(): Promise<void> {
+async function unregisterRegisteredScripts(): Promise<void> {
   if (typeof chrome.scripting?.unregisterContentScripts !== "function") {
     return;
   }
@@ -225,18 +234,6 @@ async function unregisterLegacyRegisteredScripts(): Promise<void> {
       ids: [AUTO_BOOSTER_ISOLATED_SCRIPT_ID, AUTO_BOOSTER_MAIN_WORLD_SCRIPT_ID]
     });
   } catch {
-    // Legacy registered scripts may not exist; cleanup is best-effort.
+    // Registered scripts may not exist yet; cleanup is best-effort.
   }
-}
-
-/**
- * Inyecta dinámicamente el módulo del auto-booster dentro del tab.
- */
-async function injectAutoBoosterModule(moduleUrl: string): Promise<void> {
-  const runtimeWindow = window as Window & {
-    __PRISM_AUTO_BOOSTER_IMPORT_PROMISE__?: Promise<unknown>;
-  };
-
-  runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__ ??= import(moduleUrl);
-  await runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__;
 }

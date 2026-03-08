@@ -21,21 +21,15 @@ export const OFFSCREEN_JUSTIFICATION =
   "Process captured tab audio in a hidden document so volume boosting survives popup close.";
 /** Sampling interval, in milliseconds, for live audio meter updates. */
 export const METER_SAMPLE_MS = 20;
-/** Built isolated-world bundle used for global auto-boost content injection. */
-export const AUTO_BOOSTER_CONTENT_SCRIPT_PATH = "assets/auto-booster.js";
-/** Built main-world bundle kept for future bridge experiments. */
-export const AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH = "assets/auto-booster-main.js";
-/** Public loader injected into tabs for the isolated auto-booster lane. */
-export const AUTO_BOOSTER_ISOLATED_LOADER_PATH = "auto-booster-loader.js";
-/** Public loader injected into tabs for the main-world bridge lane. */
-export const AUTO_BOOSTER_MAIN_WORLD_LOADER_PATH = "auto-booster-main-loader.js";
-/** Registered content-script id for the isolated auto-booster loader. */
+/** URL patterns targeted by the registered multi-frame global auto-booster runtime. */
+export const AUTO_BOOSTER_REGISTERED_MATCHES = ["http://*/*", "https://*/*"] as const;
+/** Built isolated-world bundle used for registered global auto-boost injection. */
+export const AUTO_BOOSTER_CONTENT_SCRIPT_PATH = "content-scripts/auto-booster-isolated.js";
+/** Built main-world bundle used for registered global Web Audio bridge injection. */
+export const AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH = "content-scripts/auto-booster-main.js";
+/** Registered content-script id for the isolated auto-booster runtime. */
 export const AUTO_BOOSTER_ISOLATED_SCRIPT_ID = "prism-auto-booster-isolated";
-/** Registered content-script id for the main-world bridge loader. */
+/** Registered content-script id for the main-world bridge runtime. */
 export const AUTO_BOOSTER_MAIN_WORLD_SCRIPT_ID = "prism-auto-booster-main";
-/** Duration of in-page failure toasts shown by the automatic booster lane. */
-export const AUTO_BOOSTER_FAILURE_TOAST_MS = 6000;
-/** Delay used by experimental global recovery logic before a forced reload. */
-export const AUTO_BOOSTER_RECOVERY_RELOAD_DELAY_MS = 600;
-/** Feature flag for the experimental main-world Web Audio bridge. */
-export const AUTO_BOOSTER_ENABLE_MAIN_WORLD_BRIDGE = false;
+/** DOM id used by the persistent in-page fallback toast. */
+export const AUTO_BOOSTER_FALLBACK_TOAST_ID = "prism-auto-booster-fallback-toast";

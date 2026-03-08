@@ -175,7 +175,6 @@ class WebAudioBridgeController {
       value: Constructor.name,
       configurable: true
     });
-    PatchedConstructor.prototype = Constructor.prototype;
     Object.setPrototypeOf(PatchedConstructor, Constructor);
 
     return PatchedConstructor as AudioContextConstructor;

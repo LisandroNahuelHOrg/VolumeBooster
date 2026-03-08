@@ -13,8 +13,6 @@ export const BRIDGE_TELEMETRY_EVENT = "prism:auto-booster:telemetry";
  * Estrategia activa reportada por el bridge del MAIN world.
  */
 export type BridgeActiveStrategy = "none" | "web_audio_bridge";
-export type BridgeRecoveryReason = "late_boot_missed" | "hot_attach_failed";
-
 /**
  * Métricas resumidas que el bridge envía al controlador aislado.
  */
@@ -41,9 +39,6 @@ export interface BridgeStatusPayload {
   audioContextCount: number;
   attachedNodeCount: number;
   lastTechnicalError?: string;
-  recoveryPending?: boolean;
-  recoveryUsed?: boolean;
-  recoveryReason?: BridgeRecoveryReason;
   currentUrl: string;
 }
 

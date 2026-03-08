@@ -17,14 +17,14 @@ chrome.runtime.onInstalled.addListener(() => {
   void orchestrator.bootstrap().catch(() => undefined);
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (isPopupCommand(message)) {
     void orchestrator.handlePopupCommand(message).then(sendResponse);
     return true;
   }
 
   if (isOffscreenEvent(message) || isContentEvent(message)) {
-    void orchestrator.handleBackgroundEvent(message).catch(() => undefined);
+    void orchestrator.handleBackgroundEvent(message, sender).catch(() => undefined);
   }
 
   return false;

@@ -45,8 +45,6 @@ export type EngineLane = "manual_tab_capture" | "auto_media_element";
 export type AutoBoosterScope = "site" | "global";
 /** Effective automatic strategy currently attached on the page. */
 export type AutoActiveStrategy = "none" | "media_element" | "web_audio_bridge" | "hybrid";
-/** Reason associated with a one-shot automatic recovery attempt. */
-export type AutoRecoveryReason = "late_boot_missed" | "hot_attach_failed";
 
 /** Persisted advanced DSP settings controlled from the popup. */
 export interface AdvancedAudioSettings {
@@ -93,9 +91,6 @@ export interface CaptureSessionState {
   autoActiveStrategy?: AutoActiveStrategy;
   autoAttachState: AutoAttachState;
   autoAttachReason?: AutoAttachReason;
-  recoveryPending?: boolean;
-  recoveryUsed?: boolean;
-  recoveryReason?: AutoRecoveryReason;
   streamState: SessionStreamState;
   engineStatus: AudioEngineStatus;
   level: number;
@@ -107,6 +102,20 @@ export interface CaptureSessionState {
   outputPeak: number;
   lastError?: LocalizedMessage;
   updatedAt: number;
+}
+
+/** Stable identity for a frame-level automatic runtime instance. */
+export interface AutoFrameIdentity {
+  frameId?: number;
+  documentId?: string;
+  isTopFrame?: boolean;
+  frameUrl?: string;
+}
+
+/** Addressable frame target used by the worker when messaging a specific document. */
+export interface AutoFrameTarget {
+  frameId: number;
+  documentId?: string;
 }
 
 /** Reduced summary of the current tab used by the popup. */
@@ -124,9 +133,6 @@ export interface TabSummary {
   autoActiveStrategy?: AutoActiveStrategy;
   autoAttachState: AutoAttachState;
   autoAttachReason?: AutoAttachReason;
-  recoveryPending?: boolean;
-  recoveryUsed?: boolean;
-  recoveryReason?: AutoRecoveryReason;
 }
 
 /** Worker-owned snapshot sent to the popup on each state refresh. */
@@ -135,6 +141,7 @@ export interface WorkerState {
   advancedAudioSettings: AdvancedAudioSettings;
   autoBoosterMode: AutoBoosterMode;
   globalAutoGainPercent: number;
+  hasGlobalPermission: boolean;
   sessions: CaptureSessionState[];
   generatedAt: number;
 }
@@ -149,6 +156,7 @@ export interface PopupViewModel {
   advancedAudioSettings: AdvancedAudioSettings;
   autoBoosterMode: AutoBoosterMode;
   globalAutoGainPercent: number;
+  hasGlobalPermission: boolean;
   gainPercent: number;
   sessionCount: number;
   canStart: boolean;
@@ -217,9 +225,6 @@ export interface AutoBoosterTabState {
   autoAttachReason?: AutoAttachReason;
   autoBoosterScope?: AutoBoosterScope;
   autoActiveStrategy?: AutoActiveStrategy;
-  recoveryPending?: boolean;
-  recoveryUsed?: boolean;
-  recoveryReason?: AutoRecoveryReason;
 }
 
 /** Configuration pushed from the worker to the automatic booster content script. */
@@ -233,7 +238,7 @@ export interface AutoBoosterConfigPayload {
 }
 
 /** Automatic session status update emitted by the content script. */
-export interface AutoSessionStatusPayload extends AutoBoosterTabState {
+export interface AutoSessionStatusPayload extends AutoBoosterTabState, AutoFrameIdentity {
   gainPercent: number;
   streamState: SessionStreamState;
   engineStatus: AudioEngineStatus;
@@ -244,7 +249,7 @@ export interface AutoSessionStatusPayload extends AutoBoosterTabState {
 }
 
 /** Live audio level update emitted by the automatic content lane. */
-export interface AutoSessionLevelPayload {
+export interface AutoSessionLevelPayload extends AutoFrameIdentity {
   tabId: number;
   level: number;
   warning: LevelWarning;
@@ -256,7 +261,7 @@ export interface AutoSessionLevelPayload {
 }
 
 /** Automatic attach failure payload emitted by the content script. */
-export interface AutoSessionAttachFailedPayload extends AutoBoosterTabState {
+export interface AutoSessionAttachFailedPayload extends AutoBoosterTabState, AutoFrameIdentity {
   gainPercent: number;
   engineLane: "auto_media_element";
   engineStatus: AudioEngineStatus;
@@ -266,10 +271,54 @@ export interface AutoSessionAttachFailedPayload extends AutoBoosterTabState {
   bridgeAttachedNodeCount?: number;
 }
 
-/** Request to show an in-page failure toast for the automatic lane. */
-export interface AutoSessionToastRequestedPayload {
+/** Announces that a frame runtime is alive and ready to receive configuration. */
+export interface AutoBoosterFrameReadyPayload extends AutoFrameIdentity {
+  tabId?: number;
+  title: string;
+  url?: string;
+  domain?: string;
+  favIconUrl?: string;
+}
+
+/** Sent by the top frame when the user requests switching from global to manual mode. */
+export interface AutoManualFallbackRequestPayload extends AutoFrameIdentity {
   tabId: number;
   reason: AutoAttachReason;
+}
+
+/** Sent by the top frame when the persistent automatic-fallback toast is dismissed. */
+export interface AutoFallbackToastDismissedPayload extends AutoFrameIdentity {
+  tabId: number;
+  reason: AutoAttachReason;
+}
+
+/** Command payload used by the worker to show or update the persistent fallback toast. */
+export interface AutoFallbackToastCommandPayload {
+  tabId: number;
+  documentId?: string;
+  reason: AutoAttachReason;
+  errorMessage?: LocalizedMessage;
+}
+
+/** Frame-level automatic runtime state cached by the worker for aggregation. */
+export interface AutoFrameRuntimeState extends AutoBoosterTabState, AutoFrameIdentity {
+  frameId: number;
+  isTopFrame: boolean;
+  gainPercent: number;
+  ready: boolean;
+  streamState: SessionStreamState;
+  engineStatus: AudioEngineStatus;
+  level: number;
+  warning: LevelWarning;
+  protectorActionDb: number;
+  clipEvents: number;
+  clipPeak: number;
+  protectionBypassed: boolean;
+  outputPeak: number;
+  lastError?: LocalizedMessage;
+  bridgeContextCount?: number;
+  bridgeAttachedNodeCount?: number;
+  toastVisible?: boolean;
 }
 
 /** Rich diagnostic snapshot used by debugging tools and automated tests. */
@@ -286,11 +335,12 @@ export interface AutoBoosterDebugState {
   autoplayPolicy?: string;
   mediaElementCount: number;
   attachedElementCount: number;
+  frameCount: number;
+  readyFrameCount: number;
+  attachedFrameCount: number;
+  toastVisible: boolean;
   bridgeContextCount?: number;
   bridgeAttachedNodeCount?: number;
-  recoveryPending?: boolean;
-  recoveryUsed?: boolean;
-  recoveryReason?: AutoRecoveryReason;
   lastTelemetryAt: number | null;
   lastLevel: number;
   lastError?: LocalizedMessage;

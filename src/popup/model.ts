@@ -33,6 +33,7 @@ export function buildPopupViewModel(state: WorkerState): PopupViewModel {
     advancedAudioSettings: state.advancedAudioSettings,
     autoBoosterMode: state.autoBoosterMode,
     globalAutoGainPercent: state.globalAutoGainPercent,
+    hasGlobalPermission: state.hasGlobalPermission,
     gainPercent:
       currentSession?.gainPercent ??
       (state.autoBoosterMode === "global" ? state.globalAutoGainPercent : DEFAULT_GAIN_PERCENT),

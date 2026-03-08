@@ -445,7 +445,7 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
               <button
                 class="ghost-button ghost-button--lane ghost-button--lane-global ${globalAutoEnabled ? "is-active" : ""}"
                 data-role="toggle-global-auto"
-                data-action="${globalAutoEnabled ? "disable-global-auto" : "enable-global-auto"}"
+                data-action="${globalBoosterButtonAction(viewModel)}"
                 ${currentTab ? "" : "disabled"}
                 type="button"
               >
@@ -1062,6 +1062,9 @@ function handleRootClick(event: Event): void {
       }
       return;
     }
+    case "request-global-auto-permission":
+      void requestGlobalAutoPermission();
+      return;
     case "disable-global-auto":
       void disableGlobalAutoBooster();
       return;
@@ -1324,6 +1327,12 @@ async function enableGlobalAutoBooster(tabId: number): Promise<void> {
   await handleWorkerResponse(response);
 }
 
+async function requestGlobalAutoPermission(): Promise<void> {
+  clearTransientError();
+  const response = await sendMessageSafe<WorkerState>({ type: "REQUEST_GLOBAL_PERMISSION" });
+  await handleWorkerResponse(response);
+}
+
 async function disableGlobalAutoBooster(): Promise<void> {
   clearTransientError();
   const response = await sendMessageSafe<WorkerState>({ type: "DISABLE_GLOBAL_AUTO_BOOSTER" });
@@ -1533,7 +1542,7 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
 
   if (globalAutoButton) {
     const globalAutoEnabled = isGlobalAutoEnabled(viewModel);
-    globalAutoButton.dataset.action = globalAutoEnabled ? "disable-global-auto" : "enable-global-auto";
+    globalAutoButton.dataset.action = globalBoosterButtonAction(viewModel);
     globalAutoButton.disabled = !Boolean(currentTab);
     globalAutoButton.classList.toggle("is-active", globalAutoEnabled);
     globalAutoButton.textContent = globalBoosterButtonCopy(viewModel);
@@ -2124,6 +2133,15 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
     };
   }
 
+  if (!viewModel.hasGlobalPermission && viewModel.autoBoosterMode !== "global") {
+    return {
+      tone: "watching",
+      badge: translate(currentCatalog, "laneBadgeAutomaticGlobal"),
+      title: translate(currentCatalog, "laneGlobalPermissionTitle"),
+      detail: translate(currentCatalog, "laneGlobalPermissionDetail")
+    };
+  }
+
   if (viewModel.autoBoosterMode === "global") {
     return {
       tone: "automatic",
@@ -2161,12 +2179,28 @@ function siteBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>
 
 function globalBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (!currentCatalog) {
-    return isGlobalAutoEnabled(viewModel) ? t("disableBoosterInAllSites") : t("enableBoosterInAllSites");
+    if (isGlobalAutoEnabled(viewModel)) {
+      return t("disableBoosterInAllSites");
+    }
+
+    return viewModel.hasGlobalPermission ? t("enableBoosterInAllSites") : t("grantGlobalAutoPermission");
   }
 
-  return isGlobalAutoEnabled(viewModel)
-    ? translate(currentCatalog, "disableBoosterInAllSites")
-    : translate(currentCatalog, "enableBoosterInAllSites");
+  if (isGlobalAutoEnabled(viewModel)) {
+    return translate(currentCatalog, "disableBoosterInAllSites");
+  }
+
+  return viewModel.hasGlobalPermission
+    ? translate(currentCatalog, "enableBoosterInAllSites")
+    : translate(currentCatalog, "grantGlobalAutoPermission");
+}
+
+function globalBoosterButtonAction(viewModel: ReturnType<typeof buildPopupViewModel>): string {
+  if (isGlobalAutoEnabled(viewModel)) {
+    return "disable-global-auto";
+  }
+
+  return viewModel.hasGlobalPermission ? "enable-global-auto" : "request-global-auto-permission";
 }
 
 function sessionSummaryCopy(count: number): string {
