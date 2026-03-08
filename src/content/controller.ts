@@ -342,6 +342,16 @@ export class AutoBoosterController {
       }
 
       if (!isMediaElementReadyForAttach(mediaElement)) {
+        if (
+          isPotentialMediaForAutomaticAttach(mediaElement) &&
+          !shouldAttemptAutomaticMediaAttach(mediaElement)
+        ) {
+          this.state.attachState = "awaiting_user_gesture";
+          this.state.attachReason = "autoplay_blocked";
+          this.state.lastError = message("errorAutoAwaitingGesture");
+          this.armGestureRetry();
+        }
+
         this.ensurePendingMediaRetryListeners(mediaElement);
         continue;
       }
@@ -894,22 +904,21 @@ function roundTo(value: number, precision: number): number {
  * autoplay prematuros.
  */
 function isMediaElementReadyForAttach(mediaElement: HTMLMediaElement): boolean {
-  const haveCurrentData =
-    typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2;
-  const hasSource = Boolean(mediaElement.currentSrc || mediaElement.srcObject);
-  const playbackRanges = mediaElement.played?.length ?? 0;
-  const hasPlaybackActivity = mediaElement.currentTime > 0 || playbackRanges > 0;
-
-  if (!hasSource || mediaElement.ended) {
-    return false;
-  }
-
   return (
-    !mediaElement.paused &&
-    hasPlaybackActivity &&
-    mediaElement.readyState >= haveCurrentData &&
-    shouldAttemptAutomaticMediaAttach(mediaElement)
+    isPotentialMediaForAutomaticAttach(mediaElement) && shouldAttemptAutomaticMediaAttach(mediaElement)
   );
+}
+
+/**
+ * Indica si el media element tiene metadata, no está finalizado y ya expone
+ * una fuente utilizable para intentar attach automático.
+ */
+function isPotentialMediaForAutomaticAttach(mediaElement: HTMLMediaElement): boolean {
+  const haveMetadata =
+    typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_METADATA : 1;
+  const hasSource = Boolean(mediaElement.currentSrc || mediaElement.srcObject);
+
+  return hasSource && !mediaElement.ended && mediaElement.readyState >= haveMetadata;
 }
 
 /**
