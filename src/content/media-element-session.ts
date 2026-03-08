@@ -104,11 +104,14 @@ export class MediaElementSession {
     advancedAudioSettings: AdvancedAudioSettings
   ): Promise<MediaElementSession> {
     const mediaAutoplayPolicy = getMediaAutoplayPolicy(mediaElement);
+    const mediaAutoplayPolicyKnown = typeof mediaAutoplayPolicy === "string";
+    const autoplayPolicyAllowsCreateWithoutGesture =
+      mediaAutoplayPolicyKnown && isAutoplayPolicyAllowed(mediaAutoplayPolicy);
 
-    if (!shouldAttemptAutomaticMediaAttach(mediaElement)) {
+    if (!hasRecentUserGesture() && !autoplayPolicyAllowsCreateWithoutGesture) {
       throw new MediaElementSessionError(
         "autoplay_blocked",
-        "Deferred AudioContext creation until audible playback is allowed.",
+        `AudioContext autoplay policy requires user gesture (${mediaAutoplayPolicy ?? "unknown"}).`,
         {
           audioContextState: "none",
           autoplayPolicy: mediaAutoplayPolicy
@@ -126,18 +129,6 @@ export class MediaElementSession {
         `AudioContext was not allowed to start. ${(error instanceof Error ? error.message : "Unknown startup error.")}`,
         {
           audioContextState: "none",
-          autoplayPolicy: mediaAutoplayPolicy
-        }
-      );
-    }
-
-    if (!isUserActivationAllowedForAudioContext()) {
-      await audioContext.close().catch(() => undefined);
-      throw new MediaElementSessionError(
-        "autoplay_blocked",
-        "AudioContext requires a user gesture before starting.",
-        {
-          audioContextState: audioContext.state,
           autoplayPolicy: mediaAutoplayPolicy
         }
       );
@@ -421,18 +412,32 @@ function getMediaAutoplayPolicy(mediaElement: HTMLMediaElement): string | undefi
 }
 
 /**
- * Devuelve `true` solo cuando el media ya tiene reproducción utilizable y
- * Chrome indica que Web Audio puede arrancar sin disparar warnings de
- * autoplay.
+ * Devuelve `true` solo cuando el elemento está en un estado apto para intentar
+ * conectar el grafo automático.
  */
 export function shouldAttemptAutomaticMediaAttach(mediaElement: HTMLMediaElement): boolean {
-  const autoplayPolicy = getMediaAutoplayPolicy(mediaElement);
+  if (!hasAttachablePlayback(mediaElement)) {
+    return false;
+  }
 
-  return (
-    hasAttachablePlayback(mediaElement) &&
-    isAutoplayPolicyAllowed(autoplayPolicy) &&
-    isUserActivationAllowedForAudioContext()
-  );
+  const mediaAutoplayPolicy = getMediaAutoplayPolicy(mediaElement);
+  if (!hasRecentUserGesture()) {
+    if (typeof mediaAutoplayPolicy !== "string") {
+      return false;
+    }
+
+    return isAutoplayPolicyAllowed(mediaAutoplayPolicy);
+  }
+
+  return true;
+}
+
+/**
+ * Indica si el media element ya está listo como candidato para enganchar el
+ * grafo automático.
+ */
+export function hasPotentialMediaForAutomaticAttach(mediaElement: HTMLMediaElement): boolean {
+  return hasAttachablePlayback(mediaElement);
 }
 
 /**
@@ -494,31 +499,23 @@ function isAutoplayPolicyAllowed(autoplayPolicy?: string): boolean {
 }
 
 /**
- * Devuelve `true` si hay evidencia de gesto de usuario disponible para arrancar
- * audio.
+ * Determina el sample size Faust a partir de las opciones de compilación.
  */
-function isUserActivationAllowedForAudioContext(): boolean {
-  const userActivation = (
-    navigator as Navigator & {
-      userActivation?: {
-        isActive: boolean;
-        hasBeenActive: boolean;
-      };
-    }
-  ).userActivation;
+function getSampleSize(meta: { compile_options: string }): 4 | 8 {
+  return meta.compile_options.includes("-double") ? 8 : 4;
+}
+
+/**
+ * Evalúa si hubo activación reciente del usuario en esta navegación.
+ */
+function hasRecentUserGesture(): boolean {
+  const userActivation = (navigator as Navigator & { userActivation?: { isActive?: boolean; hasBeenActive?: boolean } }).userActivation;
 
   if (!userActivation) {
     return true;
   }
 
-  return Boolean(userActivation.isActive || userActivation.hasBeenActive);
-}
-
-/**
- * Determina el sample size Faust a partir de las opciones de compilación.
- */
-function getSampleSize(meta: { compile_options: string }): 4 | 8 {
-  return meta.compile_options.includes("-double") ? 8 : 4;
+  return Boolean(userActivation.isActive);
 }
 
 /**

@@ -204,7 +204,7 @@ describe("MediaElementSession", () => {
         audioContextState: "none",
         autoplayPolicy: "disallowed"
       },
-      technicalMessage: "Deferred AudioContext creation until audible playback is allowed."
+      technicalMessage: expect.stringContaining("requires user gesture")
     });
 
     expect(FakeAudioContext.instances).toHaveLength(0);

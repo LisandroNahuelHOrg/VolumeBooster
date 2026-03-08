@@ -37,6 +37,7 @@ import { getCurrentFrameContext } from "./frame-runtime";
 import {
   MediaElementSession,
   MediaElementSessionError,
+  hasPotentialMediaForAutomaticAttach,
   shouldAttemptAutomaticMediaAttach,
   type MediaElementTelemetry
 } from "./media-element-session";
@@ -342,10 +343,7 @@ export class AutoBoosterController {
       }
 
       if (!isMediaElementReadyForAttach(mediaElement)) {
-        if (
-          isPotentialMediaForAutomaticAttach(mediaElement) &&
-          !shouldAttemptAutomaticMediaAttach(mediaElement)
-        ) {
+        if (isMediaElementPotentiallyAttachable(mediaElement)) {
           this.state.attachState = "awaiting_user_gesture";
           this.state.attachReason = "autoplay_blocked";
           this.state.lastError = message("errorAutoAwaitingGesture");
@@ -664,11 +662,10 @@ export class AutoBoosterController {
       ) {
         const shouldRetryObserving =
           this.state.attachState === "observing" && this.state.attachReason === "no_media";
-        const shouldRetryAwaiting = this.state.attachState === "awaiting_user_gesture";
 
-        if (shouldRetryObserving || shouldRetryAwaiting) {
+        if (shouldRetryObserving) {
           const now = Date.now();
-          const retryIntervalMs = shouldRetryAwaiting ? 1250 : 500;
+          const retryIntervalMs = 500;
 
           if (now - this.lastAutoRetryAt >= retryIntervalMs) {
             this.lastAutoRetryAt = now;
@@ -904,21 +901,11 @@ function roundTo(value: number, precision: number): number {
  * autoplay prematuros.
  */
 function isMediaElementReadyForAttach(mediaElement: HTMLMediaElement): boolean {
-  return (
-    isPotentialMediaForAutomaticAttach(mediaElement) && shouldAttemptAutomaticMediaAttach(mediaElement)
-  );
+  return shouldAttemptAutomaticMediaAttach(mediaElement);
 }
 
-/**
- * Indica si el media element tiene metadata, no está finalizado y ya expone
- * una fuente utilizable para intentar attach automático.
- */
-function isPotentialMediaForAutomaticAttach(mediaElement: HTMLMediaElement): boolean {
-  const haveMetadata =
-    typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_METADATA : 1;
-  const hasSource = Boolean(mediaElement.currentSrc || mediaElement.srcObject);
-
-  return hasSource && !mediaElement.ended && mediaElement.readyState >= haveMetadata;
+function isMediaElementPotentiallyAttachable(mediaElement: HTMLMediaElement): boolean {
+  return hasPotentialMediaForAutomaticAttach(mediaElement);
 }
 
 /**

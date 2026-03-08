@@ -1,0 +1,35 @@
+
+╔══════════════════════════════════════════════════════════════╗
+║           SpeedSuite Worktree Manager v1.0                  ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║  COMMANDS:                                                   ║
+║    create <type> <agent> <scope>  Create isolated worktree   ║
+║    ship   <type> <agent> <scope>  Build → PR → CI → Merge    ║
+║    list                           Show active worktrees       ║
+║    fixed-open <monitor>           Open fixed monitor tree     ║
+║    fixed-ship <monitor>           Ship fixed monitor tree     ║
+║    fixed-ship-all                 Ship all fixed monitor trees║
+║                                   (single-instance guarded)    ║
+║    fixed-list                     Show fixed monitor status   ║
+║    cleanup [<type> <agent> <scope>] Cleanup only own lock     ║
+║    scope-check <scope>            Check if scope is locked    ║
+║    help                           Show this message           ║
+║    (default: hidden; ship/fixed-ship*: foreground live)       ║
+║                                                              ║
+║  EXAMPLES:                                                   ║
+║    .\worktree-manager.ps1 create feat ag1 adblock            ║
+║    .\worktree-manager.ps1 ship feat ag1 adblock              ║
+║    .\worktree-manager.ps1 fixed-open izq-arriba              ║
+║    .\worktree-manager.ps1 fixed-ship izq-arriba              ║
+║    .\worktree-manager.ps1 fixed-ship-all                     ║
+║    .\ship-live.ps1 feat ag1 adblock                          ║
+║    .\worktree-manager.ps1 cleanup                            ║
+║    .\worktree-manager.ps1 cleanup feat ag1 adblock           ║
+║    .\worktree-manager.ps1 ship ... -Foreground               ║
+║                                                              ║
+        ║  TREE ROOT: D:\Local Worktrees                                      ║
+        ║  MAIN REPO: D:\OfiDrive\0. Programacion\Chromium - Volume Booster                                     ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
