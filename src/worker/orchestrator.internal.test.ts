@@ -395,7 +395,8 @@ describe("WorkerOrchestrator internals", () => {
       }),
       lastError: message("errorAutoAttachFailed")
     });
-    expect(internals.autoTabStates.get(12)?.autoAttachState).toBe("failed");
+    expect(internals.autoTabStates.get(12)?.autoAttachState).toBe("observing");
+    expect(internals.autoTabStates.get(12)?.autoAttachReason).toBe("no_media");
   });
 
   it("covers deactivate and sync flows for auto-booster tabs", async () => {
@@ -977,7 +978,7 @@ describe("WorkerOrchestrator internals", () => {
     expect(autoBoosterClient.configure).not.toHaveBeenCalled();
   });
 
-  it("marks generic global auto attach failures as failed with attach_failed reason", async () => {
+  it("marks generic global auto attach failures as observing with no_media reason", async () => {
     const { internals, autoBoosterClient } = createHarness();
     autoBoosterClient.configure.mockRejectedValueOnce(new Error("boom"));
 
@@ -991,8 +992,8 @@ describe("WorkerOrchestrator internals", () => {
 
     expect(internals.autoTabStates.get(17)).toMatchObject({
       title: "https://kick.com/demo",
-      autoAttachState: "failed",
-      autoAttachReason: "attach_failed",
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
       lastError: message("errorExtensionActionFailed")
     });
   });

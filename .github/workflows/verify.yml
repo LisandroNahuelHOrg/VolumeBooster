@@ -1,0 +1,73 @@
+name: Verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_escalation:
+        description: "Execution mode override for local CI experiments"
+        required: false
+        default: none
+        type: choice
+        options:
+          - none
+          - complete
+          - ultra-complete
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  merge_group:
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_OPTIONS: "--max_old_space_size=4096"
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Ensure cache folders
+        run: mkdir -p .cache/eslint .cache/tsc output
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run verify pipeline
+        run: npm run verify
+
+  ci-gate:
+    name: "✅ CI Gate"
+    if: always()
+    needs:
+      - verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify final status
+        run: |
+          if [ "${{ needs.verify.result }}" != "success" ]; then
+            echo "CI gate failed: verify job failed."
+            exit 1
+          fi
+          echo "✅ CI Gate passed."
