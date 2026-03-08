@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Constantes compartidas para resolver nombres de procesadores y
+ * rutas de assets Faust.
+ */
 export type DspVariant = "mono" | "stereo";
 
 export const WORKLET_PATHS: Record<DspVariant, string> = {

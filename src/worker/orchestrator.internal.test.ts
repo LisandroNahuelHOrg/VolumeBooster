@@ -32,6 +32,16 @@ interface WorkerOrchestratorInternals {
   badgePulseTimer: ReturnType<typeof globalThis.setInterval> | null;
   badgePulseHighlighted: boolean;
   autoBoosterMode: AutoBoosterMode;
+  autoFrameRegistry: {
+    upsertKnownFrame(frame: {
+      tabId: number;
+      frameId: number;
+      documentId?: string;
+      isTopFrame: boolean;
+      frameUrl?: string;
+      ready: boolean;
+    }): unknown;
+  };
   syncFromOffscreen(): Promise<void>;
   setGain(tabId: number, gainPercent: number): Promise<void>;
   stopCapture(tabId: number): Promise<void>;
@@ -175,6 +185,7 @@ function createHarness() {
     requestGlobalPermission: vi.fn(async () => true),
     hasGlobalPermission: vi.fn(async () => true),
     queryInjectableTabs: vi.fn(async () => [] as chrome.tabs.Tab[]),
+    injectRegisteredScriptsIntoTab: vi.fn(async () => undefined),
     configure: vi.fn(async () => undefined),
     disable: vi.fn(async () => undefined),
     getDebugState: vi.fn(async () => null)
@@ -890,6 +901,10 @@ describe("WorkerOrchestrator internals", () => {
         autoplayPolicy: undefined,
         mediaElementCount: 0,
         attachedElementCount: 1,
+        frameCount: 0,
+        readyFrameCount: 0,
+        attachedFrameCount: 0,
+        toastVisible: false,
         lastTelemetryAt: null,
         lastLevel: 0.77,
         lastError: message("errorAutoAttachFailed"),
@@ -993,7 +1008,7 @@ describe("WorkerOrchestrator internals", () => {
       "global"
     );
 
-    expect(internals.autoTabStates.get(77)).toEqual({
+    expect(internals.autoTabStates.get(77)).toMatchObject({
       tabId: 77,
       title: "https://rumble.com/demo",
       url: "https://rumble.com/demo",
@@ -1002,6 +1017,7 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       gainPercent: 100,
       lastError: message("errorAutoUnsupportedSite")
     });
@@ -1105,6 +1121,7 @@ describe("WorkerOrchestrator internals", () => {
       gainPercent: 220,
       engineLane: "auto_media_element",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       autoAttachState: "attached",
       autoAttachReason: undefined,
       streamState: "active",
@@ -1151,8 +1168,13 @@ describe("WorkerOrchestrator internals", () => {
 
     offscreenSpy.mockClear();
     await (orchestrator as unknown as { handleBackgroundEvent(input: unknown): Promise<void> }).handleBackgroundEvent({
-      type: "AUTO_SESSION_TOAST_REQUESTED",
-      payload: { tabId: 1 }
+      type: "AUTO_BOOSTER_FRAME_READY",
+      payload: {
+        tabId: 1,
+        title: "YouTube",
+        url: "https://youtube.com/watch?v=1",
+        domain: "youtube.com"
+      }
     });
     expect(offscreenSpy).not.toHaveBeenCalled();
     expect(contentSpy).toHaveBeenCalledTimes(1);
@@ -1472,7 +1494,7 @@ describe("WorkerOrchestrator internals", () => {
       { id: 201, title: undefined, url: "chrome://extensions" } as chrome.tabs.Tab
     );
 
-    expect(internals.autoTabStates.get(201)).toEqual({
+    expect(internals.autoTabStates.get(201)).toMatchObject({
       tabId: 201,
       title: "chrome://extensions",
       url: "chrome://extensions",
@@ -1481,6 +1503,7 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       gainPercent: 100,
       lastError: message("errorAutoUnsupportedSite")
     });
@@ -1819,6 +1842,69 @@ describe("WorkerOrchestrator internals", () => {
     await internals.resumeAutoLaneIfNeeded(810);
 
     expect(activateSpy).not.toHaveBeenCalled();
+  });
+
+  it("reuses known frames without reinjecting scripts when reconfiguring an active auto tab", async () => {
+    const { internals, autoBoosterClient } = createHarness();
+    tabsGet.mockResolvedValue({
+      id: 811,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1"
+    } as chrome.tabs.Tab);
+
+    internals.autoFrameRegistry.upsertKnownFrame({
+      tabId: 811,
+      frameId: 0,
+      documentId: "doc-top",
+      isTopFrame: true,
+      frameUrl: "https://youtube.com/watch?v=1",
+      ready: true
+    });
+    internals.autoFrameRegistry.upsertKnownFrame({
+      tabId: 811,
+      frameId: 4,
+      documentId: "doc-frame",
+      isTopFrame: false,
+      frameUrl: "https://www.youtube.com/embed/demo",
+      ready: true
+    });
+
+    await internals.activateAutoBoosterForTab(
+      { id: 811, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab,
+      "global",
+      240
+    );
+
+    expect(autoBoosterClient.injectRegisteredScriptsIntoTab).not.toHaveBeenCalled();
+    expect(autoBoosterClient.configure).toHaveBeenCalledTimes(2);
+    expect(autoBoosterClient.configure).toHaveBeenNthCalledWith(
+      1,
+      811,
+      expect.objectContaining({
+        tabId: 811,
+        scope: "global",
+        gainPercent: 240,
+        enabled: true
+      }),
+      {
+        frameId: 0,
+        documentId: "doc-top"
+      }
+    );
+    expect(autoBoosterClient.configure).toHaveBeenNthCalledWith(
+      2,
+      811,
+      expect.objectContaining({
+        tabId: 811,
+        scope: "global",
+        gainPercent: 240,
+        enabled: true
+      }),
+      {
+        frameId: 4,
+        documentId: "doc-frame"
+      }
+    );
   });
 
   it("ignores level updates for missing manual sessions and only syncs badges when audibility changes", async () => {

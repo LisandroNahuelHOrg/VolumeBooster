@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Verificación de consistencia entre locales, placeholders y
+ * familias plurales del sistema i18n.
+ */
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Encapsula una sesión automática sobre un `HTMLMediaElement`
+ * usando Web Audio + Faust para el modo `All sites`.
+ */
 import { FaustMonoAudioWorkletNode } from "@grame/faustwasm";
 import {
   applyQualityProtector,
@@ -14,6 +18,7 @@ import type {
   LevelWarning
 } from "../shared/types";
 import { selectFaustAsset, type FaustAssetDescriptor } from "../offscreen/faust-assets";
+import { getRuntimeUrlSafe } from "./runtime-api";
 
 export interface MediaElementTelemetry {
   level: number;
@@ -21,11 +26,19 @@ export interface MediaElementTelemetry {
   metrics: DspRuntimeMetrics;
 }
 
+/**
+ * Estado mínimo de depuración útil para diagnosticar bloqueos de autoplay o
+ * problemas de audio context.
+ */
 export interface MediaElementSessionDebugState {
   audioContextState: AudioContextState | "none";
   autoplayPolicy?: string;
 }
 
+/**
+ * Error tipado de creación/operación de una sesión automática sobre un media
+ * element.
+ */
 export class MediaElementSessionError extends Error {
   constructor(
     readonly reason: AutoAttachReason,
@@ -37,6 +50,9 @@ export class MediaElementSessionError extends Error {
   }
 }
 
+/**
+ * Mantiene el grafo Web Audio/Faust asociado a un único `HTMLMediaElement`.
+ */
 export class MediaElementSession {
   private static readonly loadedWorkletModules = new WeakMap<BaseAudioContext, Set<string>>();
   private readonly audioContext: AudioContext;
@@ -78,23 +94,21 @@ export class MediaElementSession {
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(advancedAudioSettings));
   }
 
+  /**
+   * Crea una sesión completamente inicializada para un `audio` o `video`
+   * concreto.
+   */
   static async create(
     mediaElement: HTMLMediaElement,
     gainPercent: number,
     advancedAudioSettings: AdvancedAudioSettings
   ): Promise<MediaElementSession> {
-    const initialAutoplayPolicy = getAudioContextAutoplayPolicyHint();
-    const hasUserActivation = hasPageUserActivation();
+    const initialAutoplayPolicy = getMediaAutoplayPolicy(mediaElement);
 
-    if (!hasUserActivation || (initialAutoplayPolicy && initialAutoplayPolicy !== "allowed")) {
-      const technicalMessage =
-        initialAutoplayPolicy && initialAutoplayPolicy !== "allowed"
-          ? `AudioContext creation is blocked until the page receives a user gesture (${initialAutoplayPolicy}).`
-          : "AudioContext creation is blocked until the page receives a user gesture.";
-
+    if (!shouldAttemptAutomaticMediaAttach(mediaElement)) {
       throw new MediaElementSessionError(
         "autoplay_blocked",
-        technicalMessage,
+        "Deferred AudioContext creation until audible playback is allowed.",
         {
           audioContextState: "none",
           autoplayPolicy: initialAutoplayPolicy
@@ -103,7 +117,7 @@ export class MediaElementSession {
     }
 
     const audioContext = new AudioContext();
-    const autoplayPolicy = getAutoplayPolicy(audioContext);
+    const autoplayPolicy = getAudioContextAutoplayPolicy(audioContext);
     await audioContext.resume().catch(() => undefined);
 
     if (audioContext.state !== "running") {
@@ -171,28 +185,43 @@ export class MediaElementSession {
     return session;
   }
 
+  /**
+   * Indica si esta sesión corresponde al media element indicado.
+   */
   isConnectedTo(element: HTMLMediaElement): boolean {
     return this.mediaElement === element;
   }
 
+  /**
+   * Actualiza el nivel de boost actual reaplicando los parámetros DSP.
+   */
   setGainPercent(gainPercent: number): void {
     this.currentGainPercent = gainPercent;
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(this.currentSettings));
     this.applyRuntimeParameters();
   }
 
+  /**
+   * Reconfigura los ajustes avanzados del engine premium.
+   */
   setAdvancedAudioSettings(settings: AdvancedAudioSettings): void {
     this.currentSettings = settings;
     this.latestMetrics = createDefaultMetrics(isProtectionBypassedSettings(settings));
     this.applyRuntimeParameters();
   }
 
+  /**
+   * Alterna entre procesamiento activo y bypass limpio del media element.
+   */
   setProcessingEnabled(enabled: boolean): void {
     this.processingEnabled = enabled;
     this.wetGainNode.gain.value = enabled ? 1 : 0;
     this.bypassGainNode.gain.value = enabled ? 0 : 1;
   }
 
+  /**
+   * Mide el nivel actual y deriva métricas de protección/clipping para la UI.
+   */
   sampleTelemetry(): MediaElementTelemetry {
     const runtime = applyQualityProtector(
       buildDspRuntimeParameters(this.currentGainPercent, this.currentSettings)
@@ -214,15 +243,24 @@ export class MediaElementSession {
     };
   }
 
+  /**
+   * Expone el estado actual del AudioContext para depuración.
+   */
   getDebugState(): MediaElementSessionDebugState {
     return createDebugState(this.audioContext);
   }
 
+  /**
+   * Reintenta reanudar el `AudioContext` si quedó suspendido.
+   */
   async resumeProcessing(): Promise<boolean> {
     await this.audioContext.resume().catch(() => undefined);
     return this.audioContext.state === "running";
   }
 
+  /**
+   * Desconecta por completo la sesión y cierra el `AudioContext`.
+   */
   async stop(): Promise<void> {
     this.outputAnalyserNode.disconnect();
     this.wetGainNode.disconnect();
@@ -236,6 +274,9 @@ export class MediaElementSession {
     }
   }
 
+  /**
+   * Aplica el mapping de parámetros de alto nivel al nodo Faust de la sesión.
+   */
   private applyRuntimeParameters(): void {
     const runtime = applyQualityProtector(
       buildDspRuntimeParameters(this.currentGainPercent, this.currentSettings)
@@ -281,12 +322,21 @@ export class MediaElementSession {
       return;
     }
 
-    await audioContext.audioWorklet.addModule(chrome.runtime.getURL(modulePath));
+    const moduleUrl = getRuntimeUrlSafe(modulePath);
+
+    if (!moduleUrl) {
+      throw new MediaElementSessionError("attach_failed", "Extension context invalidated.");
+    }
+
+    await audioContext.audioWorklet.addModule(moduleUrl);
     loadedModules.add(modulePath);
     MediaElementSession.loadedWorkletModules.set(audioContext, loadedModules);
   }
 }
 
+/**
+ * Crea un analyser calibrado para muestrear picos de entrada/salida.
+ */
 function createAnalyser(audioContext: AudioContext): AnalyserNode {
   const analyser = audioContext.createAnalyser();
   analyser.fftSize = 1024;
@@ -294,9 +344,12 @@ function createAnalyser(audioContext: AudioContext): AnalyserNode {
   return analyser;
 }
 
+/**
+ * Construye un estado de depuración a partir del `AudioContext` actual.
+ */
 function createDebugState(
   audioContext: BaseAudioContext,
-  autoplayPolicy = getAutoplayPolicy(audioContext)
+  autoplayPolicy = getAudioContextAutoplayPolicy(audioContext)
 ): MediaElementSessionDebugState {
   return {
     audioContextState: audioContext.state,
@@ -304,48 +357,36 @@ function createDebugState(
   };
 }
 
-function getAutoplayPolicy(audioContext: BaseAudioContext): string | undefined {
-  const policyApi = (
-    navigator as Navigator & {
-      getAutoplayPolicy?: (target?: string | BaseAudioContext | HTMLMediaElement) => string;
-    }
-  ).getAutoplayPolicy;
-
-  if (typeof policyApi !== "function") {
-    return undefined;
-  }
-
-  try {
-    return policyApi(audioContext);
-  } catch {
-    try {
-      return policyApi("audiocontext");
-    } catch {
-      return undefined;
-    }
-  }
+/**
+ * Intenta leer la autoplay policy asociada al contexto cuando Chrome la
+ * expone.
+ */
+function getAudioContextAutoplayPolicy(audioContext: BaseAudioContext): string | undefined {
+  return getNavigatorAutoplayPolicy(audioContext, "audiocontext");
 }
 
-function getAudioContextAutoplayPolicyHint(): string | undefined {
-  const policyApi = (
-    navigator as Navigator & {
-      getAutoplayPolicy?: (target?: string | BaseAudioContext | HTMLMediaElement) => string;
-    }
-  ).getAutoplayPolicy;
-
-  if (typeof policyApi !== "function") {
-    return undefined;
-  }
-
-  try {
-    return policyApi("audiocontext");
-  } catch {
-    return undefined;
-  }
+/**
+ * Lee la autoplay policy asociada a un media element cuando Chrome la expone.
+ */
+function getMediaAutoplayPolicy(mediaElement: HTMLMediaElement): string | undefined {
+  return getNavigatorAutoplayPolicy(mediaElement, "mediaelement");
 }
 
-function hasPageUserActivation(): boolean {
-  const activationState = (
+/**
+ * Devuelve `true` solo cuando el media ya tiene reproducción utilizable y
+ * Chrome indica que Web Audio puede arrancar sin disparar warnings de
+ * autoplay.
+ */
+export function shouldAttemptAutomaticMediaAttach(mediaElement: HTMLMediaElement): boolean {
+  if (!hasAttachablePlayback(mediaElement)) {
+    return false;
+  }
+
+  if (!isAudibleMediaElement(mediaElement)) {
+    return false;
+  }
+
+  const userActivation = (
     navigator as Navigator & {
       userActivation?: {
         hasBeenActive?: boolean;
@@ -354,13 +395,89 @@ function hasPageUserActivation(): boolean {
     }
   ).userActivation;
 
-  return Boolean(activationState?.hasBeenActive || activationState?.isActive);
+  if (userActivation?.isActive || userActivation?.hasBeenActive) {
+    return true;
+  }
+
+  const mediaPolicy = getMediaAutoplayPolicy(mediaElement);
+
+  if (mediaPolicy === "allowed") {
+    return true;
+  }
+
+  const audioContextPolicy = getNavigatorAutoplayPolicy("audiocontext");
+
+  if (audioContextPolicy === "allowed") {
+    return true;
+  }
+
+  return mediaPolicy === undefined && audioContextPolicy === undefined;
 }
 
+/**
+ * Determina si un media element ya está reproduciendo de forma suficiente como
+ * para intentar adjuntarle el grafo automático.
+ */
+function hasAttachablePlayback(mediaElement: HTMLMediaElement): boolean {
+  return (
+    !mediaElement.paused &&
+    !mediaElement.ended &&
+    Boolean(mediaElement.currentSrc || mediaElement.srcObject) &&
+    mediaElement.readyState >=
+    (typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2)
+  );
+}
+
+/**
+ * Determina si el media element expone audio utilizable para el lane global.
+ */
+function isAudibleMediaElement(mediaElement: HTMLMediaElement): boolean {
+  const volume = typeof mediaElement.volume === "number" ? mediaElement.volume : 1;
+  return !mediaElement.muted && !mediaElement.defaultMuted && volume > 0;
+}
+
+/**
+ * Intenta leer la autoplay policy asociada al target cuando Chrome la expone.
+ */
+function getNavigatorAutoplayPolicy(
+  target?: string | BaseAudioContext | HTMLMediaElement,
+  fallbackTarget?: string
+): string | undefined {
+  const policyApi = (
+    navigator as Navigator & {
+      getAutoplayPolicy?: (target?: string | BaseAudioContext | HTMLMediaElement) => string;
+    }
+  ).getAutoplayPolicy;
+
+  if (typeof policyApi !== "function") {
+    return undefined;
+  }
+
+  try {
+    return policyApi(target);
+  } catch {
+    if (!fallbackTarget) {
+      return undefined;
+    }
+  }
+
+  try {
+    return policyApi(fallbackTarget);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Determina el sample size Faust a partir de las opciones de compilación.
+ */
 function getSampleSize(meta: { compile_options: string }): 4 | 8 {
   return meta.compile_options.includes("-double") ? 8 : 4;
 }
 
+/**
+ * Devuelve el pico absoluto actual de un analyser.
+ */
 function readPeak(analyserNode: AnalyserNode): number {
   const buffer = new Float32Array(analyserNode.fftSize);
   analyserNode.getFloatTimeDomainData(buffer);
@@ -374,6 +491,9 @@ function readPeak(analyserNode: AnalyserNode): number {
   return roundTo(peak, 4);
 }
 
+/**
+ * Redondea un valor con la precisión solicitada.
+ */
 function roundTo(value: number, precision: number): number {
   const factor = Math.pow(10, precision);
   return Math.round(value * factor) / factor;

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Orquestador central del service worker MV3. Coordina captura
+ * manual, auto-booster global, offscreen, badges y estado del popup.
+ */
 import { DEFAULT_GAIN_PERCENT } from "../shared/constants";
 import { isProtectionBypassedSettings, sanitizeAdvancedAudioSettings } from "../shared/audio-settings";
 import { buildTabSummary, getDomainFromUrl, isSupportedTabUrl } from "../shared/domain";
@@ -15,10 +19,15 @@ import { SettingsRepository } from "../shared/storage";
 import type {
   AdvancedAudioSettings,
   AutoBoosterDebugState,
+  AutoBoosterFrameReadyPayload,
   AutoBoosterConfigPayload,
   AutoBoosterMode,
   AutoBoosterScope,
   AutoBoosterTabState,
+  AutoFallbackToastDismissedPayload,
+  AutoFrameRuntimeState,
+  AutoFrameTarget,
+  AutoManualFallbackRequestPayload,
   AutoSessionAttachFailedPayload,
   AutoSessionLevelPayload,
   AutoSessionStatusPayload,
@@ -32,6 +41,8 @@ import type {
 } from "../shared/types";
 import { OffscreenClient } from "./offscreen-client";
 import { AutoBoosterClient } from "./auto-booster-client";
+import { aggregateAutoFrameStates } from "./auto-tab-aggregate";
+import { AutoFrameRegistry } from "./auto-frame-registry";
 
 const ACTION_BADGE_TEXT = "🔊";
 const ACTION_BADGE_TEXT_COLOR = "#0b0b0b";
@@ -46,11 +57,20 @@ interface AutoTabRuntimeState extends AutoBoosterTabState {
   lastError?: LocalizedMessage;
 }
 
+/**
+ * Coordina todos los modos de booster y mantiene el estado consolidado de la
+ * extensión.
+ */
 export class WorkerOrchestrator {
   private readonly sessions = new Map<number, CaptureSessionState>();
   private readonly manualSessions = new Map<number, CaptureSessionState>();
   private readonly autoSessions = new Map<number, CaptureSessionState>();
   private readonly autoTabStates = new Map<number, AutoTabRuntimeState>();
+  private readonly autoDebugStates = new Map<
+    number,
+    Pick<AutoBoosterDebugState, "frameCount" | "readyFrameCount" | "attachedFrameCount" | "toastVisible">
+  >();
+  private readonly autoFrameRegistry = new AutoFrameRegistry();
   private readonly siteEnabledAutoTabs = new Set<number>();
   private readonly autoSuppressedTabs = new Set<number>();
   private readonly badgedTabs = new Set<number>();
@@ -66,11 +86,25 @@ export class WorkerOrchestrator {
     private readonly autoBoosterClient = new AutoBoosterClient()
   ) {}
 
+  /**
+   * Restaura el estado persistido y vuelve a sincronizar offscreen, auto lane y
+   * badges al levantar el worker.
+   */
   async bootstrap(): Promise<void> {
     this.autoBoosterMode = await this.settingsRepository.getAutoBoosterMode();
 
-    if (this.autoBoosterMode === "global" && !(await this.autoBoosterClient.hasGlobalPermission())) {
+    if (
+      this.autoBoosterMode === "global" &&
+      typeof this.autoBoosterClient.hasGlobalPermission === "function" &&
+      !(await this.autoBoosterClient.hasGlobalPermission())
+    ) {
       this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("off");
+    }
+
+    if (this.autoBoosterMode === "global") {
+      await this.registerGlobalContentScripts();
+    } else {
+      await this.unregisterGlobalContentScripts();
     }
 
     await this.syncFromOffscreen();
@@ -82,6 +116,9 @@ export class WorkerOrchestrator {
     await this.syncActionBadges();
   }
 
+  /**
+   * Punto único de entrada para comandos enviados desde el popup.
+   */
   async handlePopupCommand(
     command: PopupCommand
   ): Promise<RuntimeResponse<WorkerState | AutoBoosterDebugState | null>> {
@@ -145,16 +182,44 @@ export class WorkerOrchestrator {
 
   private async getDebugState(tabId: number): Promise<AutoBoosterDebugState | null> {
     const liveDebugState = await this.autoBoosterClient.getDebugState(tabId).catch(() => null);
+    const cachedDebugState = this.buildCachedAutoDebugState(tabId);
 
-    if (liveDebugState) {
+    if (!cachedDebugState) {
       return liveDebugState;
     }
 
+    if (!liveDebugState) {
+      return cachedDebugState;
+    }
+
+    return {
+      ...liveDebugState,
+      tabId: cachedDebugState.tabId,
+      enabled: cachedDebugState.enabled,
+      suspended: cachedDebugState.suspended,
+      scope: cachedDebugState.scope,
+      attachState: cachedDebugState.attachState,
+      attachReason: cachedDebugState.attachReason,
+      ...(cachedDebugState.activeStrategy ? { activeStrategy: cachedDebugState.activeStrategy } : {}),
+      attachedElementCount: Math.max(liveDebugState.attachedElementCount, cachedDebugState.attachedElementCount),
+      frameCount: cachedDebugState.frameCount,
+      readyFrameCount: cachedDebugState.readyFrameCount,
+      attachedFrameCount: cachedDebugState.attachedFrameCount,
+      toastVisible: cachedDebugState.toastVisible,
+      lastLevel: cachedDebugState.lastLevel,
+      lastError: cachedDebugState.lastError ?? liveDebugState.lastError,
+      currentUrl: cachedDebugState.currentUrl ?? liveDebugState.currentUrl
+    };
+  }
+
+  private buildCachedAutoDebugState(tabId: number): AutoBoosterDebugState | null {
     const autoState = this.autoTabStates.get(tabId);
 
     if (!autoState) {
       return null;
     }
+
+    const debugState = this.autoDebugStates.get(tabId);
 
     return {
       tabId,
@@ -164,10 +229,17 @@ export class WorkerOrchestrator {
       scope: autoState.autoBoosterScope ?? null,
       attachState: autoState.autoAttachState,
       attachReason: autoState.autoAttachReason,
+      ...(autoState.autoActiveStrategy && autoState.autoActiveStrategy !== "none"
+        ? { activeStrategy: autoState.autoActiveStrategy }
+        : {}),
       audioContextState: "none",
       autoplayPolicy: undefined,
       mediaElementCount: 0,
       attachedElementCount: this.autoSessions.has(tabId) ? 1 : 0,
+      frameCount: debugState?.frameCount ?? 0,
+      readyFrameCount: debugState?.readyFrameCount ?? 0,
+      attachedFrameCount: debugState?.attachedFrameCount ?? 0,
+      toastVisible: debugState?.toastVisible ?? false,
       lastTelemetryAt: null,
       lastLevel: this.autoSessions.get(tabId)?.level ?? 0,
       lastError: autoState.lastError,
@@ -176,17 +248,27 @@ export class WorkerOrchestrator {
     };
   }
 
-  async handleBackgroundEvent(incomingMessage: unknown): Promise<void> {
+  /**
+   * Reenvía eventos del documento offscreen y del content script automático al
+   * handler interno correspondiente.
+   */
+  async handleBackgroundEvent(
+    incomingMessage: unknown,
+    sender?: chrome.runtime.MessageSender
+  ): Promise<void> {
     if (isOffscreenEvent(incomingMessage)) {
       await this.handleOffscreenEvent(incomingMessage);
       return;
     }
 
     if (isContentEvent(incomingMessage)) {
-      await this.handleContentEvent(incomingMessage);
+      await this.handleContentEvent(incomingMessage, sender);
     }
   }
 
+  /**
+   * Reacciona a navegación/recarga de tabs y re-sincroniza el lane correcto.
+   */
   async handleTabUpdated(
     tabId: number,
     changeInfo: { status?: string; url?: string },
@@ -233,6 +315,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Re-sincroniza el modo global al cambiar la pestaña activa.
+   */
   async handleTabActivated(activeInfo: { tabId: number }): Promise<void> {
     if (this.autoBoosterMode === "global") {
       const activeTab = await chrome.tabs.get(activeInfo.tabId);
@@ -245,6 +330,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Limpia por completo el estado asociado a una pestaña cerrada.
+   */
   async handleTabRemoved(tabId: number): Promise<void> {
     if (this.manualSessions.has(tabId)) {
       await this.stopManualCapture(tabId);
@@ -254,10 +342,16 @@ export class WorkerOrchestrator {
     this.autoSuppressedTabs.delete(tabId);
     this.autoSessions.delete(tabId);
     this.autoTabStates.delete(tabId);
+    this.autoDebugStates.delete(tabId);
+    this.autoFrameRegistry.clearTab(tabId);
     this.rebuildEffectiveSessions();
     await this.broadcastState();
   }
 
+  /**
+   * Actualiza el estado de una captura manual cuando `chrome.tabCapture`
+   * reporta cambios.
+   */
   async handleCaptureStatusChanged(info: chrome.tabCapture.CaptureInfo): Promise<void> {
     if (typeof info.tabId !== "number" || !this.manualSessions.has(info.tabId)) {
       return;
@@ -315,41 +409,63 @@ export class WorkerOrchestrator {
   }
 
   private async handleContentEvent(
-    incomingMessage: Extract<Parameters<typeof isContentEvent>[0], unknown>
+    incomingMessage: Extract<Parameters<typeof isContentEvent>[0], unknown>,
+    sender?: chrome.runtime.MessageSender
   ): Promise<void> {
     if (!isContentEvent(incomingMessage)) {
       return;
     }
 
     switch (incomingMessage.type) {
+      case "AUTO_BOOSTER_FRAME_READY":
+        await this.handleAutoFrameReady(incomingMessage.payload, sender);
+        await this.broadcastState();
+        return;
       case "AUTO_SESSION_STATUS_UPDATE":
-        this.applyAutoStatusUpdate(incomingMessage.payload);
+        this.applyAutoStatusUpdate(incomingMessage.payload, sender);
+        await this.syncFallbackToastForTab(incomingMessage.payload.tabId);
         await this.broadcastState();
         return;
       case "AUTO_SESSION_LEVEL_UPDATE":
-        this.applyAutoLevelUpdate(incomingMessage.payload);
+        this.applyAutoLevelUpdate(incomingMessage.payload, sender);
+        await this.syncFallbackToastForTab(incomingMessage.payload.tabId);
         await this.broadcastState();
         return;
       case "AUTO_SESSION_ATTACH_FAILED":
-        this.applyAutoAttachFailure(incomingMessage.payload);
+        this.applyAutoAttachFailure(incomingMessage.payload, sender);
+        await this.syncFallbackToastForTab(incomingMessage.payload.tabId);
         await this.broadcastState();
         return;
-      case "AUTO_SESSION_TOAST_REQUESTED":
+      case "AUTO_MANUAL_FALLBACK_REQUESTED":
+        await this.handleManualFallbackRequest(incomingMessage.payload, sender);
+        await this.broadcastState();
+        return;
+      case "AUTO_FALLBACK_TOAST_DISMISSED":
+        this.handleFallbackToastDismissed(incomingMessage.payload, sender);
+        await this.broadcastState();
         return;
     }
   }
 
+  /**
+   * Devuelve el estado agregado consumido por el popup.
+   */
   private async getState(): Promise<WorkerState> {
     await this.syncFromOffscreen();
     const currentTab = await this.getCurrentTabSummary();
     const advancedAudioSettings = await this.settingsRepository.getAdvancedAudioSettings();
     const globalAutoGainPercent = await this.settingsRepository.getGlobalAutoGainPercent();
+    const hasGlobalPermission =
+      typeof this.autoBoosterClient.hasGlobalPermission === "function"
+        ? await this.autoBoosterClient.hasGlobalPermission()
+        : false;
 
     return {
       currentTab,
       advancedAudioSettings,
       autoBoosterMode: this.autoBoosterMode,
       globalAutoGainPercent,
+      hasGlobalPermission,
       sessions: [...this.sessions.values()],
       generatedAt: this.now()
     };
@@ -386,6 +502,7 @@ export class WorkerOrchestrator {
       ...summary,
       activeLane: activeSession?.engineLane,
       autoBoosterScope: activeSession?.autoBoosterScope ?? autoTabState?.autoBoosterScope,
+      autoActiveStrategy: activeSession?.autoActiveStrategy ?? autoTabState?.autoActiveStrategy,
       autoAttachState:
         activeSession?.engineLane === "auto_media_element"
           ? activeSession.autoAttachState
@@ -397,6 +514,9 @@ export class WorkerOrchestrator {
     };
   }
 
+  /**
+   * Inicia una captura robusta manual usando `tabCapture`.
+   */
   private async startCapture(tabId: number, gainPercent: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
 
@@ -461,6 +581,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Actualiza el gain del lane activo correspondiente para la pestaña.
+   */
   private async setGain(tabId: number, gainPercent: number): Promise<void> {
     const nextGain = clampGainPercent(gainPercent);
     const autoScope = this.getAutoScopeForTab(tabId);
@@ -488,6 +611,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Persiste un gain por dominio para el sitio actual.
+   */
   private async saveDomainGain(tabId: number, gainPercent: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
     const domain = getDomainFromUrl(targetTab.url);
@@ -500,6 +626,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Elimina la preferencia de gain guardada para el sitio actual.
+   */
   private async removeDomainGain(tabId: number): Promise<void> {
     const targetTab = await chrome.tabs.get(tabId);
     const domain = getDomainFromUrl(targetTab.url);
@@ -512,6 +641,9 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Persiste y propaga los advanced settings globales a todos los lanes activos.
+   */
   private async setAdvancedAudioSettings(partialSettings: Partial<AdvancedAudioSettings>): Promise<void> {
     const persistedSettings = await this.settingsRepository.setAdvancedAudioSettings(
       sanitizeAdvancedAudioSettings({
@@ -537,6 +669,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Detiene la captura o auto-sesión efectiva de una pestaña concreta.
+   */
   private async stopCapture(tabId: number): Promise<void> {
     if (this.manualSessions.has(tabId)) {
       await this.stopManualCapture(tabId);
@@ -608,86 +743,362 @@ export class WorkerOrchestrator {
     this.rebuildEffectiveSessions();
   }
 
-  private applyAutoStatusUpdate(update: AutoSessionStatusPayload): void {
-    this.autoTabStates.set(update.tabId, {
-      tabId: update.tabId,
+  private applyAutoStatusUpdate(
+    update: AutoSessionStatusPayload,
+    sender?: chrome.runtime.MessageSender
+  ): void {
+    const target = this.resolveFrameTarget(sender, update);
+    const existingState = this.autoFrameRegistry.getFrameState(update.tabId, target);
+    const nextState: AutoFrameRuntimeState = {
+      ...(existingState ?? this.createEmptyFrameRuntimeState(update.tabId, target, update)),
+      ...update,
+      frameId: target.frameId,
+      documentId: target.documentId,
+      isTopFrame: update.isTopFrame ?? target.frameId === 0,
+      frameUrl: update.frameUrl ?? sender?.url ?? update.url,
+      ready: true
+    };
+
+    this.autoFrameRegistry.updateFrameState(nextState);
+    this.recomputeAutoTabAggregation(update.tabId);
+  }
+
+  private applyAutoLevelUpdate(
+    update: AutoSessionLevelPayload,
+    sender?: chrome.runtime.MessageSender
+  ): void {
+    const target = this.resolveFrameTarget(sender, update);
+    const existingState = this.autoFrameRegistry.getFrameState(update.tabId, target);
+
+    if (!existingState) {
+      return;
+    }
+
+    this.autoFrameRegistry.updateFrameState({
+      ...existingState,
+      level: update.level,
+      warning: update.warning,
+      protectorActionDb: update.protectorActionDb,
+      clipEvents: update.clipEvents,
+      clipPeak: update.clipPeak,
+      protectionBypassed: update.protectionBypassed,
+      outputPeak: update.outputPeak,
+      ready: true
+    });
+    this.recomputeAutoTabAggregation(update.tabId);
+    this.updateAudibleState(update.tabId, update.level);
+  }
+
+  private applyAutoAttachFailure(
+    update: AutoSessionAttachFailedPayload,
+    sender?: chrome.runtime.MessageSender
+  ): void {
+    const target = this.resolveFrameTarget(sender, update);
+    const existingState = this.autoFrameRegistry.getFrameState(update.tabId, target);
+
+    this.autoFrameRegistry.updateFrameState({
+      ...(existingState ?? this.createEmptyFrameRuntimeState(update.tabId, target, update)),
+      ...update,
+      frameId: target.frameId,
+      documentId: target.documentId,
+      isTopFrame: update.isTopFrame ?? target.frameId === 0,
+      frameUrl: update.frameUrl ?? sender?.url ?? update.url,
+      autoAttachState: "failed",
+      ready: true
+    });
+    this.audibleTabs.delete(update.tabId);
+    this.syncBadgePulseTimer();
+    this.recomputeAutoTabAggregation(update.tabId);
+  }
+
+  private createEmptyFrameRuntimeState(
+    tabId: number,
+    target: AutoFrameTarget,
+    update: Pick<AutoSessionStatusPayload, "title" | "url" | "domain" | "favIconUrl" | "gainPercent"> &
+      Partial<Pick<AutoSessionStatusPayload, "autoBoosterScope" | "autoActiveStrategy" | "lastError">>
+  ): AutoFrameRuntimeState {
+    return {
+      tabId,
+      frameId: target.frameId,
+      documentId: target.documentId,
+      isTopFrame: target.frameId === 0,
+      frameUrl: update.url,
       title: update.title,
       url: update.url,
       domain: update.domain,
       favIconUrl: update.favIconUrl,
-      autoAttachState: update.autoAttachState,
-      autoAttachReason: update.autoAttachReason,
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
       autoBoosterScope: update.autoBoosterScope,
+      autoActiveStrategy: update.autoActiveStrategy ?? "none",
       gainPercent: update.gainPercent,
+      ready: true,
+      streamState: "inactive",
+      engineStatus: "ready",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0,
       lastError: update.lastError
-    });
+    };
+  }
 
-    if (update.autoAttachState === "attached" && update.streamState === "active") {
-      const existingSession = this.autoSessions.get(update.tabId);
-      const nextSession: CaptureSessionState = {
-        ...(existingSession ?? this.createEmptyAutoSession(update)),
-        tabId: update.tabId,
-        title: update.title,
-        url: update.url,
-        domain: update.domain,
-        favIconUrl: update.favIconUrl,
-        gainPercent: update.gainPercent,
-        engineLane: "auto_media_element",
-        autoBoosterScope: update.autoBoosterScope,
-        autoAttachState: update.autoAttachState,
-        autoAttachReason: update.autoAttachReason,
-        streamState: update.streamState,
-        engineStatus: update.engineStatus,
-        lastError: update.lastError,
-        updatedAt: this.now()
-      };
+  private recomputeAutoTabAggregation(tabId: number): void {
+    const aggregated = aggregateAutoFrameStates(tabId, this.autoFrameRegistry.getFrameStates(tabId), this.now);
 
-      this.autoSessions.set(update.tabId, nextSession);
+    if (!aggregated) {
+      this.autoSessions.delete(tabId);
+      this.autoTabStates.delete(tabId);
+      this.autoDebugStates.delete(tabId);
+      this.audibleTabs.delete(tabId);
+      this.rebuildEffectiveSessions();
+      return;
+    }
+
+    this.autoTabStates.set(tabId, aggregated.tabState);
+    this.autoDebugStates.set(tabId, aggregated.debug);
+
+    if (aggregated.session) {
+      this.autoSessions.set(tabId, aggregated.session);
     } else {
-      this.autoSessions.delete(update.tabId);
-      this.audibleTabs.delete(update.tabId);
+      this.autoSessions.delete(tabId);
+      this.audibleTabs.delete(tabId);
       this.syncBadgePulseTimer();
     }
 
     this.rebuildEffectiveSessions();
   }
 
-  private applyAutoLevelUpdate(update: AutoSessionLevelPayload): void {
-    const currentSession = this.autoSessions.get(update.tabId);
+  private resolveFrameTarget(
+    sender: chrome.runtime.MessageSender | undefined,
+    payload: Partial<Pick<AutoSessionStatusPayload, "frameId" | "documentId">>
+  ): AutoFrameTarget {
+    return {
+      frameId: sender?.frameId ?? payload.frameId ?? 0,
+      documentId: sender?.documentId ?? payload.documentId
+    };
+  }
 
-    if (!currentSession) {
+  private async handleAutoFrameReady(
+    payload: AutoBoosterFrameReadyPayload,
+    sender?: chrome.runtime.MessageSender
+  ): Promise<void> {
+    const tabId = sender?.tab?.id ?? payload.tabId;
+
+    if (typeof tabId !== "number") {
       return;
     }
 
-    currentSession.level = update.level;
-    currentSession.warning = update.warning;
-    currentSession.protectorActionDb = update.protectorActionDb;
-    currentSession.clipEvents = update.clipEvents;
-    currentSession.clipPeak = update.clipPeak;
-    currentSession.protectionBypassed = update.protectionBypassed;
-    currentSession.outputPeak = update.outputPeak;
-    currentSession.updatedAt = this.now();
-    this.rebuildEffectiveSessions();
-    this.updateAudibleState(update.tabId, update.level);
+    const target = this.resolveFrameTarget(sender, payload);
+    this.autoFrameRegistry.upsertKnownFrame({
+      tabId,
+      frameId: target.frameId,
+      documentId: target.documentId,
+      isTopFrame: payload.isTopFrame ?? target.frameId === 0,
+      frameUrl: payload.frameUrl ?? sender?.url ?? payload.url,
+      ready: true
+    });
+
+    if (!this.autoFrameRegistry.getFrameState(tabId, target)) {
+      this.autoFrameRegistry.updateFrameState({
+        tabId,
+        frameId: target.frameId,
+        documentId: target.documentId,
+        isTopFrame: payload.isTopFrame ?? target.frameId === 0,
+        frameUrl: payload.frameUrl ?? sender?.url ?? payload.url,
+        title: payload.title,
+        url: payload.url,
+        domain: payload.domain,
+        favIconUrl: payload.favIconUrl,
+        autoAttachState: "observing",
+        autoAttachReason: "no_media",
+        autoBoosterScope: this.getAutoScopeForTab(tabId),
+        autoActiveStrategy: "none",
+        gainPercent:
+          this.autoTabStates.get(tabId)?.gainPercent ??
+          (this.autoBoosterMode === "global"
+            ? await this.settingsRepository.getGlobalAutoGainPercent()
+            : DEFAULT_GAIN_PERCENT),
+        ready: true,
+        streamState: "inactive",
+        engineStatus: "ready",
+        level: 0,
+        warning: "none",
+        protectorActionDb: 0,
+        clipEvents: 0,
+        clipPeak: 0,
+        protectionBypassed: false,
+        outputPeak: 0
+      });
+      this.recomputeAutoTabAggregation(tabId);
+    }
+
+    const scope = this.getAutoScopeForTab(tabId);
+
+    if (!scope || this.autoSuppressedTabs.has(tabId)) {
+      return;
+    }
+
+    const advancedAudioSettings = await this.settingsRepository.getAdvancedAudioSettings();
+    const gainPercent =
+      this.autoTabStates.get(tabId)?.gainPercent ??
+      (scope === "global"
+        ? await this.settingsRepository.getGlobalAutoGainPercent()
+        : DEFAULT_GAIN_PERCENT);
+
+    try {
+      await this.autoBoosterClient.configure(
+        tabId,
+        {
+          tabId,
+          scope,
+          enabled: true,
+          suspended: this.manualSessions.has(tabId) || this.autoSuppressedTabs.has(tabId),
+          gainPercent,
+          advancedAudioSettings
+        },
+        target
+      );
+    } catch (error) {
+      const localizedError = this.toErrorMessage(error);
+      this.autoFrameRegistry.updateFrameState({
+        ...(this.autoFrameRegistry.getFrameState(tabId, target) ??
+          this.createEmptyFrameRuntimeState(tabId, target, {
+            title: payload.title,
+            url: payload.url,
+            domain: payload.domain,
+            favIconUrl: payload.favIconUrl,
+            gainPercent,
+            autoBoosterScope: scope,
+            lastError: localizedError
+          })),
+        tabId,
+        frameId: target.frameId,
+        documentId: target.documentId,
+        isTopFrame: payload.isTopFrame ?? target.frameId === 0,
+        frameUrl: payload.frameUrl ?? sender?.url ?? payload.url,
+        autoAttachState: localizedError.key === "errorAutoPermissionMissing" ? "failed" : "failed",
+        autoAttachReason:
+          localizedError.key === "errorAutoPermissionMissing" ? "permission_missing" : "attach_failed",
+        autoBoosterScope: scope,
+        gainPercent,
+        lastError: localizedError,
+        ready: true
+      });
+      this.recomputeAutoTabAggregation(tabId);
+    }
   }
 
-  private applyAutoAttachFailure(update: AutoSessionAttachFailedPayload): void {
-    this.autoSessions.delete(update.tabId);
-    this.autoTabStates.set(update.tabId, {
-      tabId: update.tabId,
-      title: update.title,
-      url: update.url,
-      domain: update.domain,
-      favIconUrl: update.favIconUrl,
-      autoAttachState: "failed",
-      autoAttachReason: update.autoAttachReason,
-      autoBoosterScope: update.autoBoosterScope,
-      gainPercent: update.gainPercent,
-      lastError: update.lastError
-    });
-    this.audibleTabs.delete(update.tabId);
-    this.syncBadgePulseTimer();
-    this.rebuildEffectiveSessions();
+  private async handleManualFallbackRequest(
+    payload: AutoManualFallbackRequestPayload,
+    sender?: chrome.runtime.MessageSender
+  ): Promise<void> {
+    const tabId = sender?.tab?.id ?? payload.tabId;
+
+    if (typeof tabId !== "number") {
+      return;
+    }
+
+    const target = this.resolveFrameTarget(sender, payload);
+    const gainPercent =
+      this.autoSessions.get(tabId)?.gainPercent ??
+      this.autoTabStates.get(tabId)?.gainPercent ??
+      (await this.settingsRepository.getGlobalAutoGainPercent());
+
+    await this.deactivateGlobalAutoBooster();
+
+    try {
+      await this.startCapture(tabId, gainPercent);
+      await this.hideFallbackToastForTab(tabId, target);
+    } catch (error) {
+      await this.showFallbackToastForTab(tabId, target, payload.reason, this.toErrorMessage(error));
+    }
+  }
+
+  private handleFallbackToastDismissed(
+    payload: AutoFallbackToastDismissedPayload,
+    sender?: chrome.runtime.MessageSender
+  ): void {
+    const tabId = sender?.tab?.id ?? payload.tabId;
+
+    if (typeof tabId !== "number") {
+      return;
+    }
+
+    const target = this.resolveFrameTarget(sender, payload);
+    this.autoFrameRegistry.markToastDismissed(tabId, target, true);
+    this.autoFrameRegistry.markToastVisible(tabId, target, false);
+    this.recomputeAutoTabAggregation(tabId);
+  }
+
+  private async syncFallbackToastForTab(tabId: number): Promise<void> {
+    const scope = this.autoTabStates.get(tabId)?.autoBoosterScope;
+    const topFrame = this.autoFrameRegistry.getTopFrame(tabId);
+    const tabState = this.autoTabStates.get(tabId);
+
+    if (
+      !topFrame ||
+      scope !== "global" ||
+      this.autoBoosterMode !== "global" ||
+      this.manualSessions.has(tabId) ||
+      !tabState ||
+      tabState.autoAttachState !== "failed" ||
+      this.autoSessions.has(tabId) ||
+      this.autoFrameRegistry.isToastDismissed(tabId, topFrame)
+    ) {
+      await this.hideFallbackToastForTab(tabId, topFrame ?? { frameId: 0 });
+      return;
+    }
+
+    await this.showFallbackToastForTab(
+      tabId,
+      topFrame,
+      tabState.autoAttachReason ?? "attach_failed",
+      tabState.lastError
+    );
+  }
+
+  private async showFallbackToastForTab(
+    tabId: number,
+    target: AutoFrameTarget,
+    reason: NonNullable<AutoTabRuntimeState["autoAttachReason"]>,
+    errorMessage?: LocalizedMessage
+  ): Promise<void> {
+    if (typeof this.autoBoosterClient.sendMessageToFrame === "function") {
+      await this.autoBoosterClient.sendMessageToFrame(tabId, target, {
+        type: "AUTO_BOOSTER_SHOW_FALLBACK_TOAST",
+        payload: {
+          tabId,
+          documentId: target.documentId,
+          reason,
+          errorMessage
+        }
+      });
+    }
+    this.autoFrameRegistry.markToastVisible(tabId, target, true);
+    this.recomputeAutoTabAggregation(tabId);
+  }
+
+  private async hideFallbackToastForTab(tabId: number, target: AutoFrameTarget): Promise<void> {
+    try {
+      if (typeof this.autoBoosterClient.sendMessageToFrame === "function") {
+        await this.autoBoosterClient.sendMessageToFrame(tabId, target, {
+          type: "AUTO_BOOSTER_HIDE_FALLBACK_TOAST",
+          payload: {
+            tabId,
+            documentId: target.documentId
+          }
+        });
+      }
+    } catch {
+      // Missing receiver is acceptable during navigation or teardown.
+    }
+
+    this.autoFrameRegistry.markToastVisible(tabId, target, false);
+    this.recomputeAutoTabAggregation(tabId);
   }
 
   private normalizeManualSession(session: CaptureSessionState): CaptureSessionState {
@@ -709,6 +1120,7 @@ export class WorkerOrchestrator {
       gainPercent: update.gainPercent,
       engineLane: "auto_media_element",
       autoBoosterScope: update.autoBoosterScope,
+      autoActiveStrategy: update.autoActiveStrategy,
       autoAttachState: update.autoAttachState,
       autoAttachReason: update.autoAttachReason,
       streamState: update.streamState,
@@ -740,6 +1152,9 @@ export class WorkerOrchestrator {
     this.syncBadgePulseTimer();
   }
 
+  /**
+   * Activa el modo `Single Tab` garantizado para la pestaña actual.
+   */
   private async enableCurrentTabBooster(tabId: number, gainPercent: number): Promise<void> {
     if (this.autoBoosterMode === "global") {
       await this.deactivateGlobalAutoBooster();
@@ -753,6 +1168,9 @@ export class WorkerOrchestrator {
     await this.stopCapture(tabId);
   }
 
+  /**
+   * Activa el modo global `All sites` y configura la pestaña actual y futuras.
+   */
   private async enableGlobalAutoBooster(currentTabId: number, gainPercent: number): Promise<void> {
     const granted = await this.autoBoosterClient.requestGlobalPermission();
 
@@ -761,6 +1179,7 @@ export class WorkerOrchestrator {
     }
 
     await this.disableAllSiteAutoTabs();
+    await this.registerGlobalContentScripts();
 
     if (this.manualSessions.has(currentTabId)) {
       await this.stopManualCapture(currentTabId);
@@ -786,9 +1205,13 @@ export class WorkerOrchestrator {
     await this.broadcastState();
   }
 
+  /**
+   * Desactiva por completo el modo global y limpia sus tabs asociadas.
+   */
   private async deactivateGlobalAutoBooster(): Promise<void> {
     this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("off");
     this.autoSuppressedTabs.clear();
+    await this.unregisterGlobalContentScripts();
 
     const globalTabIds = new Set<number>();
 
@@ -805,15 +1228,31 @@ export class WorkerOrchestrator {
     }
 
     for (const tabId of globalTabIds) {
-      await this.autoBoosterClient.disable(tabId);
+      const knownFrames = this.autoFrameRegistry.getKnownFrames(tabId);
+
+      if (knownFrames.length === 0) {
+        await this.autoBoosterClient.disable(tabId);
+      } else {
+        await Promise.allSettled(
+          knownFrames.map((frame) =>
+            this.autoBoosterClient.disable(tabId, {
+              frameId: frame.frameId,
+              documentId: frame.documentId
+            })
+          )
+        );
+      }
       this.autoSessions.delete(tabId);
       this.autoTabStates.delete(tabId);
+      this.autoDebugStates.delete(tabId);
+      this.autoFrameRegistry.clearTab(tabId);
     }
 
     this.rebuildEffectiveSessions();
   }
 
   private async syncGlobalAutoBoosterAcrossTabs(): Promise<void> {
+    await this.registerGlobalContentScripts();
     const injectableTabs = await this.autoBoosterClient.queryInjectableTabs();
 
     for (const tab of injectableTabs) {
@@ -856,6 +1295,9 @@ export class WorkerOrchestrator {
     }
   }
 
+  /**
+   * Activa o reconfigura el auto-booster sobre una pestaña compatible.
+   */
   private async activateAutoBoosterForTab(
     tab: chrome.tabs.Tab,
     scope: AutoBoosterScope,
@@ -893,10 +1335,24 @@ export class WorkerOrchestrator {
       autoAttachState: "observing",
       autoAttachReason: "no_media",
       autoBoosterScope: scope,
+      autoActiveStrategy: "none",
       gainPercent
     };
 
+    if (scope === "site") {
+      this.siteEnabledAutoTabs.add(tab.id);
+    }
+
+    this.autoFrameRegistry.resetToastStateForTab(tab.id);
     this.autoTabStates.set(tab.id, state);
+    this.autoDebugStates.set(tab.id, {
+      frameCount: this.autoFrameRegistry.getFrameStates(tab.id).length,
+      readyFrameCount: this.autoFrameRegistry.getFrameStates(tab.id).filter((frame) => frame.ready).length,
+      attachedFrameCount: this.autoFrameRegistry
+        .getFrameStates(tab.id)
+        .filter((frame) => frame.autoAttachState === "attached").length,
+      toastVisible: false
+    });
     this.rebuildEffectiveSessions();
 
     const payload: AutoBoosterConfigPayload = {
@@ -909,7 +1365,24 @@ export class WorkerOrchestrator {
     };
 
     try {
-      await this.autoBoosterClient.configure(tab.id, payload);
+      const targetTabId = tab.id;
+      const knownFrames = this.autoFrameRegistry.getKnownFrames(targetTabId);
+
+      if (knownFrames.length === 0) {
+        if (typeof this.autoBoosterClient.injectRegisteredScriptsIntoTab === "function") {
+          await this.autoBoosterClient.injectRegisteredScriptsIntoTab(targetTabId);
+        }
+        await this.autoBoosterClient.configure(targetTabId, payload);
+      } else {
+        await Promise.allSettled(
+          knownFrames.map((frame) =>
+            this.autoBoosterClient.configure(targetTabId, payload, {
+              frameId: frame.frameId,
+              documentId: frame.documentId
+            })
+          )
+        );
+      }
     } catch (error) {
       const localizedError = this.toErrorMessage(error);
       this.autoSessions.delete(tab.id);
@@ -941,20 +1414,36 @@ export class WorkerOrchestrator {
       return;
     }
 
+    const targetTabId = tab.id;
+
     const advancedAudioSettings = await this.settingsRepository.getAdvancedAudioSettings();
     const gainPercent =
       this.autoSessions.get(tabId)?.gainPercent ??
       this.manualSessions.get(tabId)?.gainPercent ??
       DEFAULT_GAIN_PERCENT;
-
-    await this.autoBoosterClient.configure(tab.id, {
-      tabId: tab.id,
+    const payload = {
+      tabId: targetTabId,
       scope,
       enabled: true,
       suspended: true,
       gainPercent,
       advancedAudioSettings
-    });
+    } satisfies AutoBoosterConfigPayload;
+    const knownFrames = this.autoFrameRegistry.getKnownFrames(targetTabId);
+
+    if (knownFrames.length === 0) {
+      await this.autoBoosterClient.configure(targetTabId, payload);
+      return;
+    }
+
+    await Promise.allSettled(
+      knownFrames.map((frame) =>
+        this.autoBoosterClient.configure(targetTabId, payload, {
+          frameId: frame.frameId,
+          documentId: frame.documentId
+        })
+      )
+    );
   }
 
   private async resumeAutoLaneIfNeeded(tabId: number): Promise<void> {
@@ -982,9 +1471,21 @@ export class WorkerOrchestrator {
       this.autoSuppressedTabs.add(tabId);
     }
 
-    await this.autoBoosterClient.disable(tabId);
+    const knownFrames = this.autoFrameRegistry.getKnownFrames(tabId);
+
+    if (knownFrames.length === 0) {
+      await this.autoBoosterClient.disable(tabId);
+    } else {
+      await Promise.allSettled(
+        knownFrames.map((frame) =>
+          this.autoBoosterClient.disable(tabId, { frameId: frame.frameId, documentId: frame.documentId })
+        )
+      );
+    }
     this.autoSessions.delete(tabId);
     this.autoTabStates.delete(tabId);
+    this.autoDebugStates.delete(tabId);
+    this.autoFrameRegistry.clearTab(tabId);
     this.audibleTabs.delete(tabId);
     this.rebuildEffectiveSessions();
   }
@@ -1007,9 +1508,24 @@ export class WorkerOrchestrator {
     this.siteEnabledAutoTabs.clear();
 
     for (const tabId of siteTabIds) {
-      await this.autoBoosterClient.disable(tabId);
+      const knownFrames = this.autoFrameRegistry.getKnownFrames(tabId);
+
+      if (knownFrames.length === 0) {
+        await this.autoBoosterClient.disable(tabId);
+      } else {
+        await Promise.allSettled(
+          knownFrames.map((frame) =>
+            this.autoBoosterClient.disable(tabId, {
+              frameId: frame.frameId,
+              documentId: frame.documentId
+            })
+          )
+        );
+      }
       this.autoSessions.delete(tabId);
       this.autoTabStates.delete(tabId);
+      this.autoDebugStates.delete(tabId);
+      this.autoFrameRegistry.clearTab(tabId);
       this.audibleTabs.delete(tabId);
     }
 
@@ -1051,6 +1567,7 @@ export class WorkerOrchestrator {
       return;
     }
 
+    this.autoFrameRegistry.clearTab(tab.id);
     this.autoSessions.delete(tab.id);
     this.autoTabStates.set(tab.id, {
       tabId: tab.id,
@@ -1061,8 +1578,15 @@ export class WorkerOrchestrator {
       autoAttachState: "unsupported",
       autoAttachReason: "site_not_hookable",
       autoBoosterScope: scope,
+      autoActiveStrategy: "none",
       gainPercent: DEFAULT_GAIN_PERCENT,
       lastError: message("errorAutoUnsupportedSite")
+    });
+    this.autoDebugStates.set(tab.id, {
+      frameCount: 0,
+      readyFrameCount: 0,
+      attachedFrameCount: 0,
+      toastVisible: false
     });
     this.rebuildEffectiveSessions();
   }
@@ -1075,8 +1599,22 @@ export class WorkerOrchestrator {
     this.autoSuppressedTabs.delete(tabId);
     this.autoSessions.delete(tabId);
     this.autoTabStates.delete(tabId);
+    this.autoDebugStates.delete(tabId);
+    this.autoFrameRegistry.clearTab(tabId);
     this.audibleTabs.delete(tabId);
     this.rebuildEffectiveSessions();
+  }
+
+  private async registerGlobalContentScripts(): Promise<void> {
+    if (typeof this.autoBoosterClient.registerGlobalContentScripts === "function") {
+      await this.autoBoosterClient.registerGlobalContentScripts();
+    }
+  }
+
+  private async unregisterGlobalContentScripts(): Promise<void> {
+    if (typeof this.autoBoosterClient.unregisterGlobalContentScripts === "function") {
+      await this.autoBoosterClient.unregisterGlobalContentScripts();
+    }
   }
 
   private getAutoScopeForTab(tabId: number): AutoBoosterScope | undefined {
@@ -1103,6 +1641,10 @@ export class WorkerOrchestrator {
     return message("errorExtensionActionFailed");
   }
 
+  /**
+   * Sincroniza el badge de la action con el estado audible real de cada tab
+   * boosteada.
+   */
   private async syncActionBadges(): Promise<void> {
     if (!chrome.action) {
       return;

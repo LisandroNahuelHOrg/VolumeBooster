@@ -8,6 +8,21 @@
   "autoBoosterFailureToast": {
     "message": "El booster automático no pudo enganchar esta página. Usa el booster manual desde el popup."
   },
+  "autoBoosterFallbackToastTitle": {
+    "message": "El boost automático no pudo completarse en esta página."
+  },
+  "autoBoosterFallbackToastBody": {
+    "message": "Esta página no expuso una ruta de audio enganchable. Cambiá al modo manual para obtener el resultado más confiable."
+  },
+  "autoBoosterFallbackToastPermissionBody": {
+    "message": "Esta página bloqueó el runtime automático. Igual podés boostear esta pestaña con la ruta manual."
+  },
+  "autoBoosterFallbackToastManualAction": {
+    "message": "Cambiar a modo manual"
+  },
+  "autoBoosterFallbackToastDismissAction": {
+    "message": "Descartar"
+  },
   "advancedSubtitle": {
     "message": "Ajusta en detalle el motor DSP premium global que se aplica a cada sesión activa."
   },
@@ -141,7 +156,7 @@
     "message": "El booster automático del sitio no pudo enganchar esta página."
   },
   "errorAutoAwaitingGesture": {
-    "message": "Esta página necesita un clic, una tecla, un toque o iniciar la reproducción para que el booster automático pueda empezar a procesar el audio."
+    "message": "El booster automático sigue reintentando enganchar el audio en esta página."
   },
   "errorAutoGlobalPermissionDenied": {
     "message": "No se concedió el permiso global del booster automático."
@@ -236,6 +251,9 @@
   "enableBoosterInAllSites": {
     "message": "Activar booster en todos los sitios"
   },
+  "grantGlobalAutoPermission": {
+    "message": "Conceder permiso para todos los sitios"
+  },
   "enableBoosterInThisSite": {
     "message": "Activar booster en este sitio"
   },
@@ -273,7 +291,7 @@
     "message": "Este sitio"
   },
   "laneBadgeFailed": {
-    "message": "Fallback"
+    "message": "Problema"
   },
   "laneBadgeIdle": {
     "message": "Listo"
@@ -288,19 +306,31 @@
     "message": "Preparando"
   },
   "laneBadgeInteraction": {
-    "message": "Acción necesaria"
+    "message": "Iniciando"
+  },
+  "laneBadgeLimited": {
+    "message": "Limitado"
+  },
+  "laneBadgeRecovering": {
+    "message": "Recuperando"
   },
   "laneFailedDetail": {
-    "message": "Esta página no expuso media elements utilizables. Usá el booster manual robusto para garantizar la captura."
+    "message": "El booster automático no pudo engancharse en esta página por ahora. La página puede seguir cargando media o bloquear el acceso automático."
   },
   "laneFailedTitle": {
-    "message": "La ruta automática falló"
+    "message": "El booster automático encontró un problema"
   },
   "laneGlobalArmedDetail": {
     "message": "El modo Global está listo. Esta página y otros sitios compatibles empezarán a boostear automáticamente apenas haya audio o video reproducible."
   },
   "laneGlobalArmedTitle": {
     "message": "El modo Global está listo"
+  },
+  "laneGlobalPermissionTitle": {
+    "message": "El modo Global necesita permiso"
+  },
+  "laneGlobalPermissionDetail": {
+    "message": "Concedé primero el permiso para todos los sitios. Después de eso, el modo Global intentará boostear sitios compatibles como una ruta best effort y caerá a manual cuando haga falta."
   },
   "laneIdleDetail": {
     "message": "Elegí cómo querés usar el booster: Solo esta pestaña boostea únicamente esta tab, mientras que Global intenta boostear esta página y también otros sitios compatibles de forma automática."
@@ -324,19 +354,25 @@
     "message": "La ruta automática no está disponible"
   },
   "laneInteractionGlobalDetail": {
-    "message": "El modo Global está listo, pero esta página todavía necesita un clic, una tecla, un toque o iniciar la reproducción antes de que el booster automático pueda empezar."
+    "message": "El modo Global sigue intentando engancharse automáticamente en esta página. La extensión sigue reintentando en segundo plano a medida que la reproducción queda disponible."
   },
   "laneInteractionGlobalTitle": {
-    "message": "El modo Global espera interacción"
+    "message": "El modo Global todavía se está iniciando en esta página"
   },
   "laneInteractionSiteDetail": {
-    "message": "El modo Este sitio está listo, pero esta página todavía necesita un clic, una tecla, un toque o iniciar la reproducción antes de que el booster pueda empezar."
+    "message": "El modo Este sitio sigue intentando engancharse automáticamente en esta página. La extensión sigue reintentando en segundo plano a medida que la reproducción queda disponible."
   },
   "laneInteractionSiteTitle": {
-    "message": "El modo Este sitio espera interacción"
+    "message": "El modo Este sitio todavía se está iniciando en esta página"
   },
   "laneInteractionTitle": {
     "message": "Esperando interacción de la página"
+  },
+  "laneAutomaticGlobalBridgeDetail": {
+    "message": "El modo Global está activo. Esta página ya se está boosteando a través de su pipeline de Web Audio, y otros sitios compatibles también se activarán automáticamente."
+  },
+  "laneAutomaticGlobalHybridDetail": {
+    "message": "El modo Global está activo. Esta página ya se está boosteando mediante detección de media y detección de Web Audio al mismo tiempo para máxima compatibilidad."
   },
   "laneWatchingGlobalDetail": {
     "message": "El modo Global está listo y esperando audio o video reproducible en esta página antes de empezar a boostear automáticamente."

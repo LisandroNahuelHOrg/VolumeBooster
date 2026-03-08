@@ -22,6 +22,7 @@ let context;
 try {
   const launchOptions = {
     headless: process.env.PRISM_E2E_HEADLESS === "1",
+    ignoreDefaultArgs: ["--disable-extensions"],
     args: [
       `--disable-extensions-except=${DIST_DIR}`,
       `--load-extension=${DIST_DIR}`
@@ -34,17 +35,22 @@ try {
 
   context = await chromium.launchPersistentContext(PROFILE_DIR, launchOptions);
 
-  const serviceWorker = await waitForServiceWorker(context);
-  logStep(`Service worker ready: ${serviceWorker.url()}`);
-  serviceWorker.on("console", (message) => {
-    workerLogs.push({
-      type: message.type(),
-      text: message.text(),
-      location: message.location()
-    });
-  });
+  const { serviceWorker, extensionId } = await resolveExtensionRuntime(context);
+  logStep(`Extension runtime ready: ${extensionId}`);
 
-  const extensionId = new URL(serviceWorker.url()).host;
+  if (serviceWorker) {
+    logStep(`Service worker ready: ${serviceWorker.url()}`);
+    serviceWorker.on("console", (message) => {
+      workerLogs.push({
+        type: message.type(),
+        text: message.text(),
+        location: message.location()
+      });
+    });
+  } else {
+    logStep("Service worker target was resolved through CDP fallback.");
+  }
+
   const automationPage = await context.newPage();
   await automationPage.goto(`chrome-extension://${extensionId}/automation.html`, {
     waitUntil: "domcontentloaded"
@@ -93,11 +99,19 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
     {
       name: "fixture-site-audio-basic",
       url: `${baseUrl}/audio-basic.html`,
-      mode: "site",
+      mode: "manual",
       async run(page, tabId) {
         await page.click("#start-playback");
-        const finalDebug = await waitForDebugState(automationPage, tabId, (debug) => debug?.attachState === "attached");
-        return evaluateScenarioResult("attached", finalDebug);
+        const finalState = await waitForWorkerState(
+          automationPage,
+          (state) => hasManualSession(state, tabId),
+          12000
+        );
+        return {
+          classification: "pass_manual",
+          passed: hasManualSession(finalState, tabId),
+          finalDebug: null
+        };
       }
     },
     {
@@ -105,19 +119,29 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
       url: `${baseUrl}/audio-basic.html`,
       mode: "global-new-tab",
       async run(page, tabId) {
-        await page.click("#start-playback");
-        await waitForDebugState(automationPage, tabId, (debug) => debug?.attachState === "attached");
+        await waitForAttachOrGestureWithRecovery({
+          automationPage,
+          page,
+          tabId,
+          startPlayback: async (targetPage) => {
+            await targetPage.click("#start-playback");
+            return true;
+          }
+        });
 
         const secondPage = await context.newPage();
         await secondPage.goto(`${baseUrl}/audio-basic.html`, { waitUntil: "domcontentloaded" });
         await secondPage.bringToFront();
         const secondTab = await getActiveTab(automationPage);
-        await secondPage.click("#start-playback");
-        const finalDebug = await waitForDebugState(
+        const { finalDebug } = await waitForAttachOrGestureWithRecovery({
           automationPage,
-          secondTab.id,
-          (debug) => debug?.attachState === "attached"
-        );
+          page: secondPage,
+          tabId: secondTab.id,
+          startPlayback: async (targetPage) => {
+            await targetPage.click("#start-playback");
+            return true;
+          }
+        });
         await captureScenarioScreenshot(secondPage, "fixture-global-new-tab");
         await secondPage.close().catch(() => undefined);
         return evaluateScenarioResult("attached", finalDebug);
@@ -144,8 +168,15 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
       mode: "global",
       async run(page, tabId) {
         await page.waitForSelector("#fixture-audio");
-        await page.click("#start-playback");
-        const finalDebug = await waitForDebugState(automationPage, tabId, (debug) => debug?.attachState === "attached");
+        const { finalDebug } = await waitForAttachOrGestureWithRecovery({
+          automationPage,
+          page,
+          tabId,
+          startPlayback: async (targetPage) => {
+            await targetPage.click("#start-playback");
+            return true;
+          }
+        });
         return evaluateScenarioResult("attached", finalDebug);
       }
     },
@@ -167,8 +198,15 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
       url: `${baseUrl}/video-basic.html`,
       mode: "global",
       async run(page, tabId) {
-        await page.click("#start-playback");
-        const finalDebug = await waitForDebugState(automationPage, tabId, (debug) => debug?.attachState === "attached");
+        const { finalDebug } = await waitForAttachOrGestureWithRecovery({
+          automationPage,
+          page,
+          tabId,
+          startPlayback: async (targetPage) => {
+            await targetPage.click("#start-playback");
+            return true;
+          }
+        });
         return evaluateScenarioResult("attached", finalDebug);
       }
     }
@@ -184,12 +222,15 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
     await page.bringToFront();
     const activeTab = await getActiveTab(automationPage);
     logScenarioData(scenario.name, "active-tab", activeTab);
-    await armScenario(automationPage, activeTab.id, scenario.mode);
-    const initialDebug = await getDebugState(automationPage, activeTab.id);
+    const armResponse = await armScenario(automationPage, activeTab.id, scenario.mode);
+    const initialDebugResponse = await getDebugStateResponse(automationPage, activeTab.id);
+    const initialDebug = initialDebugResponse?.ok ? initialDebugResponse.data : null;
     logScenarioData(scenario.name, "initial-debug", initialDebug);
     const outcome = await scenario.run(page, activeTab.id);
-    const finalDebug = outcome.finalDebug ?? (await getDebugState(automationPage, activeTab.id));
-    const state = await getState(automationPage);
+    const finalDebugResponse = await getDebugStateResponse(automationPage, activeTab.id);
+    const finalDebug = outcome.finalDebug ?? (finalDebugResponse?.ok ? finalDebugResponse.data : null);
+    const stateResponse = await getStateResponse(automationPage);
+    const state = stateResponse?.ok ? stateResponse.data : null;
     logScenarioData(scenario.name, "final-debug", finalDebug);
 
     results.push({
@@ -197,8 +238,12 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
       target: scenario.url,
       classification: outcome.classification,
       passed: outcome.passed,
+      armResponse,
+      initialDebugResponse,
       initialDebug,
+      finalDebugResponse,
       finalDebug,
+      stateResponse,
       workerState: state
     });
 
@@ -221,7 +266,7 @@ async function runPublicSiteScenarios(context, automationPage) {
     {
       name: "youtube-site",
       url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-      mode: "site",
+      mode: "manual",
       startPlayback: startYouTubePlayback
     },
     {
@@ -263,20 +308,36 @@ async function runPublicSiteScenarios(context, automationPage) {
     await page.bringToFront();
     const activeTab = await getActiveTab(automationPage);
     logScenarioData(scenario.name, "active-tab", activeTab);
-    await armScenario(automationPage, activeTab.id, scenario.mode);
-    const initialDebug = await getDebugState(automationPage, activeTab.id);
+    const armResponse = await armScenario(automationPage, activeTab.id, scenario.mode);
+    const initialDebugResponse = await getDebugStateResponse(automationPage, activeTab.id);
+    const initialDebug = initialDebugResponse?.ok ? initialDebugResponse.data : null;
     logScenarioData(scenario.name, "initial-debug", initialDebug);
 
     let playbackStarted = false;
+    let finalDebug = null;
     try {
-      playbackStarted = await scenario.startPlayback(page);
+      const outcome = await waitForAttachOrGestureWithRecovery({
+        automationPage,
+        page,
+        tabId: activeTab.id,
+        startPlayback: scenario.startPlayback,
+        timeoutMs: 15000,
+        allowAwaitingGesture: true
+      });
+      playbackStarted = outcome.playbackStarted;
+      finalDebug = outcome.finalDebug;
     } catch {
       playbackStarted = false;
     }
 
-    const finalDebug = await pollForDebugState(automationPage, activeTab.id, 5000);
-    const classification = classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted);
-    const state = await getState(automationPage);
+    finalDebug ??= await pollForDebugState(automationPage, activeTab.id, 5000);
+    const finalDebugResponse = await getDebugStateResponse(automationPage, activeTab.id);
+    const stateResponse = await getStateResponse(automationPage);
+    const state = stateResponse?.ok ? stateResponse.data : null;
+    const classification =
+      scenario.mode === "manual"
+        ? classifyManualSiteResult(state, activeTab.id)
+        : classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted);
     logScenarioData(scenario.name, "final-debug", finalDebug);
 
     results.push({
@@ -284,9 +345,13 @@ async function runPublicSiteScenarios(context, automationPage) {
       target: scenario.url,
       classification,
       passed: classification !== "product_bug",
+      armResponse,
+      initialDebugResponse,
       initialDebug,
+      finalDebugResponse,
       finalDebug,
       playbackStarted,
+      stateResponse,
       workerState: state
     });
 
@@ -300,15 +365,14 @@ async function runPublicSiteScenarios(context, automationPage) {
 
 async function armScenario(automationPage, tabId, mode) {
   logStep(`Arming tab ${tabId} with mode ${mode}`);
-  if (mode === "site") {
-    await sendCommand(automationPage, {
+  if (mode === "site" || mode === "manual") {
+    return sendCommandDetailed(automationPage, {
       type: "ENABLE_CURRENT_TAB_BOOSTER",
       payload: { tabId, gainPercent: 100 }
     });
-    return;
   }
 
-  await sendCommand(automationPage, {
+  return sendCommandDetailed(automationPage, {
     type: "ENABLE_GLOBAL_AUTO_BOOSTER",
     payload: { tabId, gainPercent: 100 }
   });
@@ -316,8 +380,8 @@ async function armScenario(automationPage, tabId, mode) {
 
 async function resetExtensionState(automationPage) {
   logStep("Resetting extension state.");
-  await sendCommand(automationPage, { type: "STOP_ALL" });
-  await sendCommand(automationPage, { type: "DISABLE_GLOBAL_AUTO_BOOSTER" });
+  await sendCommandDetailed(automationPage, { type: "STOP_ALL" });
+  await sendCommandDetailed(automationPage, { type: "DISABLE_GLOBAL_AUTO_BOOSTER" });
 }
 
 async function ensureGlobalPermission(automationPage) {
@@ -341,6 +405,49 @@ async function waitForServiceWorker(context) {
   return context.waitForEvent("serviceworker", { timeout: 30000 });
 }
 
+async function resolveExtensionRuntime(context) {
+  try {
+    const serviceWorker = await waitForServiceWorker(context);
+    return {
+      serviceWorker,
+      extensionId: new URL(serviceWorker.url()).host
+    };
+  } catch {
+    const extensionId = await findExtensionIdViaCdp(context);
+
+    if (!extensionId) {
+      throw new Error("Could not resolve extension runtime through service worker or CDP targets.");
+    }
+
+    return {
+      serviceWorker: null,
+      extensionId
+    };
+  }
+}
+
+async function findExtensionIdViaCdp(context) {
+  const probePage = await context.newPage();
+
+  try {
+    const session = await context.newCDPSession(probePage);
+    const target = await waitFor(async () => {
+      const { targetInfos } = await session.send("Target.getTargets");
+      return (
+        targetInfos.find(
+          (targetInfo) =>
+            targetInfo.url.startsWith("chrome-extension://") &&
+            ["service_worker", "background_page", "page", "other"].includes(targetInfo.type)
+        ) ?? null
+      );
+    }, 30000);
+
+    return target ? new URL(target.url).host : null;
+  } finally {
+    await probePage.close().catch(() => undefined);
+  }
+}
+
 async function sendCommand(automationPage, command) {
   return automationPage.evaluate(
     async (payload) => window.__PRISM_AUTOMATION__.sendCommand(payload),
@@ -348,8 +455,26 @@ async function sendCommand(automationPage, command) {
   );
 }
 
+async function sendCommandDetailed(automationPage, command) {
+  return automationPage.evaluate(
+    async (payload) => window.__PRISM_AUTOMATION__.sendCommandDetailed(payload),
+    command
+  );
+}
+
 async function getState(automationPage) {
   return automationPage.evaluate(() => window.__PRISM_AUTOMATION__.getState());
+}
+
+async function getStateResponse(automationPage) {
+  return automationPage.evaluate(() => window.__PRISM_AUTOMATION__.getStateDetailed());
+}
+
+async function waitForWorkerState(automationPage, predicate, timeoutMs = 12000) {
+  return waitFor(async () => {
+    const state = await getState(automationPage);
+    return predicate(state) ? state : null;
+  }, timeoutMs);
 }
 
 async function getActiveTab(automationPage) {
@@ -365,6 +490,13 @@ async function getActiveTab(automationPage) {
 async function getDebugState(automationPage, tabId) {
   return automationPage.evaluate(
     async (payload) => window.__PRISM_AUTOMATION__.getDebugState(payload),
+    tabId
+  );
+}
+
+async function getDebugStateResponse(automationPage, tabId) {
+  return automationPage.evaluate(
+    async (payload) => window.__PRISM_AUTOMATION__.getDebugStateDetailed(payload),
     tabId
   );
 }
@@ -390,6 +522,68 @@ async function waitForDebugState(automationPage, tabId, predicate, timeoutMs = 1
     const debug = await getDebugState(automationPage, tabId);
     return predicate(debug) ? debug : null;
   }, timeoutMs);
+}
+
+async function waitForAttachOrGestureWithRecovery({
+  automationPage,
+  page,
+  tabId,
+  startPlayback,
+  timeoutMs = 15000,
+  allowAwaitingGesture = false
+}) {
+  const deadline = Date.now() + timeoutMs;
+  let playbackStarted = false;
+  let recoveryObserved = false;
+  let playbackNeedsRetry = true;
+  let finalDebug = await getDebugState(automationPage, tabId);
+
+  while (Date.now() < deadline) {
+    if (playbackNeedsRetry) {
+      try {
+        playbackStarted = (await startPlayback(page)) || playbackStarted;
+      } catch {
+        // Ignore playback kick failures; state polling below will decide the outcome.
+      }
+
+      playbackNeedsRetry = false;
+    }
+
+    finalDebug = await getDebugState(automationPage, tabId);
+
+    if (finalDebug?.attachState === "attached") {
+      return {
+        finalDebug,
+        playbackStarted,
+        recoveryObserved
+      };
+    }
+
+    if (allowAwaitingGesture && finalDebug?.attachState === "awaiting_user_gesture") {
+      return {
+        finalDebug,
+        playbackStarted,
+        recoveryObserved
+      };
+    }
+
+    if (finalDebug?.recoveryPending && !recoveryObserved) {
+      recoveryObserved = true;
+      playbackNeedsRetry = true;
+
+      await page.waitForLoadState("domcontentloaded", { timeout: 5000 }).catch(() => undefined);
+      await wait(250);
+      continue;
+    }
+
+    await wait(250);
+  }
+
+  return {
+    finalDebug,
+    playbackStarted,
+    recoveryObserved
+  };
 }
 
 function evaluateScenarioResult(expected, finalDebug, initialDebug = null) {
@@ -444,6 +638,21 @@ function classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted) {
   }
 
   return "product_bug";
+}
+
+function classifyManualSiteResult(state, tabId) {
+  return hasManualSession(state, tabId) ? "pass_manual" : "product_bug";
+}
+
+function hasManualSession(state, tabId) {
+  return Boolean(
+    state?.sessions?.some(
+      (session) =>
+        session?.tabId === tabId &&
+        session.engineLane === "manual_tab_capture" &&
+        (session.streamState === "pending" || session.streamState === "active")
+    )
+  );
 }
 
 async function captureScenarioScreenshot(page, name) {

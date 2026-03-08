@@ -1,6 +1,17 @@
+/**
+ * @fileoverview Popup view-model derivation from the worker snapshot.
+ * @module popup/model
+ */
+
 import { DEFAULT_GAIN_PERCENT } from "../shared/constants";
 import type { PopupViewModel, WorkerState } from "../shared/types";
 
+/**
+ * Projects worker state into the smaller popup-specific view model.
+ *
+ * @param state - Full worker snapshot received through runtime messaging.
+ * @returns View model used by popup rendering and interaction logic.
+ */
 export function buildPopupViewModel(state: WorkerState): PopupViewModel {
   const currentTabId = typeof state.currentTab?.tabId === "number" ? state.currentTab.tabId : -1;
   const hasCurrentTab = currentTabId > -1;
@@ -22,6 +33,7 @@ export function buildPopupViewModel(state: WorkerState): PopupViewModel {
     advancedAudioSettings: state.advancedAudioSettings,
     autoBoosterMode: state.autoBoosterMode,
     globalAutoGainPercent: state.globalAutoGainPercent,
+    hasGlobalPermission: state.hasGlobalPermission,
     gainPercent:
       currentSession?.gainPercent ??
       (state.autoBoosterMode === "global" ? state.globalAutoGainPercent : DEFAULT_GAIN_PERCENT),

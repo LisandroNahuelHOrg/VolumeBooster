@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Renderiza y sincroniza el popup principal de la extensión,
+ * incluyendo controles de boost, modo global, métricas, tooltips e i18n.
+ */
 import "./popup.css";
 
 import {
@@ -232,6 +236,10 @@ function startStatePolling(): void {
   }, STATE_POLL_MS);
 }
 
+/**
+ * Recupera estado periódico del worker sin interrumpir la interacción actual
+ * del popup.
+ */
 async function refreshStateSilently(): Promise<void> {
   const response = await sendMessageSafe<WorkerState>({ type: "GET_STATE" });
 
@@ -242,6 +250,10 @@ async function refreshStateSilently(): Promise<void> {
   await applyState(response.data);
 }
 
+/**
+ * Aplica el nuevo estado del worker y decide qué partes del view model deben
+ * refrescarse o preservarse.
+ */
 async function applyState(nextState: WorkerState): Promise<void> {
   const previousState = currentState;
   currentState = nextState;
@@ -284,6 +296,10 @@ async function applyState(nextState: WorkerState): Promise<void> {
   render();
 }
 
+/**
+ * Re-renderiza el popup cuando cambió la firma visual base y sincroniza los
+ * fragmentos dinámicos en caliente.
+ */
 function render(): void {
   let shouldRestoreUiState = false;
   let preservedScrollTop = 0;
@@ -342,6 +358,9 @@ function render(): void {
   handleRootTooltipViewportChange();
 }
 
+/**
+ * Genera el markup estático del popup a partir del view model actual.
+ */
 function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (!currentCatalog) {
     return "";
@@ -403,39 +422,6 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
         }
 
         <div class="slider-card">
-          <div class="slider-head">
-            <div>
-              <div class="slider-label">${escapeHtml(translate(currentCatalog, "boostLabel"))}</div>
-            </div>
-            <div class="slider-head__actions">
-              ${
-                currentTab?.supported && currentTab.domain
-                  ? `<button
-                      class="button button--memory ${currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent ? "is-saved" : ""}"
-                      data-role="remember-site"
-                      data-action="toggle-current-site"
-                      title="${escapeHtml(rememberSiteCopy(currentTab))}"
-                      aria-label="${escapeHtml(rememberSiteCopy(currentTab))}"
-                      aria-pressed="${
-                        currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent
-                      }"
-                      type="button"
-                    >
-                      <span class="button__content">
-                        <span class="button__status-dot" aria-hidden="true"></span>
-                        <span class="button__emoji" data-role="remember-site-emoji" aria-hidden="true">
-                          ${escapeHtml(rememberSiteEmoji(currentTab))}
-                        </span>
-                        <span class="button__label" data-role="remember-site-label">
-                          ${escapeHtml(rememberSiteCopy(currentTab))}
-                        </span>
-                      </span>
-                    </button>`
-                  : ""
-              }
-            </div>
-          </div>
-
           <div class="booster-lane-grid">
             <section class="booster-lane-status" data-role="lane-status" data-tone="${laneStatus.tone}">
               <div class="booster-lane-status__meta">
@@ -459,7 +445,7 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
               <button
                 class="ghost-button ghost-button--lane ghost-button--lane-global ${globalAutoEnabled ? "is-active" : ""}"
                 data-role="toggle-global-auto"
-                data-action="${globalAutoEnabled ? "disable-global-auto" : "enable-global-auto"}"
+                data-action="${globalBoosterButtonAction(viewModel)}"
                 ${currentTab ? "" : "disabled"}
                 type="button"
               >
@@ -1076,6 +1062,9 @@ function handleRootClick(event: Event): void {
       }
       return;
     }
+    case "request-global-auto-permission":
+      void requestGlobalAutoPermission();
+      return;
     case "disable-global-auto":
       void disableGlobalAutoBooster();
       return;
@@ -1338,6 +1327,12 @@ async function enableGlobalAutoBooster(tabId: number): Promise<void> {
   await handleWorkerResponse(response);
 }
 
+async function requestGlobalAutoPermission(): Promise<void> {
+  clearTransientError();
+  const response = await sendMessageSafe<WorkerState>({ type: "REQUEST_GLOBAL_PERMISSION" });
+  await handleWorkerResponse(response);
+}
+
 async function disableGlobalAutoBooster(): Promise<void> {
   clearTransientError();
   const response = await sendMessageSafe<WorkerState>({ type: "DISABLE_GLOBAL_AUTO_BOOSTER" });
@@ -1497,27 +1492,6 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
     statusPill.textContent = statusCopy(currentStatus);
   }
 
-  const rememberButton = rootElement.querySelector<HTMLButtonElement>("[data-role='remember-site']");
-
-  if (rememberButton && currentTab?.domain) {
-    const isRemembered = currentTab.hasStoredPreference && currentTab.preferredGainPercent === draftGainPercent;
-    const rememberLabel = rememberSiteCopy(currentTab);
-    rememberButton.classList.toggle(
-      "is-saved",
-      isRemembered
-    );
-    rememberButton.setAttribute("aria-pressed", String(isRemembered));
-    rememberButton.title = rememberLabel;
-    rememberButton.setAttribute("aria-label", rememberLabel);
-    const rememberButtonEmoji = rememberButton.querySelector<HTMLElement>("[data-role='remember-site-emoji']");
-    if (rememberButtonEmoji) {
-      rememberButtonEmoji.textContent = rememberSiteEmoji(currentTab);
-    }
-    const rememberButtonLabel =
-      rememberButton.querySelector<HTMLElement>("[data-role='remember-site-label']") || rememberButton;
-    rememberButtonLabel.textContent = rememberLabel;
-  }
-
   const toggleButton = rootElement.querySelector<HTMLButtonElement>("[data-role='toggle-current']");
 
   if (toggleButton) {
@@ -1568,7 +1542,7 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
 
   if (globalAutoButton) {
     const globalAutoEnabled = isGlobalAutoEnabled(viewModel);
-    globalAutoButton.dataset.action = globalAutoEnabled ? "disable-global-auto" : "enable-global-auto";
+    globalAutoButton.dataset.action = globalBoosterButtonAction(viewModel);
     globalAutoButton.disabled = !Boolean(currentTab);
     globalAutoButton.classList.toggle("is-active", globalAutoEnabled);
     globalAutoButton.textContent = globalBoosterButtonCopy(viewModel);
@@ -2116,7 +2090,7 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
   if (currentTab.autoAttachState === "awaiting_user_gesture") {
     return {
       tone: "watching",
-      badge: translate(currentCatalog, "laneBadgeInteraction"),
+      badge: translate(currentCatalog, "laneBadgeWatching"),
       title: translate(
         currentCatalog,
         currentTab.autoBoosterScope === "global"
@@ -2134,17 +2108,17 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
 
   if (currentTab.autoAttachState === "failed") {
     return {
-      tone: "failed",
-      badge: translate(currentCatalog, "laneBadgeFailed"),
-      title: translate(currentCatalog, "laneFailedTitle"),
-      detail: translate(currentCatalog, "laneFailedDetail")
+      tone: "unsupported",
+      badge: translate(currentCatalog, "laneBadgeUnavailable"),
+      title: translate(currentCatalog, "laneUnsupportedTitle"),
+      detail: translate(currentCatalog, "laneUnsupportedDetail")
     };
   }
 
   if (currentTab.autoAttachState === "unsupported") {
     return {
       tone: "unsupported",
-      badge: translate(currentCatalog, "laneBadgeFailed"),
+      badge: translate(currentCatalog, "laneBadgeUnavailable"),
       title: translate(currentCatalog, "laneUnsupportedTitle"),
       detail: translate(currentCatalog, "laneUnsupportedDetail")
     };
@@ -2156,6 +2130,15 @@ function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneS
       badge: translate(currentCatalog, "laneBadgeUnavailable"),
       title: translate(currentCatalog, "laneUnsupportedTitle"),
       detail: translate(currentCatalog, "laneUnsupportedDetail")
+    };
+  }
+
+  if (!viewModel.hasGlobalPermission && viewModel.autoBoosterMode !== "global") {
+    return {
+      tone: "watching",
+      badge: translate(currentCatalog, "laneBadgeAutomaticGlobal"),
+      title: translate(currentCatalog, "laneGlobalPermissionTitle"),
+      detail: translate(currentCatalog, "laneGlobalPermissionDetail")
     };
   }
 
@@ -2196,12 +2179,28 @@ function siteBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>
 
 function globalBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (!currentCatalog) {
-    return isGlobalAutoEnabled(viewModel) ? t("disableBoosterInAllSites") : t("enableBoosterInAllSites");
+    if (isGlobalAutoEnabled(viewModel)) {
+      return t("disableBoosterInAllSites");
+    }
+
+    return viewModel.hasGlobalPermission ? t("enableBoosterInAllSites") : t("grantGlobalAutoPermission");
   }
 
-  return isGlobalAutoEnabled(viewModel)
-    ? translate(currentCatalog, "disableBoosterInAllSites")
-    : translate(currentCatalog, "enableBoosterInAllSites");
+  if (isGlobalAutoEnabled(viewModel)) {
+    return translate(currentCatalog, "disableBoosterInAllSites");
+  }
+
+  return viewModel.hasGlobalPermission
+    ? translate(currentCatalog, "enableBoosterInAllSites")
+    : translate(currentCatalog, "grantGlobalAutoPermission");
+}
+
+function globalBoosterButtonAction(viewModel: ReturnType<typeof buildPopupViewModel>): string {
+  if (isGlobalAutoEnabled(viewModel)) {
+    return "disable-global-auto";
+  }
+
+  return viewModel.hasGlobalPermission ? "enable-global-auto" : "request-global-auto-permission";
 }
 
 function sessionSummaryCopy(count: number): string {

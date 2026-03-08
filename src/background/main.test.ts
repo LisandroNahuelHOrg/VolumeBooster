@@ -80,11 +80,11 @@ describe("background main entrypoint", () => {
 
     expect(runtimeMessageListener({ type: "SESSION_LEVEL_UPDATE" }, {}, sendResponse)).toBe(false);
     await Promise.resolve();
-    expect(handleBackgroundEvent).toHaveBeenCalledWith({ type: "SESSION_LEVEL_UPDATE" });
+    expect(handleBackgroundEvent).toHaveBeenCalledWith({ type: "SESSION_LEVEL_UPDATE" }, {});
 
     expect(runtimeMessageListener({ type: "AUTO_SESSION_STATUS_UPDATE" }, {}, sendResponse)).toBe(false);
     await Promise.resolve();
-    expect(handleBackgroundEvent).toHaveBeenCalledWith({ type: "AUTO_SESSION_STATUS_UPDATE" });
+    expect(handleBackgroundEvent).toHaveBeenCalledWith({ type: "AUTO_SESSION_STATUS_UPDATE" }, {});
 
     expect(runtimeMessageListener({ type: "UNKNOWN" }, {}, sendResponse)).toBe(false);
 

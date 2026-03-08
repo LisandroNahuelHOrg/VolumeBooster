@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Watcher combinado para recompilar assets Faust y mantener Vite
+ * en modo watch durante el desarrollo local.
+ */
 import { watch } from "node:fs";
 import { resolve } from "node:path";
 import { spawn } from "node:child_process";
@@ -9,6 +13,11 @@ const faustDir = resolve(repoRoot, "faust");
 await runFaustBuild();
 
 const viteWatch = spawn("npm", ["run", "watch:vite"], {
+  cwd: repoRoot,
+  stdio: "inherit",
+  shell: true
+});
+const registeredContentScriptsWatch = spawn("npm", ["run", "watch:registered-content-scripts"], {
   cwd: repoRoot,
   stdio: "inherit",
   shell: true
@@ -30,6 +39,12 @@ watch(faustDir, { recursive: true }, () => {
 });
 
 viteWatch.on("exit", (code) => {
+  registeredContentScriptsWatch.kill();
+  process.exit(code ?? 0);
+});
+
+registeredContentScriptsWatch.on("exit", (code) => {
+  viteWatch.kill();
   process.exit(code ?? 0);
 });
 

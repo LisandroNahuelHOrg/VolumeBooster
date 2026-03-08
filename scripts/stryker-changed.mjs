@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Ejecución acotada de Stryker sobre archivos productivos
+ * modificados respecto de la rama base y el estado local.
+ */
 import { spawn } from "node:child_process";
 
 const changedFiles = await collectChangedFiles();

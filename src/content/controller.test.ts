@@ -1,3 +1,31 @@
+const controllerFaustMetaHoisted = vi.hoisted(() => ({
+  default: {
+    name: "prism-premium-test",
+    compile_options: "-single",
+    ui: [
+      { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+      { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
+      { shortname: "controls_release_ms", address: "/controls/release_ms" },
+      { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
+      { shortname: "controls_protector_enabled", address: "/controls/protector_enabled" },
+      { shortname: "controls_output_limiter_enabled", address: "/controls/output_limiter_enabled" },
+      { shortname: "controls_low_band_trim_db", address: "/controls/low_band_trim_db" },
+      { shortname: "controls_low_band_makeup_db", address: "/controls/low_band_makeup_db" },
+      { shortname: "controls_low_band_threshold_offset_db", address: "/controls/low_band_threshold_offset_db" },
+      { shortname: "controls_low_band_ratio_bias", address: "/controls/low_band_ratio_bias" },
+      { shortname: "controls_mid_high_threshold_offset_db", address: "/controls/mid_high_threshold_offset_db" },
+      { shortname: "controls_output_ceiling_db", address: "/controls/output_ceiling_db" },
+      { shortname: "controls_output_soft_clip_mix", address: "/controls/output_soft_clip_mix" },
+      { shortname: "controls_clarity_presence_tilt_db", address: "/controls/clarity_presence_tilt_db" },
+      { shortname: "controls_tone_low_band_gain_db", address: "/controls/tone_low_band_gain_db" },
+      { shortname: "controls_tone_mid_band_gain_db", address: "/controls/tone_mid_band_gain_db" }
+    ]
+  }
+}));
+
+vi.mock("../generated/faust/mono/dsp-meta", () => controllerFaustMetaHoisted);
+vi.mock("../generated/faust/stereo/dsp-meta", () => controllerFaustMetaHoisted);
+
 import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../shared/audio-settings";
 import { getDuckDuckGoFaviconUrl } from "../shared/domain";
 import type {
@@ -67,7 +95,7 @@ function createFakeSession(overrides: Partial<FakeSession> = {}): FakeSession {
 describe("AutoBoosterController", () => {
   const runtimeSendMessage = vi.fn();
   const i18nGetMessage = vi.fn();
-  const fakeMediaElement = {} as HTMLMediaElement;
+  let fakeMediaElement: HTMLMediaElement;
   const intervalCallbacks = new Map<number, () => void>();
   let nextIntervalId = 1;
   let documentQuerySelectorAll = vi.fn<() => HTMLMediaElement[]>();
@@ -94,6 +122,19 @@ describe("AutoBoosterController", () => {
       };
       return dictionary[key] ?? key;
     });
+    fakeMediaElement = {
+      currentSrc: "https://cdn.example.com/audio.mp4",
+      srcObject: null,
+      paused: false,
+      ended: false,
+      readyState: 2,
+      currentTime: 1,
+      played: {
+        length: 1
+      } as TimeRanges,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    } as unknown as HTMLMediaElement;
     documentQuerySelectorAll = vi.fn(() => [fakeMediaElement]);
     documentContains = vi.fn(() => true);
     documentQuerySelector = vi.fn(() => null);
@@ -179,6 +220,10 @@ describe("AutoBoosterController", () => {
       autoplayPolicy: undefined,
       mediaElementCount: 1,
       attachedElementCount: 0,
+      frameCount: 1,
+      readyFrameCount: 1,
+      attachedFrameCount: 0,
+      toastVisible: false,
       lastTelemetryAt: null,
       lastLevel: 0,
       lastError: undefined,
@@ -273,6 +318,41 @@ describe("AutoBoosterController", () => {
     await controller.destroy();
   });
 
+  it("reapplies gain immediately and queues a refresh when reconfigure happens mid-refresh", async () => {
+    const fakeSession = createFakeSession();
+    vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload());
+
+    fakeSession.setGainPercent.mockClear();
+    fakeSession.setAdvancedAudioSettings.mockClear();
+    fakeSession.setProcessingEnabled.mockClear();
+    (
+      controller as unknown as {
+        refreshInFlight: boolean;
+        refreshQueued: boolean;
+      }
+    ).refreshInFlight = true;
+
+    await controller.configure(
+      makePayload({
+        gainPercent: 1000
+      })
+    );
+
+    expect(fakeSession.setGainPercent).toHaveBeenCalledWith(1000);
+    expect(fakeSession.setAdvancedAudioSettings).toHaveBeenCalled();
+    expect(fakeSession.setProcessingEnabled).toHaveBeenCalledWith(true);
+    expect(
+      (
+        controller as unknown as {
+          refreshQueued: boolean;
+        }
+      ).refreshQueued
+    ).toBe(true);
+  });
+
   it("publishes attached status and level telemetry when media is hooked successfully", async () => {
     const fakeSession = createFakeSession({
       sampleTelemetry: vi.fn().mockReturnValue(
@@ -336,7 +416,7 @@ describe("AutoBoosterController", () => {
     );
   });
 
-  it("reports source conflicts, shows a toast and marks the tab as failed", async () => {
+  it("re-queues the element for retry on source_conflict instead of marking the tab as failed", async () => {
     vi.spyOn(MediaElementSession, "create").mockRejectedValue(
       new MediaElementSessionError("source_conflict", "already connected", {
         audioContextState: "running",
@@ -347,23 +427,20 @@ describe("AutoBoosterController", () => {
 
     await controller.configure(makePayload({ scope: "global" }));
 
+    // El elemento conflictivo se re-encola para observación continua, NO se marca como failed.
     expect(controller.getDebugState()).toMatchObject({
-      attachState: "failed",
-      attachReason: "source_conflict",
-      lastError: { key: "errorAutoSourceConflict" }
+      attachState: "observing",
+      attachReason: "no_media"
     });
-    expect(runtimeSendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "AUTO_SESSION_ATTACH_FAILED"
-      })
+    // No se disparan mensajes de fallo ni toast
+    expect(runtimeSendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "AUTO_SESSION_ATTACH_FAILED" })
     );
-    expect(runtimeSendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: "AUTO_SESSION_TOAST_REQUESTED"
-      })
+    expect(runtimeSendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "AUTO_SESSION_TOAST_REQUESTED" })
     );
-    expect(documentElementAppendChild).toHaveBeenCalledTimes(1);
-    expect(timeoutCallbacks).toHaveLength(1);
+    expect(documentElementAppendChild).not.toHaveBeenCalled();
+    expect(fakeMediaElement.addEventListener).toHaveBeenCalled();
   });
 
   it("reports generic attach failures and keeps the lane usable for fallback", async () => {
@@ -423,7 +500,7 @@ describe("AutoBoosterController", () => {
     });
   });
 
-  it("returns to observing after a gesture retry and prunes detached sessions during rescans", async () => {
+  it("retries after a gesture block and prunes detached sessions during rescans", async () => {
     const fakeSession = createFakeSession();
     const createSpy = vi
       .spyOn(MediaElementSession, "create")
@@ -440,41 +517,15 @@ describe("AutoBoosterController", () => {
     expect(controller.getDebugState().attachState).toBe("awaiting_user_gesture");
 
     await (controller as unknown as { handleGestureRetry: () => Promise<void> }).handleGestureRetry();
+    await Promise.resolve();
+    await Promise.resolve();
 
-    expect(createSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
+    expect(createSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
     expect(controller.getDebugState()).toMatchObject({
-      attachState: "observing",
-      attachReason: "no_media"
-    });
-
-    (
-      controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
-        state: { attachState: "attached"; attachReason?: undefined };
-      }
-    ).trackedSessions.set(fakeMediaElement, {
-      session: fakeSession,
-      lastTelemetry: makeTelemetry()
-    });
-    (
-      controller as unknown as {
-        state: {
-          attachState: "attached";
-          attachReason?: undefined;
-        };
-      }
-    ).state = {
-      ...(
-        controller as unknown as {
-          state: {
-            attachState: "observing" | "attached";
-            attachReason?: "no_media";
-          };
-        }
-      ).state,
       attachState: "attached",
-      attachReason: undefined
-    };
+      attachReason: undefined,
+      attachedElementCount: 1
+    });
 
     documentContains.mockReturnValue(false);
     documentQuerySelectorAll.mockReturnValue([]);
@@ -956,6 +1007,8 @@ describe("AutoBoosterController", () => {
       type: "AUTO_SESSION_LEVEL_UPDATE",
       payload: {
         tabId: 7,
+        isTopFrame: true,
+        frameUrl: "https://youtube.com/watch?v=1",
         level: 0.81,
         warning: "danger",
         protectorActionDb: 8.9,
@@ -1483,7 +1536,7 @@ describe("AutoBoosterController", () => {
     );
   });
 
-  it("keeps silent early returns for status/failure reporting and only toasts once per url", async () => {
+  it("keeps silent early returns for status/failure reporting when tab id is missing", async () => {
     const controller = new AutoBoosterController();
 
     await controller.configure(makePayload({ enabled: false }));
@@ -1492,12 +1545,9 @@ describe("AutoBoosterController", () => {
     const controllerWithState = controller as unknown as {
       state: {
         tabId: number | null;
-        scope: "global" | "site" | null;
-        attachReason?: "attach_failed";
       };
       reportStatus: () => void;
       reportAttachFailure: () => void;
-      requestFailureToast: () => void;
     };
 
     controllerWithState.state.tabId = null;
@@ -1505,100 +1555,14 @@ describe("AutoBoosterController", () => {
     controllerWithState.reportAttachFailure();
 
     expect(runtimeSendMessage).not.toHaveBeenCalled();
-
-    const createdToast = {
-      className: "",
-      textContent: "",
-      style: {},
-      remove: vi.fn()
-    };
-    const createElementMock = vi.spyOn(document, "createElement").mockReturnValue(createdToast as never);
-
-    controllerWithState.state.tabId = 7;
-    controllerWithState.state.scope = "site";
-    controllerWithState.requestFailureToast();
-    expect(runtimeSendMessage).not.toHaveBeenCalled();
-
-    controllerWithState.state.scope = "global";
-    controllerWithState.state.attachReason = "attach_failed";
-    controllerWithState.requestFailureToast();
-    controllerWithState.requestFailureToast();
-
-    expect(createElementMock).toHaveBeenCalledTimes(1);
-    expect(createElementMock).toHaveBeenCalledWith("div");
-    expect(createdToast.className).toBe("prism-auto-booster-toast");
-    expect(createdToast.textContent).toBe(
-      "Automatic booster could not hook this page. Use the manual booster from the popup."
-    );
-    expect(createdToast.style).toMatchObject({
-      position: "fixed",
-      right: "20px",
-      bottom: "20px",
-      zIndex: "2147483647",
-      maxWidth: "360px",
-      padding: "14px 16px",
-      borderRadius: "16px",
-      background: "linear-gradient(135deg, rgba(20,26,34,0.96), rgba(30,12,12,0.94))",
-      border: "1px solid rgba(245,113,113,0.4)",
-      boxShadow: "0 18px 45px rgba(0,0,0,0.35)",
-      color: "#f6f0eb",
-      fontFamily: "\"Segoe UI\", sans-serif",
-      fontSize: "13px",
-      lineHeight: "1.45"
-    });
-    expect(runtimeSendMessage).toHaveBeenCalledTimes(1);
-    expect(runtimeSendMessage).toHaveBeenCalledWith({
-      type: "AUTO_SESSION_TOAST_REQUESTED",
-      payload: { tabId: 7, reason: "attach_failed" }
-    });
-    expect(timeoutCallbacks).toHaveLength(1);
-
-    timeoutCallbacks[0]?.();
-    expect(createdToast.remove).toHaveBeenCalledTimes(1);
   });
 
-  it("uses the fallback toast copy and attach_failed reason when i18n returns an empty message", () => {
+  it("exposes toast visibility through the debug snapshot when requested", () => {
     const controller = new AutoBoosterController();
-    i18nGetMessage.mockReturnValue("");
-    const createdToast = {
-      className: "",
-      textContent: "",
-      style: {},
-      remove: vi.fn()
-    };
-    vi.spyOn(document, "createElement").mockReturnValue(createdToast as never);
-    (
-      controller as unknown as {
-        state: {
-          tabId: number | null;
-          scope: "global" | "site" | null;
-          attachReason?: "attach_failed";
-        };
-        requestFailureToast: () => void;
-      }
-    ).state = {
-      ...(
-        controller as unknown as {
-          state: {
-            tabId: number | null;
-            scope: "global" | "site" | null;
-            attachReason?: "attach_failed";
-          };
-        }
-      ).state,
-      tabId: 7,
-      scope: "global",
-      attachReason: undefined
-    };
-
-    (controller as unknown as { requestFailureToast: () => void }).requestFailureToast();
-
-    expect(createdToast.textContent).toBe(
-      "Automatic booster could not hook this page. Use the manual booster from the popup."
-    );
-    expect(runtimeSendMessage).toHaveBeenCalledWith({
-      type: "AUTO_SESSION_TOAST_REQUESTED",
-      payload: { tabId: 7, reason: "attach_failed" }
+    expect(controller.getDebugState(true)).toMatchObject({
+      toastVisible: true,
+      frameCount: 1,
+      readyFrameCount: 1
     });
   });
 });

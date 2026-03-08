@@ -3,28 +3,29 @@ import { AutoBoosterClient } from "./auto-booster-client";
 
 describe("AutoBoosterClient", () => {
   const executeScript = vi.fn();
+  const registerContentScripts = vi.fn();
   const sendMessage = vi.fn();
   const requestPermission = vi.fn();
   const containsPermission = vi.fn();
   const queryTabs = vi.fn();
-  const getUrl = vi.fn((path: string) => `chrome-extension://test/${path}`);
+  const unregisterContentScripts = vi.fn();
 
   beforeEach(() => {
     executeScript.mockReset();
+    registerContentScripts.mockReset();
     sendMessage.mockReset();
     requestPermission.mockReset();
     containsPermission.mockReset();
     queryTabs.mockReset();
-    getUrl.mockClear();
+    unregisterContentScripts.mockReset();
 
     vi.stubGlobal(
       "chrome",
       {
-        runtime: {
-          getURL: getUrl
-        },
         scripting: {
-          executeScript
+          executeScript,
+          registerContentScripts,
+          unregisterContentScripts
         },
         tabs: {
           sendMessage,
@@ -56,13 +57,17 @@ describe("AutoBoosterClient", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     });
 
-    expect(executeScript).toHaveBeenCalledTimes(1);
-    expect(executeScript).toHaveBeenCalledWith({
-      target: { tabId: 14 },
-      func: expect.any(Function),
-      args: ["chrome-extension://test/assets/auto-booster.js"]
+    expect(executeScript).toHaveBeenCalledTimes(2);
+    expect(executeScript).toHaveBeenNthCalledWith(1, {
+      target: { tabId: 14, allFrames: true },
+      files: ["content-scripts/auto-booster-isolated.js"]
     });
-    expect(sendMessage).toHaveBeenCalledWith(14, {
+    expect(executeScript).toHaveBeenNthCalledWith(2, {
+      target: { tabId: 14, allFrames: true },
+      files: ["content-scripts/auto-booster-main.js"],
+      world: "MAIN"
+    });
+    expect(sendMessage).toHaveBeenNthCalledWith(1, 14, {
       type: "AUTO_BOOSTER_CONFIGURE",
       payload: {
         tabId: 14,
@@ -91,7 +96,7 @@ describe("AutoBoosterClient", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     });
 
-    expect(executeScript).toHaveBeenCalledTimes(2);
+    expect(executeScript).toHaveBeenCalledTimes(4);
     expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
   });
@@ -117,7 +122,7 @@ describe("AutoBoosterClient", () => {
     ).rejects.toEqual({ key: "errorAutoAttachFailed" });
 
     expect(sendMessage).toHaveBeenCalledTimes(2);
-    expect(executeScript).toHaveBeenCalledTimes(1);
+    expect(executeScript).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
   });
 
@@ -180,7 +185,6 @@ describe("AutoBoosterClient", () => {
     requestPermission.mockResolvedValueOnce(true);
     containsPermission.mockResolvedValueOnce(true);
     queryTabs.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
-    executeScript.mockResolvedValueOnce(undefined);
     sendMessage.mockResolvedValueOnce({ attachState: "attached" });
 
     await expect(client.requestGlobalPermission()).resolves.toBe(true);
@@ -202,35 +206,41 @@ describe("AutoBoosterClient", () => {
     });
   });
 
-  it("loads and caches the injected content module inside the page runtime", async () => {
+  it("registers and unregisters the global content scripts for isolated and main worlds", async () => {
     const client = new AutoBoosterClient();
-    sendMessage.mockResolvedValueOnce(undefined);
 
-    await client.configure(14, {
-      tabId: 14,
-      scope: "global",
-      enabled: true,
-      suspended: false,
-      gainPercent: 230,
-      advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
+    await client.registerGlobalContentScripts();
+    await client.unregisterGlobalContentScripts();
+
+    expect(unregisterContentScripts).toHaveBeenNthCalledWith(1, {
+      ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
     });
-
-    const [{ func, args }] = executeScript.mock.calls[0] as Array<{
-      func: (moduleUrl: string) => Promise<void>;
-      args: string[];
-    }>;
-    const runtimeWindow = {} as Window & {
-      __PRISM_AUTO_BOOSTER_IMPORT_PROMISE__?: Promise<unknown>;
-    };
-    vi.stubGlobal("window", runtimeWindow);
-    const moduleUrl = "data:text/javascript,export default 1";
-
-    await func(moduleUrl);
-    const cachedPromise = runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__;
-    await func(moduleUrl);
-
-    expect(cachedPromise).toBeInstanceOf(Promise);
-    expect(args[0]).toContain("assets/auto-booster.js");
-    expect(runtimeWindow.__PRISM_AUTO_BOOSTER_IMPORT_PROMISE__).toBe(cachedPromise);
+    expect(registerContentScripts).toHaveBeenCalledWith([
+      {
+        id: "prism-auto-booster-isolated",
+        js: ["content-scripts/auto-booster-isolated.js"],
+        matches: ["http://*/*", "https://*/*"],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "ISOLATED"
+      },
+      {
+        id: "prism-auto-booster-main",
+        js: ["content-scripts/auto-booster-main.js"],
+        matches: ["http://*/*", "https://*/*"],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "MAIN"
+      }
+    ]);
+    expect(unregisterContentScripts).toHaveBeenNthCalledWith(2, {
+      ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
+    });
+    expect(executeScript).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
   });
 });

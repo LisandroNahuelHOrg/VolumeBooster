@@ -1,5 +1,15 @@
-import stereoMeta from "../generated/faust/stereo/dsp-meta.json";
+const stereoWorkletMetaHoisted = vi.hoisted(() => ({
+  default: {
+    name: "prism-premium-stereo-test"
+  }
+}));
+
+vi.mock("../generated/faust/stereo/dsp-meta", () => stereoWorkletMetaHoisted);
+
+import stereoMeta from "../generated/faust/stereo/dsp-meta";
 import { PROCESSOR_NAMES } from "./faust-runtime";
+
+const typedStereoMeta = stereoMeta as { name: string };
 
 const stereoHoisted = vi.hoisted(() => ({
   getFaustAudioWorkletProcessor: vi.fn(),
@@ -58,7 +68,7 @@ describe("faust-stereo-worklet", () => {
     });
     expect(config).toEqual({
       processorName: PROCESSOR_NAMES.stereo,
-      dspName: stereoMeta.name,
+      dspName: typedStereoMeta.name,
       dspMeta: stereoMeta,
       poly: false
     });

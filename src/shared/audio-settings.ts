@@ -1,3 +1,9 @@
+/**
+ * @fileoverview DSP preset tables and metric derivation helpers shared by the
+ * manual and automatic audio lanes.
+ * @module shared/audio-settings
+ */
+
 import {
   DEFAULT_GAIN_PERCENT,
   LEGACY_MAX_GAIN_PERCENT,
@@ -12,6 +18,7 @@ import type {
   QualityPreset
 } from "./types";
 
+/** Static definition of an advanced sound-mode preset. */
 export interface DspProfileDefinition {
   inputDriveMaxDb: number;
   ceilingDb: number;
@@ -23,6 +30,7 @@ export interface DspProfileDefinition {
   toneMidBandGainDb: number;
 }
 
+/** Runtime DSP parameters derived from user settings and current gain. */
 export interface DspRuntimeParameters {
   boostIntensity: number;
   extendedBoostIntensity: number;
@@ -45,6 +53,7 @@ export interface DspRuntimeParameters {
   toneMidBandGainDb: number;
 }
 
+/** Static definition of an audio-quality-protector mode. */
 export interface QualityProtectorDefinition {
   protectorEnabled: boolean;
   outputLimiterEnabled: boolean;
@@ -63,6 +72,7 @@ const MAX_TOTAL_INPUT_DRIVE_DB = 30;
 const MAX_OUTPUT_SOFT_CLIP_MIX = 40;
 const CLIP_THRESHOLD = 1.0005;
 
+/** Stable user-visible ordering for sound-mode presets. */
 export const QUALITY_PRESET_ORDER: QualityPreset[] = [
   "balanced",
   "maximum_clarity",
@@ -71,6 +81,7 @@ export const QUALITY_PRESET_ORDER: QualityPreset[] = [
   "custom"
 ];
 
+/** Stable user-visible ordering for protector modes. */
 export const QUALITY_PROTECTOR_MODE_ORDER: AudioQualityProtectorMode[] = [
   "off",
   "balanced",
@@ -79,6 +90,7 @@ export const QUALITY_PROTECTOR_MODE_ORDER: AudioQualityProtectorMode[] = [
   "maximum_protection"
 ];
 
+/** Base DSP profile parameters used by named sound modes. */
 export const DSP_PROFILE_TABLE: Record<Exclude<QualityPreset, "custom">, DspProfileDefinition> = {
   balanced: {
     inputDriveMaxDb: 14,
@@ -122,6 +134,7 @@ export const DSP_PROFILE_TABLE: Record<Exclude<QualityPreset, "custom">, DspProf
   }
 };
 
+/** Base quality-protector parameters used by named protector modes. */
 export const QUALITY_PROTECTOR_TABLE: Record<AudioQualityProtectorMode, QualityProtectorDefinition> = {
   off: {
     protectorEnabled: false,
@@ -190,6 +203,7 @@ export const QUALITY_PROTECTOR_TABLE: Record<AudioQualityProtectorMode, QualityP
   }
 };
 
+/** Default advanced audio settings applied to new installs and resets. */
 export const DEFAULT_ADVANCED_AUDIO_SETTINGS: AdvancedAudioSettings = {
   qualityPreset: "balanced",
   qualityProtectorMode: "balanced",
@@ -200,6 +214,13 @@ export const DEFAULT_ADVANCED_AUDIO_SETTINGS: AdvancedAudioSettings = {
   softClipMix: DSP_PROFILE_TABLE.balanced.softClipMix
 };
 
+/**
+ * Builds the advanced settings snapshot that corresponds to a named sound mode.
+ *
+ * @param preset - Preset to apply.
+ * @param qualityProtectorMode - Protector mode to keep while switching presets.
+ * @returns Advanced settings initialized from the preset table.
+ */
 export function applyQualityPreset(
   preset: Exclude<QualityPreset, "custom">,
   qualityProtectorMode = DEFAULT_ADVANCED_AUDIO_SETTINGS.qualityProtectorMode
@@ -217,6 +238,12 @@ export function applyQualityPreset(
   };
 }
 
+/**
+ * Sanitizes partial persisted advanced settings into a complete valid object.
+ *
+ * @param settings - Partial or untrusted settings snapshot.
+ * @returns Fully sanitized advanced settings.
+ */
 export function sanitizeAdvancedAudioSettings(
   settings: Partial<AdvancedAudioSettings> | undefined
 ): AdvancedAudioSettings {
@@ -238,6 +265,13 @@ export function sanitizeAdvancedAudioSettings(
   };
 }
 
+/**
+ * Translates user-facing settings into runtime DSP parameters.
+ *
+ * @param gainPercent - Current boost percentage.
+ * @param settings - Advanced settings selected by the user.
+ * @returns Runtime DSP parameters consumed by the audio engine.
+ */
 export function buildDspRuntimeParameters(
   gainPercent: number,
   settings: AdvancedAudioSettings
@@ -298,6 +332,12 @@ export function buildDspRuntimeParameters(
   };
 }
 
+/**
+ * Applies the selected quality-protector mode on top of a runtime DSP state.
+ *
+ * @param runtime - Base runtime DSP parameters.
+ * @returns Runtime parameters with protector-specific overrides applied.
+ */
 export function applyQualityProtector(runtime: DspRuntimeParameters): DspRuntimeParameters {
   const protector = getQualityProtectorDefinition(runtime.qualityProtectorMode);
 
@@ -325,12 +365,27 @@ export function applyQualityProtector(runtime: DspRuntimeParameters): DspRuntime
   };
 }
 
+/**
+ * Resolves a sanitized quality-protector definition for a mode.
+ *
+ * @param mode - Requested protector mode.
+ * @returns Matching static protector definition.
+ */
 export function getQualityProtectorDefinition(
   mode: AudioQualityProtectorMode
 ): QualityProtectorDefinition {
   return QUALITY_PROTECTOR_TABLE[sanitizeQualityProtectorMode(mode)];
 }
 
+/**
+ * Derives runtime metrics from observed input and output peaks.
+ *
+ * @param runtime - Runtime DSP parameters that produced the peaks.
+ * @param inputPeak - Peak before output protection.
+ * @param outputPeak - Peak after output protection.
+ * @param previousMetrics - Previous metrics used to accumulate clip counters.
+ * @returns Updated runtime metrics snapshot.
+ */
 export function deriveMetricsFromPeaks(
   runtime: DspRuntimeParameters,
   inputPeak: number,
@@ -359,6 +414,12 @@ export function deriveMetricsFromPeaks(
   };
 }
 
+/**
+ * Converts runtime metrics into the coarse warning severity used by the UI.
+ *
+ * @param metrics - Runtime DSP metrics.
+ * @returns Warning severity for the current session.
+ */
 export function deriveWarningFromMetrics(metrics: DspRuntimeMetrics): LevelWarning {
   if (metrics.protectionBypassed) {
     if (metrics.clipEvents > 0 || metrics.clipPeak > 1.015 || metrics.outputPeak > CLIP_THRESHOLD) {
@@ -383,6 +444,12 @@ export function deriveWarningFromMetrics(metrics: DspRuntimeMetrics): LevelWarni
   return "none";
 }
 
+/**
+ * Converts runtime metrics into the user-facing protection-load percentage.
+ *
+ * @param metrics - Subset of metrics required for the load calculation.
+ * @returns Rounded protection-load percentage.
+ */
 export function deriveProtectionLoadPercent(
   metrics: Pick<DspRuntimeMetrics, "protectionBypassed" | "protectorActionDb" | "inputPeak" | "outputPeak">
 ): number {
@@ -400,6 +467,12 @@ export function deriveProtectionLoadPercent(
   return Math.round((actionWeight * 0.82 + pressureWeight * 0.18) * 100);
 }
 
+/**
+ * Computes the remaining output headroom before clipping, in decibels.
+ *
+ * @param outputPeak - Latest normalized output peak.
+ * @returns Safety margin in dB, or `null` when the signal is effectively idle.
+ */
 export function deriveClippingSafetyMarginDb(outputPeak: number): number | null {
   if (!Number.isFinite(outputPeak) || outputPeak <= 0.015) {
     return null;
@@ -408,6 +481,12 @@ export function deriveClippingSafetyMarginDb(outputPeak: number): number | null 
   return roundTo(20 * Math.log10(1 / Math.max(outputPeak, 1e-4)), 1);
 }
 
+/**
+ * Creates a zeroed metrics object for a new or reset session.
+ *
+ * @param protectionBypassed - Whether the session starts with protection disabled.
+ * @returns Empty metrics snapshot.
+ */
 export function createDefaultMetrics(protectionBypassed = false): DspRuntimeMetrics {
   return {
     protectorActionDb: 0,
@@ -419,14 +498,33 @@ export function createDefaultMetrics(protectionBypassed = false): DspRuntimeMetr
   };
 }
 
+/**
+ * Indicates whether a protector mode bypasses protection entirely.
+ *
+ * @param mode - Protector mode to inspect.
+ * @returns `true` when the mode disables protection.
+ */
 export function isProtectionBypassedMode(mode: AudioQualityProtectorMode): boolean {
   return !QUALITY_PROTECTOR_TABLE[sanitizeQualityProtectorMode(mode)].protectorEnabled;
 }
 
+/**
+ * Indicates whether the current advanced settings bypass protection.
+ *
+ * @param settings - Advanced settings snapshot.
+ * @returns `true` when the selected protector mode is bypassed.
+ */
 export function isProtectionBypassedSettings(settings: AdvancedAudioSettings): boolean {
   return isProtectionBypassedMode(settings.qualityProtectorMode);
 }
 
+/**
+ * Checks whether an advanced-settings snapshot still matches a named sound mode.
+ *
+ * @param preset - Preset to compare against.
+ * @param settings - Current advanced settings snapshot.
+ * @returns `true` when the settings still match the preset defaults.
+ */
 export function isPresetSettingsMatch(
   preset: Exclude<QualityPreset, "custom">,
   settings: AdvancedAudioSettings
@@ -442,6 +540,12 @@ export function isPresetSettingsMatch(
   );
 }
 
+/**
+ * Promotes custom-looking settings back to a named preset when they match one.
+ *
+ * @param settings - Current advanced settings snapshot.
+ * @returns Settings with `qualityPreset` normalized to the best matching preset.
+ */
 export function maybePromotePreset(settings: AdvancedAudioSettings): AdvancedAudioSettings {
   for (const preset of QUALITY_PRESET_ORDER) {
     if (preset !== "custom" && isPresetSettingsMatch(preset, settings)) {

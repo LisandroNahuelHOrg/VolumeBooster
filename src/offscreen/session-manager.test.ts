@@ -1,3 +1,31 @@
+const sessionManagerFaustMetaHoisted = vi.hoisted(() => ({
+  default: {
+    name: "prism-premium-test",
+    compile_options: "-single",
+    ui: [
+      { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+      { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
+      { shortname: "controls_release_ms", address: "/controls/release_ms" },
+      { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
+      { shortname: "controls_protector_enabled", address: "/controls/protector_enabled" },
+      { shortname: "controls_output_limiter_enabled", address: "/controls/output_limiter_enabled" },
+      { shortname: "controls_low_band_trim_db", address: "/controls/low_band_trim_db" },
+      { shortname: "controls_low_band_makeup_db", address: "/controls/low_band_makeup_db" },
+      { shortname: "controls_low_band_threshold_offset_db", address: "/controls/low_band_threshold_offset_db" },
+      { shortname: "controls_low_band_ratio_bias", address: "/controls/low_band_ratio_bias" },
+      { shortname: "controls_mid_high_threshold_offset_db", address: "/controls/mid_high_threshold_offset_db" },
+      { shortname: "controls_output_ceiling_db", address: "/controls/output_ceiling_db" },
+      { shortname: "controls_output_soft_clip_mix", address: "/controls/output_soft_clip_mix" },
+      { shortname: "controls_clarity_presence_tilt_db", address: "/controls/clarity_presence_tilt_db" },
+      { shortname: "controls_tone_low_band_gain_db", address: "/controls/tone_low_band_gain_db" },
+      { shortname: "controls_tone_mid_band_gain_db", address: "/controls/tone_mid_band_gain_db" }
+    ]
+  }
+}));
+
+vi.mock("../generated/faust/mono/dsp-meta", () => sessionManagerFaustMetaHoisted);
+vi.mock("../generated/faust/stereo/dsp-meta", () => sessionManagerFaustMetaHoisted);
+
 import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../shared/audio-settings";
 import { OffscreenSessionManager, type AudioSessionFactory, type AudioSessionPort } from "./session-manager";
 

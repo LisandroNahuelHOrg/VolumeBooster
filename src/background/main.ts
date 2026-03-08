@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Entry point del service worker MV3 que conecta eventos de
+ * Chrome con el orquestador central de sesiones y modos de booster.
+ */
 import { isContentEvent, isOffscreenEvent, isPopupCommand } from "../shared/messages";
 import { WorkerOrchestrator } from "../worker/orchestrator";
 
@@ -13,14 +17,14 @@ chrome.runtime.onInstalled.addListener(() => {
   void orchestrator.bootstrap().catch(() => undefined);
 });
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (isPopupCommand(message)) {
     void orchestrator.handlePopupCommand(message).then(sendResponse);
     return true;
   }
 
   if (isOffscreenEvent(message) || isContentEvent(message)) {
-    void orchestrator.handleBackgroundEvent(message).catch(() => undefined);
+    void orchestrator.handleBackgroundEvent(message, sender).catch(() => undefined);
   }
 
   return false;

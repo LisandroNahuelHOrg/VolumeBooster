@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Manager del documento offscreen que mantiene las sesiones de
+ * captura robusta por pestaña y sincroniza su estado con el worker.
+ */
 import { DEFAULT_GAIN_PERCENT } from "../shared/constants";
 import {
   createDefaultMetrics,
@@ -19,6 +23,10 @@ interface SessionEntry {
   state: CaptureSessionState;
 }
 
+/**
+ * Puerto mínimo que el manager necesita de una implementación de sesión de
+ * audio.
+ */
 export interface AudioSessionPort {
   start(streamId: string): Promise<void>;
   setGainPercent(gainPercent: number): void;
@@ -26,12 +34,19 @@ export interface AudioSessionPort {
   stop(): Promise<void>;
 }
 
+/**
+ * Factoría inyectable para construir sesiones de audio, usada también en
+ * tests.
+ */
 export type AudioSessionFactory = (
   gainPercent: number,
   advancedAudioSettings: AdvancedAudioSettings,
   callbacks: AudioSessionCallbacks
 ) => AudioSessionPort;
 
+/**
+ * Gestiona el ciclo de vida de las sesiones robustas que viven en offscreen.
+ */
 export class OffscreenSessionManager {
   private readonly sessions = new Map<number, SessionEntry>();
 
@@ -124,6 +139,9 @@ export class OffscreenSessionManager {
     }
   }
 
+  /**
+   * Actualiza el gain de una sesión activa.
+   */
   async setGain(tabId: number, gainPercent: number): Promise<RuntimeResponse<{ sessions: CaptureSessionState[] }>> {
     const entry = this.sessions.get(tabId);
 
@@ -141,6 +159,9 @@ export class OffscreenSessionManager {
     return ok({ sessions: this.getSnapshot() });
   }
 
+  /**
+   * Reaplica los ajustes avanzados globales a todas las sesiones activas.
+   */
   async setAdvancedAudioSettings(
     settings: AdvancedAudioSettings
   ): Promise<RuntimeResponse<{ sessions: CaptureSessionState[] }>> {
@@ -157,6 +178,9 @@ export class OffscreenSessionManager {
     return ok({ sessions: this.getSnapshot() });
   }
 
+  /**
+   * Actualiza los metadatos visibles de una sesión ya iniciada.
+   */
   async updateMetadata(
     payload: OffscreenMetadataPayload
   ): Promise<RuntimeResponse<{ sessions: CaptureSessionState[] }>> {
@@ -194,11 +218,17 @@ export class OffscreenSessionManager {
     return ok({ sessions: this.getSnapshot() });
   }
 
+  /**
+   * Detiene una sesión concreta.
+   */
   async stopSession(tabId: number): Promise<RuntimeResponse<{ sessions: CaptureSessionState[] }>> {
     await this.stopSessionInternal(tabId);
     return ok({ sessions: this.getSnapshot() });
   }
 
+  /**
+   * Detiene todas las sesiones activas.
+   */
   async stopAll(): Promise<RuntimeResponse<{ sessions: CaptureSessionState[] }>> {
     for (const tabId of [...this.sessions.keys()]) {
       await this.stopSessionInternal(tabId);
@@ -207,6 +237,9 @@ export class OffscreenSessionManager {
     return ok({ sessions: this.getSnapshot() });
   }
 
+  /**
+   * Devuelve una snapshot inmutable del estado actual de todas las sesiones.
+   */
   getSnapshot(): CaptureSessionState[] {
     return [...this.sessions.values()].map((entry) => ({ ...entry.state }));
   }
@@ -247,6 +280,10 @@ export class OffscreenSessionManager {
   }
 }
 
+/**
+ * Envía mensajes al worker sin fallar si el receptor está dormido
+ * temporalmente.
+ */
 function postRuntimeMessage(message: unknown): void {
   try {
     const maybePromise = chrome.runtime.sendMessage(message) as Promise<unknown> | undefined;

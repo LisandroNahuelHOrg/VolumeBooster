@@ -345,6 +345,115 @@ describe("WorkerOrchestrator worker flows", () => {
     expect(response).toEqual({ ok: true, data: liveState });
   });
 
+  it("merges live top-frame debug with cached multi-frame aggregation when auto state exists", async () => {
+    const storage = new SettingsRepository(createMemoryStorage().area);
+    const liveState = {
+      tabId: 17,
+      lane: "auto_media_element" as const,
+      enabled: true,
+      suspended: false,
+      scope: "global" as const,
+      attachState: "observing" as const,
+      attachReason: "no_media" as const,
+      audioContextState: "none" as const,
+      autoplayPolicy: undefined,
+      mediaElementCount: 0,
+      attachedElementCount: 0,
+      frameCount: 1,
+      readyFrameCount: 1,
+      attachedFrameCount: 0,
+      toastVisible: false,
+      lastTelemetryAt: null,
+      lastLevel: 0,
+      lastError: undefined,
+      lastTechnicalError: undefined,
+      currentUrl: "https://youtube.com/watch?v=1"
+    };
+    const orchestrator = new WorkerOrchestrator(
+      { getSnapshot: vi.fn().mockResolvedValue([]) } as never,
+      storage,
+      () => 4,
+      {
+        getDebugState: vi.fn().mockResolvedValue(liveState)
+      } as never
+    );
+    const internals = orchestrator as unknown as {
+      autoSessions: Map<number, CaptureSessionState>;
+      autoTabStates: Map<number, Record<string, unknown>>;
+      autoDebugStates: Map<
+        number,
+        {
+          frameCount: number;
+          readyFrameCount: number;
+          attachedFrameCount: number;
+          toastVisible: boolean;
+        }
+      >;
+    };
+
+    internals.autoSessions.set(17, {
+      tabId: 17,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1",
+      domain: "youtube.com",
+      favIconUrl: "https://youtube.com/icon.ico",
+      gainPercent: 240,
+      engineLane: "auto_media_element",
+      autoBoosterScope: "global",
+      autoActiveStrategy: "web_audio_bridge",
+      autoAttachState: "attached",
+      streamState: "active",
+      engineStatus: "ready",
+      level: 0.61,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0.61,
+      updatedAt: 4
+    });
+    internals.autoTabStates.set(17, {
+      tabId: 17,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1",
+      domain: "youtube.com",
+      favIconUrl: "https://youtube.com/icon.ico",
+      autoAttachState: "attached",
+      autoBoosterScope: "global",
+      autoActiveStrategy: "web_audio_bridge",
+      gainPercent: 240
+    });
+    internals.autoDebugStates.set(17, {
+      frameCount: 2,
+      readyFrameCount: 2,
+      attachedFrameCount: 1,
+      toastVisible: false
+    });
+    tabsQuery.mockResolvedValue([]);
+
+    const response = await orchestrator.handlePopupCommand({
+      type: "GET_DEBUG_STATE",
+      payload: { tabId: 17 }
+    });
+
+    expect(response).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        tabId: 17,
+        attachState: "attached",
+        attachReason: undefined,
+        activeStrategy: "web_audio_bridge",
+        attachedElementCount: 1,
+        frameCount: 2,
+        readyFrameCount: 2,
+        attachedFrameCount: 1,
+        lastLevel: 0.61,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    });
+  });
+
   it("returns null debug state when there is no live snapshot and no cached auto tab state", async () => {
     const storage = new SettingsRepository(createMemoryStorage().area);
     const orchestrator = new WorkerOrchestrator(

@@ -72,13 +72,22 @@ describe("messages helpers", () => {
       "OFFSCREEN_GET_SNAPSHOT",
       "OFFSCREEN_UPDATE_METADATA"
     ];
-    const contentTypes = ["AUTO_BOOSTER_CONFIGURE", "AUTO_BOOSTER_DISABLE", "AUTO_BOOSTER_GET_DEBUG_STATE"];
+    const contentTypes = [
+      "AUTO_BOOSTER_PING",
+      "AUTO_BOOSTER_CONFIGURE",
+      "AUTO_BOOSTER_DISABLE",
+      "AUTO_BOOSTER_SHOW_FALLBACK_TOAST",
+      "AUTO_BOOSTER_HIDE_FALLBACK_TOAST",
+      "AUTO_BOOSTER_GET_DEBUG_STATE"
+    ];
     const offscreenEventTypes = ["SESSION_LEVEL_UPDATE", "SESSION_STATUS_UPDATE", "OFFSCREEN_SNAPSHOT"];
     const contentEventTypes = [
+      "AUTO_BOOSTER_FRAME_READY",
       "AUTO_SESSION_STATUS_UPDATE",
       "AUTO_SESSION_LEVEL_UPDATE",
       "AUTO_SESSION_ATTACH_FAILED",
-      "AUTO_SESSION_TOAST_REQUESTED"
+      "AUTO_MANUAL_FALLBACK_REQUESTED",
+      "AUTO_FALLBACK_TOAST_DISMISSED"
     ];
 
     expect(isPopupCommand(null)).toBe(false);

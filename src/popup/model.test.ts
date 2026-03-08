@@ -49,6 +49,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 100,
+      hasGlobalPermission: true,
       sessions: [manualSession, autoSession, makeSession(9, 180, "none", 9)],
       generatedAt: 11
     };
@@ -76,6 +77,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 100,
+      hasGlobalPermission: true,
       sessions: [makeSession(7, 240, "high", 10), makeSession(9, 180, "none", 9)],
       generatedAt: 11
     };
@@ -104,6 +106,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 100,
+      hasGlobalPermission: true,
       sessions: [
         makeSession(10, 220, "none", 1),
         makeSession(9, 320, "danger", 999),
@@ -132,6 +135,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 320,
+      hasGlobalPermission: true,
       sessions: [makeSession(-1, 240, "high", 10)],
       generatedAt: 11
     };
@@ -173,6 +177,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 320,
+      hasGlobalPermission: true,
       sessions: [makeSession(1, 180, "none", 9)],
       generatedAt: 11
     };
@@ -198,6 +203,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 100,
+      hasGlobalPermission: true,
       sessions: [makeSession(9, 180, "none", 9)],
       generatedAt: 11
     };
@@ -223,6 +229,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "off",
       globalAutoGainPercent: 320,
+      hasGlobalPermission: true,
       sessions: [],
       generatedAt: 11
     };
@@ -247,6 +254,7 @@ describe("buildPopupViewModel", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
       autoBoosterMode: "global",
       globalAutoGainPercent: 320,
+      hasGlobalPermission: true,
       sessions: [],
       generatedAt: 11
     };
