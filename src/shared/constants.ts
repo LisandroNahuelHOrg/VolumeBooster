@@ -12,6 +12,14 @@ export const MAX_GAIN_PERCENT = 10000;
 export const LEGACY_MAX_GAIN_PERCENT = 1000;
 /** Smallest valid boost value accepted by the extension. */
 export const MIN_GAIN_PERCENT = 100;
+/** Media query used to honor reduced-motion user preferences in interactive UI. */
+export const REDUCED_MOTION_MEDIA_QUERY = "(prefers-reduced-motion: reduce)";
+/** Shared easing curve for premium popup layout transitions. */
+export const POPUP_PREMIUM_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+/** Starting transform used for premium lane transition entrance. */
+export const POPUP_LANE_TRANSITION_FROM = "translateY(6px) scale(0.985)";
+/** Ending transform used for premium lane transition entrance. */
+export const POPUP_LANE_TRANSITION_TO = "translateY(0) scale(1)";
 /** Storage key used to persist extension settings in `chrome.storage.local`. */
 export const SETTINGS_STORAGE_KEY = "prismVolumeBoosterSettings";
 /** Path to the hidden offscreen document that owns manual capture audio graphs. */

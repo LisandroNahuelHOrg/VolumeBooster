@@ -102,6 +102,10 @@ class FakeNode {
   readonly disconnect = vi.fn();
 }
 
+class FakeAudioParam {
+  value = 0;
+}
+
 class FakeAnalyserNode extends FakeNode {
   fftSize = 0;
   smoothingTimeConstant = 0;
@@ -110,6 +114,29 @@ class FakeAnalyserNode extends FakeNode {
     buffer.fill(0);
     buffer[0] = this.peak;
   });
+}
+
+class FakeGainNode extends FakeNode {
+  readonly gain = new FakeAudioParam();
+}
+
+class FakeBiquadFilterNode extends FakeNode {
+  type: BiquadFilterType = "lowpass";
+  readonly frequency = new FakeAudioParam();
+  readonly gain = new FakeAudioParam();
+  readonly Q = new FakeAudioParam();
+}
+
+class FakeDynamicsCompressorNode extends FakeNode {
+  readonly threshold = new FakeAudioParam();
+  readonly knee = new FakeAudioParam();
+  readonly ratio = new FakeAudioParam();
+  readonly attack = new FakeAudioParam();
+  readonly release = new FakeAudioParam();
+}
+
+class FakeWaveShaperNode extends FakeNode {
+  curve: Float32Array | null = null;
 }
 
 class FakeAudioTrack {
@@ -132,11 +159,35 @@ class FakeAudioContext {
   readonly sourceNode = new FakeNode();
   readonly inputAnalyser = new FakeAnalyserNode();
   readonly outputAnalyser = new FakeAnalyserNode();
+  readonly gainNodes: FakeGainNode[] = [];
+  readonly biquadNodes: FakeBiquadFilterNode[] = [];
+  readonly compressorNodes: FakeDynamicsCompressorNode[] = [];
+  readonly waveShaperNodes: FakeWaveShaperNode[] = [];
   readonly createMediaStreamSource = vi.fn((_stream: MediaStream) => this.sourceNode as unknown as MediaStreamAudioSourceNode);
   readonly createAnalyser = vi
     .fn()
     .mockReturnValueOnce(this.inputAnalyser as unknown as AnalyserNode)
     .mockReturnValueOnce(this.outputAnalyser as unknown as AnalyserNode);
+  readonly createGain = vi.fn(() => {
+    const node = new FakeGainNode();
+    this.gainNodes.push(node);
+    return node as unknown as GainNode;
+  });
+  readonly createBiquadFilter = vi.fn(() => {
+    const node = new FakeBiquadFilterNode();
+    this.biquadNodes.push(node);
+    return node as unknown as BiquadFilterNode;
+  });
+  readonly createDynamicsCompressor = vi.fn(() => {
+    const node = new FakeDynamicsCompressorNode();
+    this.compressorNodes.push(node);
+    return node as unknown as DynamicsCompressorNode;
+  });
+  readonly createWaveShaper = vi.fn(() => {
+    const node = new FakeWaveShaperNode();
+    this.waveShaperNodes.push(node);
+    return node as unknown as WaveShaperNode;
+  });
   readonly resume = vi.fn(async () => {
     this.state = "running";
   });
@@ -155,8 +206,20 @@ class FakeAudioContext {
 
 describe("AudioSession", () => {
   const getUserMedia = vi.fn();
-  const windowSetInterval = vi.fn(() => 55);
-  const windowClearInterval = vi.fn();
+  const intervalCallbacks = new Map<number, () => void>();
+  let nextIntervalId = 1;
+  const windowSetInterval = vi.fn((handler: TimerHandler) => {
+    const id = nextIntervalId++;
+
+    if (typeof handler === "function") {
+      intervalCallbacks.set(id, handler as () => void);
+    }
+
+    return id;
+  });
+  const windowClearInterval = vi.fn((id: number) => {
+    intervalCallbacks.delete(id);
+  });
 
   beforeEach(() => {
     FakeAudioContext.reset();
@@ -165,6 +228,8 @@ describe("AudioSession", () => {
     getUserMedia.mockReset();
     windowSetInterval.mockClear();
     windowClearInterval.mockClear();
+    intervalCallbacks.clear();
+    nextIntervalId = 1;
 
     vi.stubGlobal("AudioContext", FakeAudioContext as unknown as typeof AudioContext);
     vi.stubGlobal("navigator", {
@@ -239,6 +304,44 @@ describe("AudioSession", () => {
     );
   });
 
+  it("falls back to the native manual chain when Faust cannot boot", async () => {
+    getUserMedia.mockResolvedValue(new FakeMediaStream() as unknown as MediaStream);
+    hoisted.factoryLoader.mockRejectedValueOnce(new Error("Faust init failed"));
+    const onFatalError = vi.fn();
+    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn(), onFatalError });
+
+    await session.start("stream-fallback-start");
+    const context = FakeAudioContext.instances[0];
+
+    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
+    expect(context.createGain).toHaveBeenCalledTimes(3);
+    expect(context.createBiquadFilter).toHaveBeenCalledTimes(2);
+    expect(context.createDynamicsCompressor).toHaveBeenCalledTimes(1);
+    expect(context.createWaveShaper).toHaveBeenCalledTimes(1);
+    expect(windowSetInterval).toHaveBeenCalledTimes(2);
+    expect(onFatalError).not.toHaveBeenCalled();
+  });
+
+  it("periodically retries Faust while running on the native fallback and restores it when available", async () => {
+    getUserMedia.mockResolvedValue(new FakeMediaStream() as unknown as MediaStream);
+    hoisted.factoryLoader.mockRejectedValueOnce(new Error("Faust init failed"));
+    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn() });
+
+    await session.start("stream-fallback-recovery");
+
+    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
+
+    const recoveryCallback = [...intervalCallbacks.values()][0];
+    recoveryCallback?.();
+    await vi.waitFor(() => {
+      expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("faust");
+    });
+    expect(hoisted.faustNodeInstances).toHaveLength(1);
+    expect(windowClearInterval).toHaveBeenCalledWith(1);
+
+    await session.stop();
+  });
+
   it("reapplies params and emits new telemetry when gain changes", async () => {
     getUserMedia.mockResolvedValue(new FakeMediaStream() as unknown as MediaStream);
     const onTelemetry = vi.fn();
@@ -277,10 +380,11 @@ describe("AudioSession", () => {
     expect(onTelemetry).toHaveBeenCalledTimes(1);
   });
 
-  it("emits danger telemetry when the processor errors", async () => {
+  it("switches to the native fallback when the Faust processor errors", async () => {
     getUserMedia.mockResolvedValue(new FakeMediaStream() as unknown as MediaStream);
     const onTelemetry = vi.fn();
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry });
+    const onFatalError = vi.fn();
+    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry, onFatalError });
 
     await session.start("stream-789");
     const faustNode = hoisted.faustNodeInstances[0] as MockFaustNode;
@@ -288,12 +392,16 @@ describe("AudioSession", () => {
 
     processorErrorListener?.(new Event("processorerror"));
 
-    expect(onTelemetry).toHaveBeenCalledWith(
+    expect(onTelemetry).toHaveBeenCalled();
+    expect(onTelemetry).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        level: 0,
-        warning: "danger"
+        level: 0
       })
     );
+    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
+    expect(faustNode.disconnect).toHaveBeenCalled();
+    expect(windowSetInterval).toHaveBeenCalledTimes(2);
+    expect(onFatalError).not.toHaveBeenCalled();
 
     await session.stop();
   });
@@ -308,7 +416,7 @@ describe("AudioSession", () => {
 
     await session.stop();
 
-    expect(windowClearInterval).toHaveBeenCalledWith(55);
+    expect(windowClearInterval).toHaveBeenCalledWith(expect.any(Number));
     expect(stream.track.stop).toHaveBeenCalledTimes(1);
     expect(context.sourceNode.disconnect).toHaveBeenCalledTimes(1);
     expect(context.close).toHaveBeenCalledTimes(1);

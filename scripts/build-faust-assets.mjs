@@ -1,5 +1,6 @@
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 
 const repoRoot = resolve(import.meta.dirname, "..");
@@ -18,18 +19,39 @@ const targets = [
 ];
 
 for (const target of targets) {
-  await withFsRetries(() => rm(target.output, { recursive: true, force: true }));
-  await withFsRetries(() => rm(target.runtimeOutput, { recursive: true, force: true }));
-  await mkdir(target.output, { recursive: true });
-  await mkdir(target.runtimeOutput, { recursive: true });
-  await run(process.execPath, [compilerScript, target.input, target.output, "-no-template"]);
-  await generateMetadataWrapper(target.output);
-  await withFsRetries(() =>
-    copyFile(resolve(target.output, "dsp-meta.json"), resolve(target.runtimeOutput, "dsp-meta.json"))
-  );
-  await withFsRetries(() =>
-    copyFile(resolve(target.output, "dsp-module.wasm"), resolve(target.runtimeOutput, "dsp-module.wasm"))
-  );
+  await buildTarget(target);
+}
+
+async function buildTarget(target) {
+  const stagingRoot = await createStagingDirectory(target.output);
+  const stagingOutput = join(stagingRoot, basename(target.output));
+
+  try {
+    await mkdir(stagingOutput, { recursive: true });
+    await run(process.execPath, [compilerScript, target.input, stagingOutput, "-no-template"]);
+    await generateMetadataWrapper(stagingOutput);
+
+    await publishOutputs(stagingOutput, target.output, ["dsp-meta.json", "dsp-meta.ts", "dsp-module.wasm"]);
+    await publishOutputs(stagingOutput, target.runtimeOutput, ["dsp-meta.json", "dsp-module.wasm"]);
+  } finally {
+    await withFsRetries(() => rm(stagingRoot, { recursive: true, force: true }));
+  }
+}
+
+async function createStagingDirectory(outputDirectory) {
+  const tempRoot = join(tmpdir(), "volume-booster-faust-build");
+  await mkdir(tempRoot, { recursive: true });
+  return mkdtemp(join(tempRoot, `${basename(outputDirectory)}-`));
+}
+
+async function publishOutputs(sourceDirectory, destinationDirectory, fileNames) {
+  await mkdir(destinationDirectory, { recursive: true });
+
+  for (const fileName of fileNames) {
+    const sourcePath = resolve(sourceDirectory, fileName);
+    const destinationPath = resolve(destinationDirectory, fileName);
+    await withFsRetries(() => copyFile(sourcePath, destinationPath));
+  }
 }
 
 async function run(command, args) {

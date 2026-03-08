@@ -282,13 +282,6 @@ export class WorkerOrchestrator {
 
     if (this.manualSessions.has(tabId)) {
       const domain = getDomainFromUrl(tab.url);
-
-      if (!isSupportedTabUrl(tab.url)) {
-        await this.stopCapture(tabId);
-        return;
-      }
-
-      const preferredGain = (await this.settingsRepository.getDomainGain(domain)) ?? DEFAULT_GAIN_PERCENT;
       const advancedAudioSettings = await this.settingsRepository.getAdvancedAudioSettings();
       const payload: OffscreenMetadataPayload = {
         tabId,
@@ -296,7 +289,6 @@ export class WorkerOrchestrator {
         url: tab.url,
         domain,
         favIconUrl: tab.favIconUrl,
-        gainPercent: preferredGain,
         advancedAudioSettings
       };
 

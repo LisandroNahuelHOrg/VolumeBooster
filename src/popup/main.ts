@@ -10,7 +10,15 @@ import {
   deriveProtectionLoadPercent,
   sanitizeAdvancedAudioSettings
 } from "../shared/audio-settings";
-import { DEFAULT_GAIN_PERCENT, MAX_GAIN_PERCENT, MIN_GAIN_PERCENT } from "../shared/constants";
+import {
+  DEFAULT_GAIN_PERCENT,
+  MAX_GAIN_PERCENT,
+  MIN_GAIN_PERCENT,
+  POPUP_LANE_TRANSITION_FROM,
+  POPUP_LANE_TRANSITION_TO,
+  POPUP_PREMIUM_EASING,
+  REDUCED_MOTION_MEDIA_QUERY
+} from "../shared/constants";
 import { getDuckDuckGoFaviconUrl } from "../shared/domain";
 import { clampGainPercent, deriveWarning } from "../shared/gain";
 import { message, sendMessageSafe } from "../shared/messages";
@@ -57,7 +65,11 @@ const ADVANCED_PRESET_VALUES: Array<Exclude<QualityPreset, "custom">> = [
   "bass_boost"
 ];
 const GAIN_COMMIT_DEBOUNCE_MS = 60;
+const GAIN_PRESET_ANIMATION_MS = 280;
+const GAIN_TRACK_JUMP_THRESHOLD_PX = 26;
+const GAIN_TRACK_JUMP_WINDOW_MS = 250;
 const ADVANCED_COMMIT_DEBOUNCE_MS = 80;
+const LANE_LAYOUT_TRANSITION_MS = 240;
 const STATE_POLL_MS = 180;
 const PROTECTOR_TELEMETRY_UI_MS = 80;
 type AdvancedControlKey = keyof Pick<
@@ -71,6 +83,10 @@ interface LaneStatusDescriptor {
   badge: string;
   title: string;
   detail: string;
+}
+
+interface GainVisualSyncOptions {
+  animateVisuals?: boolean;
 }
 
 const ADVANCED_CONTROL_CONFIG: Record<
@@ -146,10 +162,14 @@ let currentState: WorkerState | null = null;
 let currentCatalog: UiCatalog | null = null;
 let loadedLocale: string | null = null;
 let draftGainPercent = DEFAULT_GAIN_PERCENT;
+let visualGainPercent = DEFAULT_GAIN_PERCENT;
 let transientError: LocalizedMessage | null = null;
 let renderedSignature = "";
+let pendingGainTrackJumpAnimationAt = 0;
 let gainCommitTimer: number | null = null;
 let gainCommitInFlight = false;
+let gainSliderAnimationFrame: number | null = null;
+let gainSliderAnimationTarget: number | null = null;
 let pendingGainPercent: number | null = null;
 let isAdjustingGain = false;
 let draftAdvancedAudioSettings: AdvancedAudioSettings | null = null;
@@ -164,6 +184,7 @@ let boosterButtonMorphTimer: number | null = null;
 let lastProtectorTelemetryUiAt = 0;
 let lastProtectorTelemetryDisplayKey = "";
 let lastLaneStatusDisplayKey = "";
+let laneLayoutTransitionTimer: number | null = null;
 let tooltipRefreshFrame: number | null = null;
 let activeHelpTooltipAnchor: HTMLElement | null = null;
 
@@ -269,8 +290,7 @@ async function applyState(nextState: WorkerState): Promise<void> {
 
   const viewModel = buildPopupViewModel(nextState);
   const actualGain = viewModel.gainPercent;
-  const tabContextChanged =
-    getTabContextKey(previousState?.currentTab) !== getTabContextKey(nextState.currentTab);
+  const tabContextChanged = didTabContextChange(previousState, nextState);
 
   if (pendingGainPercent !== null) {
     if (!viewModel.currentSession || actualGain === pendingGainPercent) {
@@ -395,7 +415,7 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
           : ""
       }
 
-      <section class="panel panel--stack">
+      <section class="panel panel--stack panel--current-tab">
         <div class="panel__header panel__header--current">
           <div class="tab-hero">
             <span class="tab-hero__context">${escapeHtml(translate(currentCatalog, "currentTabLabel"))}</span>
@@ -440,7 +460,12 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                 ${currentTab?.supported ? "" : "disabled"}
                 type="button"
               >
-                ${escapeHtml(siteBoosterButtonCopy(viewModel))}
+                <span class="ghost-button--lane__play-indicator" aria-hidden="true">
+                  <span class="ghost-button--lane__play-icon"></span>
+                </span>
+                <span class="ghost-button--lane__label" data-role="toggle-site-auto-label">
+                  ${escapeHtml(siteBoosterButtonCopy(viewModel))}
+                </span>
               </button>
               <button
                 class="ghost-button ghost-button--lane ghost-button--lane-global ${globalAutoEnabled ? "is-active" : ""}"
@@ -449,7 +474,12 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                 ${currentTab ? "" : "disabled"}
                 type="button"
               >
-                ${escapeHtml(globalBoosterButtonCopy(viewModel))}
+                <span class="ghost-button--lane__play-indicator" aria-hidden="true">
+                  <span class="ghost-button--lane__play-icon"></span>
+                </span>
+                <span class="ghost-button--lane__label" data-role="toggle-global-auto-label">
+                  ${escapeHtml(globalBoosterButtonCopy(viewModel))}
+                </span>
               </button>
             </div>
           </div>
@@ -782,6 +812,7 @@ function bindRootEvents(): void {
   }
 
   rootElement.addEventListener("click", handleRootClick);
+  rootElement.addEventListener("pointerdown", handleRootPointerDown);
   rootElement.addEventListener("input", handleRootInput);
   rootElement.addEventListener("change", handleRootChange);
   rootElement.addEventListener("error", handleRootError, true);
@@ -965,7 +996,7 @@ function handleRootClick(event: Event): void {
 
   if (presetButton?.dataset.preset) {
     clearTransientError();
-    setDraftGain(Number(presetButton.dataset.preset));
+    setDraftGain(Number(presetButton.dataset.preset), { animateVisuals: true });
     scheduleGainCommit(true);
     return;
   }
@@ -1071,6 +1102,17 @@ function handleRootClick(event: Event): void {
   }
 }
 
+function handleRootPointerDown(event: PointerEvent): void {
+  const target = event.target;
+
+  if (!(target instanceof HTMLInputElement) || target.dataset.role !== "gain-slider") {
+    pendingGainTrackJumpAnimationAt = 0;
+    return;
+  }
+
+  pendingGainTrackJumpAnimationAt = shouldAnimateGainTrackJump(target, event) ? performance.now() : 0;
+}
+
 function handleRootInput(event: Event): void {
   const target = event.target;
 
@@ -1090,7 +1132,11 @@ function handleRootInput(event: Event): void {
 
   clearTransientError();
   isAdjustingGain = true;
-  setDraftGain(Number(target.value));
+  const animateTrackJump =
+    pendingGainTrackJumpAnimationAt > 0 &&
+    performance.now() - pendingGainTrackJumpAnimationAt <= GAIN_TRACK_JUMP_WINDOW_MS;
+  setDraftGain(Number(target.value), { animateVisuals: animateTrackJump });
+  pendingGainTrackJumpAnimationAt = 0;
   scheduleGainCommit(false);
 }
 
@@ -1110,12 +1156,13 @@ function handleRootChange(event: Event): void {
   }
 
   isAdjustingGain = false;
+  pendingGainTrackJumpAnimationAt = 0;
   void flushGainCommit();
 }
 
-function setDraftGain(nextValue: number): void {
+function setDraftGain(nextValue: number, options: GainVisualSyncOptions = {}): void {
   draftGainPercent = clampGainPercent(nextValue);
-  syncCurrentViewModel();
+  syncCurrentViewModel(options);
 }
 
 function scheduleGainCommit(immediate: boolean): void {
@@ -1440,16 +1487,19 @@ function getCurrentSession(): CaptureSessionState | null {
   return findSession(currentTabId) ?? null;
 }
 
-function syncCurrentViewModel(): void {
+function syncCurrentViewModel(options: GainVisualSyncOptions = {}): void {
   if (!currentState || !currentCatalog) {
     render();
     return;
   }
 
-  syncDynamicUi(buildPopupViewModel(currentState));
+  syncDynamicUi(buildPopupViewModel(currentState), options);
 }
 
-function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void {
+function syncDynamicUi(
+  viewModel: ReturnType<typeof buildPopupViewModel>,
+  options: GainVisualSyncOptions = {}
+): void {
   if (!currentCatalog) {
     return;
   }
@@ -1476,8 +1526,9 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
     advancedAudioSettings.qualityProtectorMode,
     protectionBypassed ? "bypassed" : "protected"
   ].join("|");
+  const laneGrid = rootElement.querySelector<HTMLElement>(".booster-lane-grid");
+  const previousLaneGridHeight = laneGrid?.getBoundingClientRect().height ?? 0;
 
-  setText("[data-role='slider-value']", `${formatPresetValue(draftGainPercent)}%`);
   setText("[data-role='meter-value']", `${levelPercent}%`);
   setText("[data-role='other-session-count']", String(viewModel.activeSessions.length));
   setText(
@@ -1516,10 +1567,12 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
   const laneStatus = getLaneStatus(viewModel);
   const laneStatusDisplayKey = [laneStatus.tone, laneStatus.badge, laneStatus.title, laneStatus.detail].join("|");
   const laneStatusCard = rootElement.querySelector<HTMLElement>("[data-role='lane-status']");
+  const laneContentAnimations: HTMLElement[] = [];
 
   if (laneStatusDisplayKey !== lastLaneStatusDisplayKey) {
     if (laneStatusCard) {
       laneStatusCard.dataset.tone = laneStatus.tone;
+      laneContentAnimations.push(laneStatusCard);
     }
 
     setText("[data-role='lane-status-badge']", laneStatus.badge);
@@ -1532,20 +1585,36 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
 
   if (siteAutoButton) {
     const siteAutoEnabled = isSiteAutoEnabled(viewModel);
+    const previousSiteAutoEnabled = siteAutoButton.classList.contains("is-active");
     siteAutoButton.dataset.action = siteAutoEnabled ? "disable-site-auto" : "enable-site-auto";
     siteAutoButton.disabled = !Boolean(currentTab?.supported);
     siteAutoButton.classList.toggle("is-active", siteAutoEnabled);
-    siteAutoButton.textContent = siteBoosterButtonCopy(viewModel);
+    const siteAutoButtonLabel =
+      siteAutoButton.querySelector<HTMLElement>("[data-role='toggle-site-auto-label']") || siteAutoButton;
+    const previousSiteLabel = siteAutoButtonLabel.textContent ?? "";
+    siteAutoButtonLabel.textContent = siteBoosterButtonCopy(viewModel);
+
+    if (previousSiteAutoEnabled !== siteAutoEnabled || previousSiteLabel !== siteAutoButtonLabel.textContent) {
+      laneContentAnimations.push(siteAutoButton);
+    }
   }
 
   const globalAutoButton = rootElement.querySelector<HTMLButtonElement>("[data-role='toggle-global-auto']");
 
   if (globalAutoButton) {
     const globalAutoEnabled = isGlobalAutoEnabled(viewModel);
+    const previousGlobalAutoEnabled = globalAutoButton.classList.contains("is-active");
     globalAutoButton.dataset.action = globalBoosterButtonAction(viewModel);
     globalAutoButton.disabled = !Boolean(currentTab);
     globalAutoButton.classList.toggle("is-active", globalAutoEnabled);
-    globalAutoButton.textContent = globalBoosterButtonCopy(viewModel);
+    const globalAutoButtonLabel =
+      globalAutoButton.querySelector<HTMLElement>("[data-role='toggle-global-auto-label']") || globalAutoButton;
+    const previousGlobalLabel = globalAutoButtonLabel.textContent ?? "";
+    globalAutoButtonLabel.textContent = globalBoosterButtonCopy(viewModel);
+
+    if (previousGlobalAutoEnabled !== globalAutoEnabled || previousGlobalLabel !== globalAutoButtonLabel.textContent) {
+      laneContentAnimations.push(globalAutoButton);
+    }
   }
 
   const slider = rootElement.querySelector<HTMLInputElement>("[data-role='gain-slider']");
@@ -1555,7 +1624,7 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
       slider.value = String(draftGainPercent);
     }
 
-    syncSliderVisuals(slider);
+    syncSliderVisuals(slider, options.animateVisuals ?? false);
   }
 
   for (const presetButton of rootElement.querySelectorAll<HTMLButtonElement>("[data-preset]")) {
@@ -1728,6 +1797,10 @@ function syncDynamicUi(viewModel: ReturnType<typeof buildPopupViewModel>): void 
       sessionFooterDot.dataset.state = visualStatus;
     }
   }
+
+  if (laneGrid && laneContentAnimations.length > 0) {
+    animateBoosterLaneTransition(laneGrid, previousLaneGridHeight, laneContentAnimations);
+  }
 }
 
 function createRenderSignature(viewModel: ReturnType<typeof buildPopupViewModel>): string {
@@ -1773,12 +1846,180 @@ function clearTransientError(): void {
   renderedSignature = "";
 }
 
-function syncSliderVisuals(slider: HTMLInputElement): void {
-  const progress = `${getSliderProgressPercent(draftGainPercent)}%`;
+function syncSliderVisuals(slider: HTMLInputElement, animateVisuals = false): void {
+  if (animateVisuals && !shouldReduceMotion()) {
+    startGainSliderAnimation(draftGainPercent);
+    return;
+  }
+
+  if (gainSliderAnimationFrame !== null && gainSliderAnimationTarget === draftGainPercent) {
+    applyGainSliderVisuals(slider, visualGainPercent);
+    return;
+  }
+
+  stopGainSliderAnimation();
+  visualGainPercent = draftGainPercent;
+  applyGainSliderVisuals(slider, visualGainPercent);
+}
+
+function startGainSliderAnimation(targetGainPercent: number): void {
+  const slider = rootElement.querySelector<HTMLInputElement>("[data-role='gain-slider']");
+
+  if (!slider) {
+    return;
+  }
+
+  const nextTarget = clampGainPercent(targetGainPercent);
+  const origin = gainSliderAnimationFrame !== null ? visualGainPercent : clampGainPercent(visualGainPercent);
+
+  if (Math.abs(origin - nextTarget) < 0.5) {
+    stopGainSliderAnimation();
+    visualGainPercent = nextTarget;
+    applyGainSliderVisuals(slider, visualGainPercent);
+    return;
+  }
+
+  stopGainSliderAnimation();
+  gainSliderAnimationTarget = nextTarget;
+  setGainSliderAnimating(true);
+  const startedAt = performance.now();
+
+  const tick = (now: number) => {
+    const progress = Math.min(1, (now - startedAt) / GAIN_PRESET_ANIMATION_MS);
+    const easedProgress = easeInOutCubic(progress);
+    visualGainPercent = origin + (nextTarget - origin) * easedProgress;
+    applyGainSliderVisuals(slider, visualGainPercent);
+
+    if (progress < 1) {
+      gainSliderAnimationFrame = window.requestAnimationFrame(tick);
+      return;
+    }
+
+    gainSliderAnimationFrame = null;
+    gainSliderAnimationTarget = null;
+    visualGainPercent = nextTarget;
+    applyGainSliderVisuals(slider, visualGainPercent);
+    setGainSliderAnimating(false);
+  };
+
+  gainSliderAnimationFrame = window.requestAnimationFrame(tick);
+}
+
+function stopGainSliderAnimation(): void {
+  if (gainSliderAnimationFrame !== null) {
+    window.cancelAnimationFrame(gainSliderAnimationFrame);
+    gainSliderAnimationFrame = null;
+  }
+
+  gainSliderAnimationTarget = null;
+  setGainSliderAnimating(false);
+}
+
+function applyGainSliderVisuals(slider: HTMLInputElement, gainPercent: number): void {
+  const currentSlider = slider.isConnected
+    ? slider
+    : rootElement.querySelector<HTMLInputElement>("[data-role='gain-slider']");
+  const progress = `${getSliderProgressPercent(gainPercent)}%`;
+  const sliderShell = rootElement.querySelector<HTMLElement>("[data-role='gain-slider-shell']");
+  const sliderValue = rootElement.querySelector<HTMLElement>("[data-role='slider-value']");
+
+  if (!currentSlider) {
+    return;
+  }
+
+  currentSlider.style.setProperty("--slider-progress", progress);
+  sliderShell?.style.setProperty("--slider-progress", progress);
+
+  if (sliderValue) {
+    sliderValue.textContent = `${formatPresetValue(Math.round(gainPercent))}%`;
+  }
+}
+
+function setGainSliderAnimating(isAnimating: boolean): void {
   const sliderShell = rootElement.querySelector<HTMLElement>("[data-role='gain-slider-shell']");
 
-  slider.style.setProperty("--slider-progress", progress);
-  sliderShell?.style.setProperty("--slider-progress", progress);
+  if (sliderShell) {
+    sliderShell.dataset.animating = String(isAnimating);
+  }
+}
+
+function shouldReduceMotion(): boolean {
+  return window.matchMedia(REDUCED_MOTION_MEDIA_QUERY).matches;
+}
+
+function easeInOutCubic(progress: number): number {
+  if (progress < 0.5) {
+    return 4 * progress * progress * progress;
+  }
+
+  return 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function shouldAnimateGainTrackJump(slider: HTMLInputElement, event: PointerEvent): boolean {
+  const rect = slider.getBoundingClientRect();
+
+  if (rect.width <= 0) {
+    return false;
+  }
+
+  const pointerOffsetX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+  const currentThumbOffset = (getSliderProgressPercent(draftGainPercent) / 100) * rect.width;
+
+  return Math.abs(pointerOffsetX - currentThumbOffset) > GAIN_TRACK_JUMP_THRESHOLD_PX;
+}
+
+function animateBoosterLaneTransition(
+  laneGrid: HTMLElement,
+  previousHeight: number,
+  elements: HTMLElement[]
+): void {
+  if (shouldReduceMotion()) {
+    return;
+  }
+
+  const nextHeight = laneGrid.getBoundingClientRect().height;
+
+  if (laneLayoutTransitionTimer !== null) {
+    window.clearTimeout(laneLayoutTransitionTimer);
+    laneLayoutTransitionTimer = null;
+  }
+
+  if (Math.abs(nextHeight - previousHeight) > 0.5) {
+    laneGrid.style.transition = "none";
+    laneGrid.style.height = `${previousHeight}px`;
+    laneGrid.style.overflow = "clip";
+    void laneGrid.offsetHeight;
+    laneGrid.style.transition = `height ${LANE_LAYOUT_TRANSITION_MS}ms ${POPUP_PREMIUM_EASING}`;
+    laneGrid.style.height = `${nextHeight}px`;
+
+    laneLayoutTransitionTimer = window.setTimeout(() => {
+      laneGrid.style.height = "";
+      laneGrid.style.transition = "";
+      laneGrid.style.overflow = "";
+      laneLayoutTransitionTimer = null;
+    }, LANE_LAYOUT_TRANSITION_MS + 40);
+  }
+
+  for (const element of elements) {
+    element.animate(
+      [
+        {
+          opacity: 0.82,
+          transform: POPUP_LANE_TRANSITION_FROM,
+          filter: "saturate(0.94)"
+        },
+        {
+          opacity: 1,
+          transform: POPUP_LANE_TRANSITION_TO,
+          filter: "saturate(1)"
+        }
+      ],
+      {
+        duration: LANE_LAYOUT_TRANSITION_MS,
+        easing: POPUP_PREMIUM_EASING
+      }
+    );
+  }
 }
 
 function getTabContextKey(tab: WorkerState["currentTab"] | undefined): string {
@@ -1787,6 +2028,38 @@ function getTabContextKey(tab: WorkerState["currentTab"] | undefined): string {
   }
 
   return `${tab.tabId}|${tab.url ?? ""}|${tab.domain ?? ""}|${tab.supported ? "1" : "0"}`;
+}
+
+function getTabIdentityKey(tab: WorkerState["currentTab"] | undefined): string {
+  if (!tab) {
+    return "none";
+  }
+
+  return `${tab.tabId}|${tab.supported ? "1" : "0"}`;
+}
+
+function hasManualSessionForActiveTab(state: WorkerState | null | undefined, tabId: number | undefined): boolean {
+  if (!state || typeof tabId !== "number") {
+    return false;
+  }
+
+  return state.sessions.some((session) => session.tabId === tabId && session.engineLane === "manual_tab_capture");
+}
+
+function didTabContextChange(previousState: WorkerState | null, nextState: WorkerState): boolean {
+  const previousTab = previousState?.currentTab;
+  const nextTab = nextState.currentTab;
+  const nextTabId = nextTab?.tabId;
+  const isSameTab = typeof nextTabId === "number" && previousTab?.tabId === nextTabId;
+  const preserveManualNavigationContext =
+    isSameTab &&
+    (hasManualSessionForActiveTab(previousState, nextTabId) || hasManualSessionForActiveTab(nextState, nextTabId));
+
+  if (preserveManualNavigationContext) {
+    return getTabIdentityKey(previousTab) !== getTabIdentityKey(nextTab);
+  }
+
+  return getTabContextKey(previousTab) !== getTabContextKey(nextTab);
 }
 
 function renderAdvancedControl(key: AdvancedControlKey, value: number, disabled = false): string {

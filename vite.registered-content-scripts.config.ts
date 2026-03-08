@@ -13,6 +13,12 @@ const isMainWorld = target === "main";
 
 export default defineConfig({
   publicDir: false,
+  resolve: {
+    alias: {
+      fs: resolve(__dirname, "src/shims/vite-browser-fs.ts"),
+      url: resolve(__dirname, "src/shims/vite-browser-url.ts")
+    }
+  },
   build: {
     emptyOutDir: false,
     outDir: "dist",

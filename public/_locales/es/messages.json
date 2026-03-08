@@ -243,19 +243,19 @@
     }
   },
   "disableBoosterInAllSites": {
-    "message": "Desactivar booster en todos los sitios"
+    "message": "Desactivar auto-boost en todos los sitios y pestañas"
   },
   "disableBoosterInThisSite": {
-    "message": "Desactivar booster en este sitio"
+    "message": "Desactivar boost en la pestaña actual"
   },
   "enableBoosterInAllSites": {
-    "message": "Activar booster en todos los sitios"
+    "message": "Auto-boost en todos los sitios y pestañas"
   },
   "grantGlobalAutoPermission": {
     "message": "Conceder permiso para todos los sitios"
   },
   "enableBoosterInThisSite": {
-    "message": "Activar booster en este sitio"
+    "message": "Boostear solo la pestaña actual"
   },
   "languageEnglish": {
     "message": "Inglés"
@@ -270,25 +270,25 @@
     "message": "Actividad en vivo"
   },
   "laneAutomaticGlobalDetail": {
-    "message": "El modo Global está activo. Esta página ya se está boosteando, y otros sitios compatibles también se activarán automáticamente."
+    "message": "Esta pestaña ya se está boosteando, y la extensión también empezará a boostear automáticamente otros sitios y pestañas compatibles en cuanto detecte contenido reproducible."
   },
   "laneAutomaticGlobalTitle": {
-    "message": "El modo Global está activo"
+    "message": "Está activo: Auto-boost en todos los sitios y pestañas"
   },
   "laneAutomaticSiteDetail": {
-    "message": "El modo Este sitio está activo. Solo esta pestaña se está boosteando ahora mismo, y otras páginas no se activarán automáticamente."
+    "message": "Esta pestaña ya se está boosteando, y el boost quedará limitado solo a la pestaña actual. Ninguna otra pestaña o sitio se activará automáticamente."
   },
   "laneAutomaticSiteTitle": {
-    "message": "El modo Este sitio está activo"
+    "message": "Está activo: Boostear solo la pestaña actual"
   },
   "laneAutomaticTitle": {
     "message": "Ruta automática"
   },
   "laneBadgeAutomaticGlobal": {
-    "message": "Global"
+    "message": "Todos los sitios"
   },
   "laneBadgeAutomaticSite": {
-    "message": "Este sitio"
+    "message": "Pestaña actual"
   },
   "laneBadgeFailed": {
     "message": "Problema"
@@ -297,7 +297,7 @@
     "message": "Listo"
   },
   "laneBadgeManual": {
-    "message": "Solo esta pestaña"
+    "message": "Pestaña actual"
   },
   "laneBadgeUnavailable": {
     "message": "No disponible"
@@ -321,31 +321,31 @@
     "message": "El booster automático encontró un problema"
   },
   "laneGlobalArmedDetail": {
-    "message": "El modo Global está listo. Esta página y otros sitios compatibles empezarán a boostear automáticamente apenas haya audio o video reproducible."
+    "message": "Este modo ya está seleccionado. Esta pestaña y cualquier otro sitio o pestaña compatible empezarán a boostear automáticamente apenas aparezca contenido reproducible."
   },
   "laneGlobalArmedTitle": {
-    "message": "El modo Global está listo"
+    "message": "Auto-boost en todos los sitios y pestañas está listo"
   },
   "laneGlobalPermissionTitle": {
-    "message": "El modo Global necesita permiso"
+    "message": "Auto-boost en todos los sitios y pestañas necesita permiso"
   },
   "laneGlobalPermissionDetail": {
-    "message": "Concedé primero el permiso para todos los sitios. Después de eso, el modo Global intentará boostear sitios compatibles como una ruta best effort y caerá a manual cuando haga falta."
+    "message": "Concedé el permiso para todos los sitios para que este modo pueda iniciar boost automáticamente en sitios y pestañas compatibles. Hasta entonces, solo podrás boostear manualmente la pestaña actual."
   },
   "laneIdleDetail": {
-    "message": "Elegí cómo querés usar el booster: Solo esta pestaña boostea únicamente esta tab, mientras que Global intenta boostear esta página y también otros sitios compatibles de forma automática."
+    "message": "Boostear solo la pestaña actual limita el boost a esta pestaña. Auto-boost en todos los sitios y pestañas boostea esta pestaña y también se inicia automáticamente en otros sitios y pestañas compatibles."
   },
   "laneIdleTitle": {
-    "message": "Elegí un modo de booster"
+    "message": "Elegí cómo querés que funcione el boost"
   },
   "laneManualDetail": {
-    "message": "El modo Solo esta pestaña está activo. El audio se está boosteando únicamente en esta pestaña, y otras páginas seguirán sin cambios hasta que las actives manualmente."
+    "message": "El audio se está boosteando solo en esta pestaña. Otras pestañas y sitios seguirán sin cambios hasta que actives el boost manualmente en cada uno."
   },
   "laneManualTitle": {
-    "message": "El modo Solo esta pestaña está activo"
+    "message": "Está activo: Boostear solo la pestaña actual"
   },
   "laneStatusTitle": {
-    "message": "Modo del booster"
+    "message": "Modo de boost seleccionado"
   },
   "laneUnsupportedDetail": {
     "message": "Esta página no puede engancharse automáticamente. Usá el booster manual robusto cuando esté disponible."
@@ -354,37 +354,37 @@
     "message": "La ruta automática no está disponible"
   },
   "laneInteractionGlobalDetail": {
-    "message": "El modo Global sigue intentando engancharse automáticamente en esta página. La extensión sigue reintentando en segundo plano a medida que la reproducción queda disponible."
+    "message": "Este modo ya está seleccionado y la extensión sigue intentando enganchar el audio en esta página. Seguirá reintentando aquí y además continuará auto-iniciándose en otros sitios y pestañas compatibles."
   },
   "laneInteractionGlobalTitle": {
-    "message": "El modo Global todavía se está iniciando en esta página"
+    "message": "Auto-boost en todos los sitios y pestañas todavía se está iniciando"
   },
   "laneInteractionSiteDetail": {
-    "message": "El modo Este sitio sigue intentando engancharse automáticamente en esta página. La extensión sigue reintentando en segundo plano a medida que la reproducción queda disponible."
+    "message": "Este modo ya está seleccionado y la extensión sigue intentando enganchar el audio en la pestaña actual. Otras pestañas y sitios seguirán apagados salvo que los actives manualmente."
   },
   "laneInteractionSiteTitle": {
-    "message": "El modo Este sitio todavía se está iniciando en esta página"
+    "message": "Boostear solo la pestaña actual todavía se está iniciando"
   },
   "laneInteractionTitle": {
     "message": "Esperando interacción de la página"
   },
   "laneAutomaticGlobalBridgeDetail": {
-    "message": "El modo Global está activo. Esta página ya se está boosteando a través de su pipeline de Web Audio, y otros sitios compatibles también se activarán automáticamente."
+    "message": "Esta pestaña ya se está boosteando a través de su pipeline de Web Audio, y la extensión también empezará a boostear automáticamente otros sitios y pestañas compatibles en cuanto detecte contenido reproducible."
   },
   "laneAutomaticGlobalHybridDetail": {
-    "message": "El modo Global está activo. Esta página ya se está boosteando mediante detección de media y detección de Web Audio al mismo tiempo para máxima compatibilidad."
+    "message": "Esta pestaña ya se está boosteando con detección de media y detección de Web Audio al mismo tiempo, y la extensión también seguirá auto-iniciándose en otros sitios y pestañas compatibles."
   },
   "laneWatchingGlobalDetail": {
-    "message": "El modo Global está listo y esperando audio o video reproducible en esta página antes de empezar a boostear automáticamente."
+    "message": "Este modo ya está seleccionado y listo. Esta pestaña y cualquier otra pestaña compatible empezarán a boostear automáticamente apenas aparezca audio o video reproducible."
   },
   "laneWatchingGlobalTitle": {
-    "message": "El modo Global espera contenido multimedia"
+    "message": "Auto-boost en todos los sitios y pestañas está esperando contenido multimedia"
   },
   "laneWatchingSiteDetail": {
-    "message": "El modo Este sitio está listo y esperando audio o video reproducible en esta pestaña antes de empezar a boostear automáticamente."
+    "message": "Este modo ya está seleccionado y listo. El boost arrancará solo en la pestaña actual cuando aparezca audio o video reproducible, y ninguna otra pestaña o sitio se activará automáticamente."
   },
   "laneWatchingSiteTitle": {
-    "message": "El modo Este sitio espera contenido multimedia"
+    "message": "Boostear solo la pestaña actual está esperando contenido multimedia"
   },
   "laneWatchingTitle": {
     "message": "Esperando contenido multimedia"

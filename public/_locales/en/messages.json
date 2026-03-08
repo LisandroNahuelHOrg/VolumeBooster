@@ -310,24 +310,24 @@
     "description": "Localized UI copy for forgetSite."
   },
   "disableBoosterInAllSites": {
-    "message": "Disable booster in all sites",
-    "description": "Label for turning off the automatic global booster."
+    "message": "Disable Auto-Boost All Sites and Tabs",
+    "description": "Label for turning off automatic boosting across all compatible sites and tabs."
   },
   "disableBoosterInThisSite": {
-    "message": "Disable booster in this site",
-    "description": "Label for turning off the automatic booster in the current site session."
+    "message": "Disable Boost On The Current Tab",
+    "description": "Label for turning off automatic boosting in the current tab session."
   },
   "enableBoosterInAllSites": {
-    "message": "Enable booster in all sites",
-    "description": "Label for turning on the automatic booster across all compatible sites."
+    "message": "Auto-Boost All Sites and Tabs",
+    "description": "Label for turning on automatic boosting across all compatible sites and tabs."
   },
   "grantGlobalAutoPermission": {
     "message": "Grant all-sites permission",
     "description": "Label for requesting the optional all-sites permission required before global automatic mode can be enabled."
   },
   "enableBoosterInThisSite": {
-    "message": "Enable booster in this site",
-    "description": "Label for turning on the automatic booster only in the current site session."
+    "message": "Boost Only The Current Tab",
+    "description": "Label for turning on automatic boosting only in the current tab session."
   },
   "languageEnglish": {
     "message": "English",
@@ -346,19 +346,19 @@
     "description": "Label text for levelLabel."
   },
   "laneAutomaticGlobalDetail": {
-    "message": "Global mode is on. This page is already being boosted, and other compatible websites will start automatically too.",
+    "message": "This tab is already being boosted, and the extension will also auto-start boosting other compatible sites and tabs as soon as it detects playable media.",
     "description": "Detail text shown when the automatic global lane is attached in the current tab."
   },
   "laneAutomaticGlobalTitle": {
-    "message": "Global mode is active",
+    "message": "Auto-Boost All Sites and Tabs is active",
     "description": "Title shown when the global automatic mode is actively boosting the current page."
   },
   "laneAutomaticSiteDetail": {
-    "message": "This site mode is on. Only this tab is being boosted right now, and other pages will not turn on automatically.",
+    "message": "This tab is already being boosted, and boost will stay limited to the current tab only. No other tab or site will start automatically.",
     "description": "Detail text shown when the automatic site lane is attached in the current tab."
   },
   "laneAutomaticSiteTitle": {
-    "message": "This site mode is active",
+    "message": "Boost Only The Current Tab is active",
     "description": "Title shown when the site automatic mode is actively boosting the current page."
   },
   "laneAutomaticTitle": {
@@ -366,11 +366,11 @@
     "description": "Title shown in the lane status card when the automatic lane is active."
   },
   "laneBadgeAutomaticGlobal": {
-    "message": "Global",
+    "message": "All Sites",
     "description": "Badge shown when the global automatic lane is armed or active."
   },
   "laneBadgeAutomaticSite": {
-    "message": "This site",
+    "message": "Current Tab",
     "description": "Badge shown when the site automatic lane is armed or active."
   },
   "laneBadgeFailed": {
@@ -382,7 +382,7 @@
     "description": "Badge shown when no booster lane is active yet."
   },
   "laneBadgeManual": {
-    "message": "Single Tab",
+    "message": "Current Tab",
     "description": "Badge shown when the robust manual tab capture lane is active."
   },
   "laneBadgeUnavailable": {
@@ -414,39 +414,39 @@
     "description": "Title shown when the automatic booster failed on the current page."
   },
   "laneGlobalArmedDetail": {
-    "message": "Global mode is ready. This page and other compatible websites will start boosting automatically as soon as playable media is available.",
+    "message": "This mode is selected. This tab and any other compatible site or tab will start boosting automatically as soon as playable media appears.",
     "description": "Detail shown when global auto mode is enabled but the current page is not yet attached."
   },
   "laneGlobalArmedTitle": {
-    "message": "Global mode is ready",
+    "message": "Auto-Boost All Sites and Tabs is ready",
     "description": "Title shown when global auto mode is enabled but the current page is not yet attached."
   },
   "laneGlobalPermissionTitle": {
-    "message": "Global mode needs permission",
+    "message": "Auto-Boost All Sites and Tabs needs permission",
     "description": "Title shown when the user has not granted all-sites permission yet."
   },
   "laneGlobalPermissionDetail": {
-    "message": "Grant all-sites permission first. After that, Global mode will auto-boost compatible websites as a best-effort lane and fall back to manual when needed.",
+    "message": "Grant all-sites permission so this mode can auto-start boosting across compatible sites and tabs. Until then, only the current tab can be boosted manually.",
     "description": "Detail shown when the user has not granted all-sites permission yet."
   },
   "laneIdleDetail": {
-    "message": "Choose how the booster should work: Single Tab boosts only this tab, while Global tries to boost this page and all other compatible websites automatically.",
+    "message": "Boost Only The Current Tab keeps boost limited to this tab. Auto-Boost All Sites and Tabs boosts this tab and also auto-starts on other compatible sites and tabs.",
     "description": "Detail shown when no booster lane is active in the current tab."
   },
   "laneIdleTitle": {
-    "message": "Choose a booster mode",
+    "message": "Choose how boost should work",
     "description": "Title shown when no booster lane is active in the current tab."
   },
   "laneManualDetail": {
-    "message": "Single Tab mode is on. Audio is being boosted only in this tab, and other pages will stay unchanged until you activate them manually.",
+    "message": "Audio is being boosted only in this tab. Other tabs and sites will stay unchanged until you turn boost on there manually.",
     "description": "Detail shown when the robust manual lane is active."
   },
   "laneManualTitle": {
-    "message": "Single Tab mode is active",
+    "message": "Boost Only The Current Tab is active",
     "description": "Title shown when the robust manual lane is active."
   },
   "laneStatusTitle": {
-    "message": "Booster Mode",
+    "message": "Selected Boost Mode",
     "description": "Section title shown above the current lane status in the popup."
   },
   "laneUnsupportedDetail": {
@@ -458,19 +458,19 @@
     "description": "Title shown when the current page does not support the automatic lane."
   },
   "laneInteractionGlobalDetail": {
-    "message": "Global mode is still trying to attach automatically on this page. The extension keeps retrying in the background as playback becomes available.",
+    "message": "This mode is selected and the extension is still trying to hook audio on this page. It will keep retrying here and continue auto-starting on other compatible tabs and sites.",
     "description": "Detail shown while the global automatic lane keeps retrying audio attach on the current page."
   },
   "laneInteractionGlobalTitle": {
-    "message": "Global mode is still starting on this page",
+    "message": "Auto-Boost All Sites and Tabs is still starting",
     "description": "Title shown while the global automatic mode keeps retrying audio attach on the current page."
   },
   "laneInteractionSiteDetail": {
-    "message": "This site mode is still trying to attach automatically on this page. The extension keeps retrying in the background as playback becomes available.",
+    "message": "This mode is selected and the extension is still trying to hook audio in the current tab. Other tabs and sites will stay off unless you activate them manually.",
     "description": "Detail shown while the site automatic lane keeps retrying audio attach on the current page."
   },
   "laneInteractionSiteTitle": {
-    "message": "This site mode is still starting on this page",
+    "message": "Boost Only The Current Tab is still starting",
     "description": "Title shown while the site automatic mode keeps retrying audio attach on the current page."
   },
   "laneInteractionTitle": {
@@ -478,27 +478,27 @@
     "description": "Title shown when the automatic lane is armed but blocked by autoplay policy until the user interacts with the page."
   },
   "laneAutomaticGlobalBridgeDetail": {
-    "message": "Global mode is on. This page is already being boosted through its Web Audio pipeline, and other compatible websites will start automatically too.",
+    "message": "This tab is already being boosted through its Web Audio pipeline, and the extension will also auto-start boosting other compatible sites and tabs as soon as they expose playable media.",
     "description": "Detail shown when the global automatic mode is attached through the Web Audio bridge."
   },
   "laneAutomaticGlobalHybridDetail": {
-    "message": "Global mode is on. This page is already being boosted through both media detection and Web Audio detection for maximum compatibility.",
+    "message": "This tab is already being boosted through both media detection and Web Audio detection, and the extension will keep auto-starting on other compatible sites and tabs too.",
     "description": "Detail shown when the global automatic mode is attached through both automatic strategies at the same time."
   },
   "laneWatchingGlobalDetail": {
-    "message": "Global mode is ready and waiting for playable audio or video on this page before it starts boosting automatically.",
+    "message": "This mode is selected and ready. This tab and any other compatible tab will start boosting automatically as soon as playable audio or video appears.",
     "description": "Detail shown when the global automatic lane is observing the current page."
   },
   "laneWatchingGlobalTitle": {
-    "message": "Global mode is waiting for media",
+    "message": "Auto-Boost All Sites and Tabs is waiting for media",
     "description": "Title shown when the global automatic mode is waiting for playable media on the current page."
   },
   "laneWatchingSiteDetail": {
-    "message": "This site mode is ready and waiting for playable audio or video in this tab before it starts boosting automatically.",
+    "message": "This mode is selected and ready. Boost will start only in the current tab after playable audio or video appears, and no other tab or site will start automatically.",
     "description": "Detail shown when the site automatic lane is observing the current page."
   },
   "laneWatchingSiteTitle": {
-    "message": "This site mode is waiting for media",
+    "message": "Boost Only The Current Tab is waiting for media",
     "description": "Title shown when the site automatic mode is waiting for playable media on the current page."
   },
   "laneWatchingTitle": {
