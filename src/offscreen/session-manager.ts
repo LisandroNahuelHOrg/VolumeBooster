@@ -112,6 +112,9 @@ export class OffscreenSessionManager {
               outputPeak: metrics.outputPeak
             }
           });
+        },
+        onFatalError: (errorMessage) => {
+          void this.handleSessionFatalError(payload.tabId, errorMessage);
         }
       });
 
@@ -242,6 +245,30 @@ export class OffscreenSessionManager {
    */
   getSnapshot(): CaptureSessionState[] {
     return [...this.sessions.values()].map((entry) => ({ ...entry.state }));
+  }
+
+  private async handleSessionFatalError(
+    tabId: number,
+    errorMessage: CaptureSessionState["lastError"]
+  ): Promise<void> {
+    const entry = this.sessions.get(tabId);
+
+    if (!entry || entry.state.engineStatus === "error") {
+      return;
+    }
+
+    entry.state.streamState = "error";
+    entry.state.engineStatus = "error";
+    entry.state.level = 0;
+    entry.state.warning = "danger";
+    entry.state.protectorActionDb = 0;
+    entry.state.clipEvents = 0;
+    entry.state.clipPeak = 0;
+    entry.state.outputPeak = 0;
+    entry.state.lastError = errorMessage;
+    entry.state.updatedAt = this.now();
+    this.publishStatus(entry.state);
+    await entry.audioSession.stop().catch(() => undefined);
   }
 
   private async stopSessionInternal(tabId: number): Promise<void> {

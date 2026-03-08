@@ -24,6 +24,8 @@ const registeredContentScriptsWatch = spawn("npm", ["run", "watch:registered-con
 });
 
 let rebuildTimer = null;
+let faustBuildInProgress = false;
+let pendingFaustBuild = false;
 
 watch(faustDir, { recursive: true }, () => {
   if (rebuildTimer !== null) {
@@ -32,7 +34,8 @@ watch(faustDir, { recursive: true }, () => {
 
   rebuildTimer = setTimeout(() => {
     rebuildTimer = null;
-    void runFaustBuild().catch((error) => {
+    pendingFaustBuild = true;
+    void flushFaustBuildQueue().catch((error) => {
       console.error(error);
     });
   }, 150);
@@ -66,4 +69,21 @@ async function runFaustBuild() {
     });
     child.on("error", rejectPromise);
   });
+}
+
+async function flushFaustBuildQueue() {
+  if (faustBuildInProgress) {
+    return;
+  }
+
+  faustBuildInProgress = true;
+
+  try {
+    while (pendingFaustBuild) {
+      pendingFaustBuild = false;
+      await runFaustBuild();
+    }
+  } finally {
+    faustBuildInProgress = false;
+  }
 }

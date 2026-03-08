@@ -4,6 +4,13 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   base: "./",
   publicDir: "public",
+  resolve: {
+    alias: {
+      // faustwasm bundles browser and Node helpers in one entry; browser builds must not resolve Node builtins.
+      fs: resolve(__dirname, "src/shims/vite-browser-fs.ts"),
+      url: resolve(__dirname, "src/shims/vite-browser-url.ts")
+    }
+  },
   build: {
     emptyOutDir: true,
     outDir: "dist",

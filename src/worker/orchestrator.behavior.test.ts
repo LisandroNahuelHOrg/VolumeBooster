@@ -628,12 +628,11 @@ describe("WorkerOrchestrator worker flows", () => {
     });
   });
 
-  it("stops a manual capture when a captured tab navigates to an unsupported url", async () => {
+  it("keeps a manual capture alive and only refreshes metadata when the captured tab navigates to an unsupported url", async () => {
     const storage = new SettingsRepository(createMemoryStorage().area);
     const offscreenClient = {
       getSnapshot: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 220)]),
-      stopSession: vi.fn().mockResolvedValue([]),
-      closeIfIdle: vi.fn()
+      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 220)])
     };
     tabsQuery.mockResolvedValue([{ id: 7, title: "YouTube", url: "https://youtube.com/watch?v=1" }]);
 
@@ -646,16 +645,23 @@ describe("WorkerOrchestrator worker flows", () => {
       { id: 7, title: "Chrome", url: "chrome://extensions" } as chrome.tabs.Tab
     );
 
-    expect(offscreenClient.stopSession).toHaveBeenCalledWith(7);
-    expect(offscreenClient.closeIfIdle).toHaveBeenCalledWith(0);
+    expect(offscreenClient.updateMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: 7,
+        title: "Chrome",
+        url: "chrome://extensions",
+        domain: undefined
+      })
+    );
+    expect(offscreenClient.updateMetadata.mock.calls[0]?.[0]).not.toHaveProperty("gainPercent");
   });
 
-  it("reapplies stored gain and metadata when a captured tab changes domain", async () => {
+  it("keeps the current manual gain when a captured tab changes domain even if the new site has a stored preference", async () => {
     const storage = new SettingsRepository(createMemoryStorage().area);
     await storage.setDomainGain("rumble.com", 260);
     const offscreenClient = {
-      getSnapshot: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 220)]),
-      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "rumble.com", 260)])
+      getSnapshot: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 340)]),
+      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "rumble.com", 340)])
     };
     tabsQuery.mockResolvedValue([{ id: 7, title: "YouTube", url: "https://youtube.com/watch?v=1" }]);
 
@@ -671,10 +677,36 @@ describe("WorkerOrchestrator worker flows", () => {
     expect(offscreenClient.updateMetadata).toHaveBeenCalledWith(
       expect.objectContaining({
         tabId: 7,
-        domain: "rumble.com",
-        gainPercent: 260
+        domain: "rumble.com"
       })
     );
+    expect(offscreenClient.updateMetadata.mock.calls[0]?.[0]).not.toHaveProperty("gainPercent");
+  });
+
+  it("preserves the current manual gain when a captured tab navigates within the same site without a stored preference", async () => {
+    const storage = new SettingsRepository(createMemoryStorage().area);
+    const offscreenClient = {
+      getSnapshot: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 340)]),
+      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "youtube.com", 340)])
+    };
+    tabsQuery.mockResolvedValue([{ id: 7, title: "YouTube", url: "https://youtube.com/watch?v=1" }]);
+
+    const orchestrator = new WorkerOrchestrator(offscreenClient as never, storage, () => 41);
+    await orchestrator.bootstrap();
+
+    await orchestrator.handleTabUpdated(
+      7,
+      { url: "https://youtube.com/watch?v=2" },
+      { id: 7, title: "YouTube Next", url: "https://youtube.com/watch?v=2" } as chrome.tabs.Tab
+    );
+
+    expect(offscreenClient.updateMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: 7,
+        domain: "youtube.com"
+      })
+    );
+    expect(offscreenClient.updateMetadata.mock.calls[0]?.[0]).not.toHaveProperty("gainPercent");
   });
 
   it("activates global auto mode on tab updates and activations", async () => {

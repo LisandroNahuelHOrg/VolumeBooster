@@ -245,7 +245,7 @@ describe("WorkerOrchestrator", () => {
     expect(await storage.getDomainGain("youtube.com")).toBeUndefined();
   });
 
-  it("reapplies stored gain when a captured tab navigates to a new domain", async () => {
+  it("keeps the current manual gain when a captured tab navigates to a new domain", async () => {
     const memory = createMemoryStorage();
     const storage = new SettingsRepository(memory.area);
     await storage.setDomainGain("youtube.com", 240);
@@ -257,7 +257,7 @@ describe("WorkerOrchestrator", () => {
       setAdvancedAudioSettings: vi.fn(),
       stopSession: vi.fn(),
       stopAll: vi.fn(),
-      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "twitch.tv", 100)]),
+      updateMetadata: vi.fn().mockResolvedValue([makeSession(7, "twitch.tv", 240)]),
       closeIfIdle: vi.fn()
     };
 
@@ -282,10 +282,10 @@ describe("WorkerOrchestrator", () => {
       expect.objectContaining({
         tabId: 7,
         domain: "twitch.tv",
-        gainPercent: 100,
         advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       })
     );
+    expect(offscreenClient.updateMetadata.mock.calls[0]?.[0]).not.toHaveProperty("gainPercent");
   });
 
   it("applies advanced settings globally to running sessions", async () => {
