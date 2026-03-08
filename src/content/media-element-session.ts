@@ -103,7 +103,7 @@ export class MediaElementSession {
     gainPercent: number,
     advancedAudioSettings: AdvancedAudioSettings
   ): Promise<MediaElementSession> {
-    const initialAutoplayPolicy = getMediaAutoplayPolicy(mediaElement);
+    const mediaAutoplayPolicy = getMediaAutoplayPolicy(mediaElement);
 
     if (!shouldAttemptAutomaticMediaAttach(mediaElement)) {
       throw new MediaElementSessionError(
@@ -111,17 +111,65 @@ export class MediaElementSession {
         "Deferred AudioContext creation until audible playback is allowed.",
         {
           audioContextState: "none",
-          autoplayPolicy: initialAutoplayPolicy
+          autoplayPolicy: mediaAutoplayPolicy
         }
       );
     }
 
-    const audioContext = new AudioContext();
-    const autoplayPolicy = getAudioContextAutoplayPolicy(audioContext);
-    await audioContext.resume().catch(() => undefined);
+    let audioContext: AudioContext;
+
+    try {
+      audioContext = new AudioContext();
+    } catch (error) {
+      throw new MediaElementSessionError(
+        "autoplay_blocked",
+        `AudioContext was not allowed to start. ${(error instanceof Error ? error.message : "Unknown startup error.")}`,
+        {
+          audioContextState: "none",
+          autoplayPolicy: mediaAutoplayPolicy
+        }
+      );
+    }
+
+    if (!isUserActivationAllowedForAudioContext()) {
+      await audioContext.close().catch(() => undefined);
+      throw new MediaElementSessionError(
+        "autoplay_blocked",
+        "AudioContext requires a user gesture before starting.",
+        {
+          audioContextState: audioContext.state,
+          autoplayPolicy: mediaAutoplayPolicy
+        }
+      );
+    }
+
+    const audioContextAutoplayPolicy = getAudioContextAutoplayPolicy(audioContext);
+
+    if (!isAutoplayPolicyAllowed(audioContextAutoplayPolicy)) {
+      await audioContext.close().catch(() => undefined);
+      throw new MediaElementSessionError(
+        "autoplay_blocked",
+        `AudioContext autoplay policy is disallowed (${audioContextAutoplayPolicy}).`,
+        createDebugState(audioContext, audioContextAutoplayPolicy)
+      );
+    }
+
+    try {
+      await audioContext.resume();
+    } catch (error) {
+      await audioContext.close().catch(() => undefined);
+      throw new MediaElementSessionError(
+        "autoplay_blocked",
+        `AudioContext.resume() failed: ${error instanceof Error ? error.message : "Unknown resume error."}`,
+        {
+          audioContextState: audioContext.state,
+          autoplayPolicy: audioContextAutoplayPolicy
+        }
+      );
+    }
 
     if (audioContext.state !== "running") {
-      const debugState = createDebugState(audioContext, autoplayPolicy);
+      const debugState = createDebugState(audioContext, audioContextAutoplayPolicy);
       await audioContext.close().catch(() => undefined);
       throw new MediaElementSessionError(
         "autoplay_blocked",
@@ -137,7 +185,7 @@ export class MediaElementSession {
     } catch (error) {
       const technicalMessage =
         error instanceof Error ? error.message : "MediaElementAudioSourceNode could not be created.";
-      const debugState = createDebugState(audioContext, autoplayPolicy);
+      const debugState = createDebugState(audioContext, audioContextAutoplayPolicy);
       await audioContext.close().catch(() => undefined);
       throw new MediaElementSessionError("source_conflict", technicalMessage, debugState);
     }
@@ -378,40 +426,13 @@ function getMediaAutoplayPolicy(mediaElement: HTMLMediaElement): string | undefi
  * autoplay.
  */
 export function shouldAttemptAutomaticMediaAttach(mediaElement: HTMLMediaElement): boolean {
-  if (!hasAttachablePlayback(mediaElement)) {
-    return false;
-  }
+  const autoplayPolicy = getMediaAutoplayPolicy(mediaElement);
 
-  if (!isAudibleMediaElement(mediaElement)) {
-    return false;
-  }
-
-  const userActivation = (
-    navigator as Navigator & {
-      userActivation?: {
-        hasBeenActive?: boolean;
-        isActive?: boolean;
-      };
-    }
-  ).userActivation;
-
-  if (userActivation?.isActive || userActivation?.hasBeenActive) {
-    return true;
-  }
-
-  const mediaPolicy = getMediaAutoplayPolicy(mediaElement);
-
-  if (mediaPolicy === "allowed") {
-    return true;
-  }
-
-  const audioContextPolicy = getNavigatorAutoplayPolicy("audiocontext");
-
-  if (audioContextPolicy === "allowed") {
-    return true;
-  }
-
-  return mediaPolicy === undefined && audioContextPolicy === undefined;
+  return (
+    hasAttachablePlayback(mediaElement) &&
+    isAutoplayPolicyAllowed(autoplayPolicy) &&
+    isUserActivationAllowedForAudioContext()
+  );
 }
 
 /**
@@ -420,20 +441,12 @@ export function shouldAttemptAutomaticMediaAttach(mediaElement: HTMLMediaElement
  */
 function hasAttachablePlayback(mediaElement: HTMLMediaElement): boolean {
   return (
-    !mediaElement.paused &&
     !mediaElement.ended &&
+    !mediaElement.paused &&
     Boolean(mediaElement.currentSrc || mediaElement.srcObject) &&
     mediaElement.readyState >=
-    (typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_CURRENT_DATA : 2)
+    (typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_METADATA : 1)
   );
-}
-
-/**
- * Determina si el media element expone audio utilizable para el lane global.
- */
-function isAudibleMediaElement(mediaElement: HTMLMediaElement): boolean {
-  const volume = typeof mediaElement.volume === "number" ? mediaElement.volume : 1;
-  return !mediaElement.muted && !mediaElement.defaultMuted && volume > 0;
 }
 
 /**
@@ -462,10 +475,43 @@ function getNavigatorAutoplayPolicy(
   }
 
   try {
-    return policyApi(fallbackTarget);
+  return policyApi(fallbackTarget);
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Retorna `true` cuando la policy permite iniciar Web Audio sin bloquearse por
+ * autoplay.
+ */
+function isAutoplayPolicyAllowed(autoplayPolicy?: string): boolean {
+  if (!autoplayPolicy) {
+    return true;
+  }
+
+  return !autoplayPolicy.toLowerCase().includes("disallowed");
+}
+
+/**
+ * Devuelve `true` si hay evidencia de gesto de usuario disponible para arrancar
+ * audio.
+ */
+function isUserActivationAllowedForAudioContext(): boolean {
+  const userActivation = (
+    navigator as Navigator & {
+      userActivation?: {
+        isActive: boolean;
+        hasBeenActive: boolean;
+      };
+    }
+  ).userActivation;
+
+  if (!userActivation) {
+    return true;
+  }
+
+  return Boolean(userActivation.isActive || userActivation.hasBeenActive);
 }
 
 /**
