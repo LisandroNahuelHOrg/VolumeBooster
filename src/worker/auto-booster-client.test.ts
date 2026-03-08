@@ -128,7 +128,7 @@ describe("AutoBoosterClient", () => {
 
   it("normalizes permission errors and attach failures", async () => {
     const client = new AutoBoosterClient();
-    executeScript.mockRejectedValueOnce(new Error("Cannot access contents of the page."));
+    executeScript.mockRejectedValue(new Error("Cannot access contents of the page."));
 
     await expect(
       client.configure(3, {
@@ -141,6 +141,7 @@ describe("AutoBoosterClient", () => {
       })
     ).rejects.toEqual({ key: "errorAutoPermissionMissing" });
 
+    executeScript.mockReset();
     executeScript.mockResolvedValueOnce(undefined);
     sendMessage.mockRejectedValueOnce(new Error("Boom"));
 
