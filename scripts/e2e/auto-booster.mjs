@@ -99,11 +99,19 @@ async function runFixtureScenarios(context, automationPage, fixtureServer) {
     {
       name: "fixture-site-audio-basic",
       url: `${baseUrl}/audio-basic.html`,
-      mode: "site",
+      mode: "manual",
       async run(page, tabId) {
         await page.click("#start-playback");
-        const finalDebug = await waitForDebugState(automationPage, tabId, (debug) => debug?.attachState === "attached");
-        return evaluateScenarioResult("attached", finalDebug);
+        const finalState = await waitForWorkerState(
+          automationPage,
+          (state) => hasManualSession(state, tabId),
+          12000
+        );
+        return {
+          classification: "pass_manual",
+          passed: hasManualSession(finalState, tabId),
+          finalDebug: null
+        };
       }
     },
     {
@@ -258,7 +266,7 @@ async function runPublicSiteScenarios(context, automationPage) {
     {
       name: "youtube-site",
       url: "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-      mode: "site",
+      mode: "manual",
       startPlayback: startYouTubePlayback
     },
     {
@@ -324,9 +332,12 @@ async function runPublicSiteScenarios(context, automationPage) {
 
     finalDebug ??= await pollForDebugState(automationPage, activeTab.id, 5000);
     const finalDebugResponse = await getDebugStateResponse(automationPage, activeTab.id);
-    const classification = classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted);
     const stateResponse = await getStateResponse(automationPage);
     const state = stateResponse?.ok ? stateResponse.data : null;
+    const classification =
+      scenario.mode === "manual"
+        ? classifyManualSiteResult(state, activeTab.id)
+        : classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted);
     logScenarioData(scenario.name, "final-debug", finalDebug);
 
     results.push({
@@ -354,7 +365,7 @@ async function runPublicSiteScenarios(context, automationPage) {
 
 async function armScenario(automationPage, tabId, mode) {
   logStep(`Arming tab ${tabId} with mode ${mode}`);
-  if (mode === "site") {
+  if (mode === "site" || mode === "manual") {
     return sendCommandDetailed(automationPage, {
       type: "ENABLE_CURRENT_TAB_BOOSTER",
       payload: { tabId, gainPercent: 100 }
@@ -457,6 +468,13 @@ async function getState(automationPage) {
 
 async function getStateResponse(automationPage) {
   return automationPage.evaluate(() => window.__PRISM_AUTOMATION__.getStateDetailed());
+}
+
+async function waitForWorkerState(automationPage, predicate, timeoutMs = 12000) {
+  return waitFor(async () => {
+    const state = await getState(automationPage);
+    return predicate(state) ? state : null;
+  }, timeoutMs);
 }
 
 async function getActiveTab(automationPage) {
@@ -620,6 +638,21 @@ function classifyPublicSiteResult(initialDebug, finalDebug, playbackStarted) {
   }
 
   return "product_bug";
+}
+
+function classifyManualSiteResult(state, tabId) {
+  return hasManualSession(state, tabId) ? "pass_manual" : "product_bug";
+}
+
+function hasManualSession(state, tabId) {
+  return Boolean(
+    state?.sessions?.some(
+      (session) =>
+        session?.tabId === tabId &&
+        session.engineLane === "manual_tab_capture" &&
+        (session.streamState === "pending" || session.streamState === "active")
+    )
+  );
 }
 
 async function captureScenarioScreenshot(page, name) {

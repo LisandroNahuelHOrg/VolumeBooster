@@ -3,30 +3,28 @@ import { AutoBoosterClient } from "./auto-booster-client";
 
 describe("AutoBoosterClient", () => {
   const executeScript = vi.fn();
+  const registerContentScripts = vi.fn();
   const sendMessage = vi.fn();
   const requestPermission = vi.fn();
   const containsPermission = vi.fn();
   const queryTabs = vi.fn();
   const unregisterContentScripts = vi.fn();
-  const getUrl = vi.fn((path: string) => `chrome-extension://test/${path}`);
 
   beforeEach(() => {
     executeScript.mockReset();
+    registerContentScripts.mockReset();
     sendMessage.mockReset();
     requestPermission.mockReset();
     containsPermission.mockReset();
     queryTabs.mockReset();
     unregisterContentScripts.mockReset();
-    getUrl.mockClear();
 
     vi.stubGlobal(
       "chrome",
       {
-        runtime: {
-          getURL: getUrl
-        },
         scripting: {
           executeScript,
+          registerContentScripts,
           unregisterContentScripts
         },
         tabs: {
@@ -59,11 +57,15 @@ describe("AutoBoosterClient", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     });
 
-    expect(executeScript).toHaveBeenCalledTimes(1);
+    expect(executeScript).toHaveBeenCalledTimes(2);
     expect(executeScript).toHaveBeenNthCalledWith(1, {
-      target: { tabId: 14 },
-      func: expect.any(Function),
-      args: ["chrome-extension://test/assets/auto-booster.js"]
+      target: { tabId: 14, allFrames: true },
+      files: ["content-scripts/auto-booster-isolated.js"]
+    });
+    expect(executeScript).toHaveBeenNthCalledWith(2, {
+      target: { tabId: 14, allFrames: true },
+      files: ["content-scripts/auto-booster-main.js"],
+      world: "MAIN"
     });
     expect(sendMessage).toHaveBeenNthCalledWith(1, 14, {
       type: "AUTO_BOOSTER_CONFIGURE",
@@ -94,7 +96,7 @@ describe("AutoBoosterClient", () => {
       advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     });
 
-    expect(executeScript).toHaveBeenCalledTimes(2);
+    expect(executeScript).toHaveBeenCalledTimes(4);
     expect(sendMessage).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
   });
@@ -120,7 +122,7 @@ describe("AutoBoosterClient", () => {
     ).rejects.toEqual({ key: "errorAutoAttachFailed" });
 
     expect(sendMessage).toHaveBeenCalledTimes(2);
-    expect(executeScript).toHaveBeenCalledTimes(1);
+    expect(executeScript).toHaveBeenCalledTimes(2);
     expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 50);
   });
 
@@ -183,8 +185,7 @@ describe("AutoBoosterClient", () => {
     requestPermission.mockResolvedValueOnce(true);
     containsPermission.mockResolvedValueOnce(true);
     queryTabs.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
-    executeScript.mockResolvedValueOnce(undefined);
-    sendMessage.mockResolvedValueOnce({ ready: true }).mockResolvedValueOnce({ attachState: "attached" });
+    sendMessage.mockResolvedValueOnce({ attachState: "attached" });
 
     await expect(client.requestGlobalPermission()).resolves.toBe(true);
     await expect(client.hasGlobalPermission()).resolves.toBe(true);
@@ -214,6 +215,28 @@ describe("AutoBoosterClient", () => {
     expect(unregisterContentScripts).toHaveBeenNthCalledWith(1, {
       ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
     });
+    expect(registerContentScripts).toHaveBeenCalledWith([
+      {
+        id: "prism-auto-booster-isolated",
+        js: ["content-scripts/auto-booster-isolated.js"],
+        matches: ["http://*/*", "https://*/*"],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "ISOLATED"
+      },
+      {
+        id: "prism-auto-booster-main",
+        js: ["content-scripts/auto-booster-main.js"],
+        matches: ["http://*/*", "https://*/*"],
+        allFrames: true,
+        matchOriginAsFallback: true,
+        persistAcrossSessions: true,
+        runAt: "document_start",
+        world: "MAIN"
+      }
+    ]);
     expect(unregisterContentScripts).toHaveBeenNthCalledWith(2, {
       ids: ["prism-auto-booster-isolated", "prism-auto-booster-main"]
     });
