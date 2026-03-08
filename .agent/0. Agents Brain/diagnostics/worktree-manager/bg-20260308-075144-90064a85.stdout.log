@@ -1,0 +1,19 @@
+🔄 Sincronizando main local con origin/main (NO destructivo)...
+📦 Dependencias OK para 'WorktreeDerArriba/fixed-open'.
+📦 Dependencias OK para 'WorktreeDerArriba/fixed-open/deps'.
+⚠️  Omitiendo fallback de eslint-plugin-speedsuite/dist en 'WorktreeDerArriba/fixed-open' porque no aplica en este proyecto.
+ℹ️ No hay cambios pendientes para session-start autosave en 'D:\Local Worktrees\WorktreeDerArriba'.
+
+═══════════════════════════════════════════
+✅ MONITOR LISTO: WorktreeDerArriba
+   Path:   D:\Local Worktrees\WorktreeDerArriba
+   Branch: monitor-der-arriba
+   Scope:  monitor-der-arriba
+   Estado vs origin/main: ahead=0, behind=0
+   Main local sync: ⚠️ no sincronizado (bloqueado por estado local)
+   Session sync monitor: ✅ ya estaba alineado
+   Worktree: reutilizado
+   Autosave: ℹ️ sin cambios pendientes
+   Para trabajar: cd D:\Local Worktrees\WorktreeDerArriba
+═══════════════════════════════════════════
+

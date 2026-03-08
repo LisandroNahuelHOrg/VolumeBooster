@@ -97,50 +97,6 @@ describe("aggregateAutoFrameStates", () => {
     });
   });
 
-  it("keeps attached auto lane when a frame is attached even if level is currently 0", () => {
-    const aggregation = aggregateAutoFrameStates(
-      7,
-      [
-        makeFrameState({
-          frameId: 0,
-          isTopFrame: true,
-          autoAttachState: "attached",
-          autoAttachReason: undefined,
-          autoActiveStrategy: "media_element",
-          streamState: "active",
-          level: 0,
-          warning: "none",
-          protectorActionDb: 0,
-          clipEvents: 0,
-          clipPeak: 0,
-          outputPeak: 0
-        }),
-        makeFrameState({
-          frameId: 1,
-          isTopFrame: false,
-          autoAttachState: "observing",
-          autoAttachReason: "no_media",
-          streamState: "inactive"
-        })
-      ],
-      () => 123456
-    );
-
-    expect(aggregation?.tabState).toMatchObject({
-      tabId: 7,
-      autoAttachState: "attached",
-      autoAttachReason: undefined
-    });
-    expect(aggregation?.session).toMatchObject({
-      streamState: "active",
-      autoActiveStrategy: "media_element",
-      level: 0,
-      warning: "none",
-      protectionBypassed: false,
-      outputPeak: 0
-    });
-  });
-
   it("prefers awaiting_user_gesture over failed when nothing is attached", () => {
     const aggregation = aggregateAutoFrameStates(
       7,

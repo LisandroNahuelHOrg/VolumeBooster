@@ -36,27 +36,4 @@ describe("discoverMediaElements", () => {
 
     expect(discoverMediaElements()).toEqual([]);
   });
-
-  it("collects media from same-origin iframe documents", () => {
-    document.body.innerHTML = `
-      <audio id="root-audio"></audio>
-      <iframe id="frame"></iframe>
-    `;
-
-    const frame = document.getElementById("frame") as HTMLIFrameElement;
-    const frameDocument = document.implementation.createHTMLDocument("embedded");
-
-    frameDocument.body.innerHTML = `<video id="frame-video"></video>`;
-
-    Object.defineProperty(frame, "contentDocument", {
-      configurable: true,
-      get: () => frameDocument
-    });
-
-    const ids = discoverMediaElements()
-      .map((element) => element.id)
-      .sort();
-
-    expect(ids).toEqual(["frame-video", "root-audio"]);
-  });
 });

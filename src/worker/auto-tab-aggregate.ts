@@ -40,7 +40,9 @@ export function aggregateAutoFrameStates(
   }
 
   const preferredFrame = pickPreferredFrame(frameStates);
-  const attachedFrames = frameStates.filter((frame) => frame.autoAttachState === "attached");
+  const attachedFrames = frameStates.filter(
+    (frame) => frame.autoAttachState === "attached" && frame.streamState === "active"
+  );
   const mediaAttached = attachedFrames.some((frame) =>
     frame.autoActiveStrategy === "media_element" || frame.autoActiveStrategy === "hybrid"
   );

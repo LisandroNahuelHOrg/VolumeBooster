@@ -1,0 +1,5 @@
+Exception: D:\OfiDrive\0. Programacion\SpeedSuite Beta\scripts\worktree-manager.ps1:2190
+Line |
+2190 |          throw "❌ Type inválido '$Type'. Valores válidos: $($ValidComm …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | ❌ Type inválido 'codex/fix'. Valores válidos: feat, fix, chore, refactor, test, docs, perf, ci

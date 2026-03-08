@@ -210,29 +210,6 @@ describe("MediaElementSession", () => {
     expect(FakeAudioContext.instances).toHaveLength(0);
   });
 
-  it("defers AudioContext creation when autoplay policy is allowed-muted", async () => {
-    vi.stubGlobal("navigator", {
-      getAutoplayPolicy: vi.fn(() => "allowed-muted"),
-      userActivation: {
-        hasBeenActive: false,
-        isActive: false
-      }
-    } as unknown as Navigator);
-
-    await expect(
-      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
-    ).rejects.toMatchObject({
-      reason: "autoplay_blocked",
-      debugState: {
-        audioContextState: "none",
-        autoplayPolicy: "allowed-muted"
-      },
-      technicalMessage: expect.stringContaining("requires user gesture")
-    });
-
-    expect(FakeAudioContext.instances).toHaveLength(0);
-  });
-
   it("reports autoplay_blocked when resume leaves the context suspended", async () => {
     FakeAudioContext.nextState = "suspended";
     FakeAudioContext.keepStateOnResume = true;

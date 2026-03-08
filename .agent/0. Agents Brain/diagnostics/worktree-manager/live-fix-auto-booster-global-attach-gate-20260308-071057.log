@@ -1,0 +1,5 @@
+Exception: D:\OfiDrive\0. Programacion\SpeedSuite Beta\scripts\worktree-manager.ps1:3931
+Line |
+3931 |              throw "❌ Worktree no encontrado: $WorktreePath"
+     |              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | ❌ Worktree no encontrado: D:\SpeedSuite-Trees\fix-auto-booster-global-attach-gate

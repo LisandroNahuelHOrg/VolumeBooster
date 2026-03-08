@@ -2011,7 +2011,7 @@ describe("WorkerOrchestrator internals", () => {
     await commandPromise;
   });
 
-  it("keeps attached auto sessions while media capture is being discovered", () => {
+  it("keeps attached auto sessions only when both attach state and stream state are active", () => {
     const { internals } = createHarness();
 
     internals.applyAutoStatusUpdate(
@@ -2021,7 +2021,7 @@ describe("WorkerOrchestrator internals", () => {
         streamState: "inactive"
       })
     );
-    expect(internals.autoSessions.has(940)).toBe(true);
+    expect(internals.autoSessions.has(940)).toBe(false);
 
     internals.applyAutoStatusUpdate(
       makeAutoStatus({

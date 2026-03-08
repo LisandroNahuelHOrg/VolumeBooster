@@ -495,11 +495,7 @@ function isAutoplayPolicyAllowed(autoplayPolicy?: string): boolean {
     return true;
   }
 
-  const normalizedPolicy = autoplayPolicy.toLowerCase();
-
-  return !["disallowed", "required", "muted"].some((forbiddenFragment) =>
-    normalizedPolicy.includes(forbiddenFragment)
-  );
+  return !autoplayPolicy.toLowerCase().includes("disallowed");
 }
 
 /**
@@ -513,15 +509,13 @@ function getSampleSize(meta: { compile_options: string }): 4 | 8 {
  * Evalúa si hubo activación reciente del usuario en esta navegación.
  */
 function hasRecentUserGesture(): boolean {
-  const userActivation = (
-    navigator as Navigator & { userActivation?: { isActive?: boolean; hasBeenActive?: boolean } }
-  ).userActivation;
+  const userActivation = (navigator as Navigator & { userActivation?: { isActive?: boolean; hasBeenActive?: boolean } }).userActivation;
 
   if (!userActivation) {
     return true;
   }
 
-  return Boolean(userActivation.isActive || userActivation.hasBeenActive);
+  return Boolean(userActivation.isActive);
 }
 
 /**
