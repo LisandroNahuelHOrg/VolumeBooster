@@ -215,9 +215,35 @@ body[data-boosting="true"]::after {
 }
 
 .panel--current-tab {
+  --current-tab-subcard-inline-padding: 13.5px;
+  --current-tab-subcard-compact-inline-padding: 12px;
+  --current-tab-subcard-pill-inline-padding: 10px;
   padding-top: 12px;
   padding-bottom: 12px;
   gap: 10px;
+}
+
+.panel--current-tab .slider-card {
+  padding-inline: var(--current-tab-subcard-inline-padding);
+}
+
+.panel--current-tab .booster-lane-status,
+.panel--current-tab .ghost-button--lane,
+.panel--current-tab .quality-protector__top,
+.panel--current-tab .advanced-settings__summary {
+  padding-inline: var(--current-tab-subcard-inline-padding);
+}
+
+.panel--current-tab .gain-control,
+.panel--current-tab .quality-protector__body,
+.panel--current-tab .advanced-settings__body {
+  padding-inline: var(--current-tab-subcard-compact-inline-padding);
+}
+
+.panel--current-tab .telemetry-pill,
+.panel--current-tab .advanced-custom-badge,
+.panel--current-tab .advanced-presets .ghost-button {
+  padding-inline: var(--current-tab-subcard-pill-inline-padding);
 }
 
 .panel__header {
@@ -478,11 +504,12 @@ body[data-boosting="true"]::after {
   column-gap: 8px;
   row-gap: 9px;
   width: 100%;
+  max-width: 692px;
   min-width: 0;
   align-items: stretch;
   justify-items: stretch;
-  padding: 10px 10px 14px;
-  margin: -10px -10px -14px;
+  padding: 10px 0 14px;
+  margin: -10px auto -14px;
   overflow: visible;
 }
 
