@@ -80,9 +80,15 @@ export class AutoBoosterClient {
       return false;
     }
 
-    return chrome.permissions.request({
-      origins: ["<all_urls>"]
-    });
+    try {
+      return Boolean(
+        await chrome.permissions.request({
+          origins: ["<all_urls>"]
+        })
+      );
+    } catch {
+      return false;
+    }
   }
 
   async hasGlobalPermission(): Promise<boolean> {
@@ -96,9 +102,13 @@ export class AutoBoosterClient {
   }
 
   async queryInjectableTabs(): Promise<chrome.tabs.Tab[]> {
-    return chrome.tabs.query({
-      url: [...AUTO_BOOSTER_REGISTERED_MATCHES]
-    });
+    try {
+      return await chrome.tabs.query({
+        url: [...AUTO_BOOSTER_REGISTERED_MATCHES]
+      });
+    } catch {
+      return [];
+    }
   }
 
   async registerGlobalContentScripts(): Promise<void> {
@@ -138,20 +148,32 @@ export class AutoBoosterClient {
 
   async injectRegisteredScriptsIntoTab(tabId: number): Promise<void> {
     try {
-      await Promise.all([
-        chrome.scripting.executeScript({
-          target: { tabId, allFrames: true },
-          files: [AUTO_BOOSTER_CONTENT_SCRIPT_PATH]
-        }),
-        chrome.scripting.executeScript({
-          target: { tabId, allFrames: true },
-          files: [AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH],
-          world: "MAIN"
-        })
-      ]);
+      await this.injectRegisteredScriptsIntoTabWithTarget(tabId, { allFrames: true });
     } catch (error) {
-      throw normalizeContentScriptError(error);
+      // Top-frame fallback avoids failing all sites on cross-origin frame injection errors.
+      try {
+        await this.injectRegisteredScriptsIntoTabWithTarget(tabId, { allFrames: false });
+      } catch (fallbackError) {
+        throw normalizeContentScriptError(fallbackError);
+      }
     }
+  }
+
+  private async injectRegisteredScriptsIntoTabWithTarget(
+    tabId: number,
+    target: { allFrames: boolean }
+  ): Promise<void> {
+    await Promise.all([
+      chrome.scripting.executeScript({
+        target: { tabId, ...target },
+        files: [AUTO_BOOSTER_CONTENT_SCRIPT_PATH]
+      }),
+      chrome.scripting.executeScript({
+        target: { tabId, ...target },
+        files: [AUTO_BOOSTER_MAIN_WORLD_SCRIPT_PATH],
+        world: "MAIN"
+      })
+    ]);
   }
 
   async sendMessageToFrame<T = void>(

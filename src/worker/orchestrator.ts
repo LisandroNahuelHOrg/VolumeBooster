@@ -795,6 +795,9 @@ export class WorkerOrchestrator {
   ): void {
     const target = this.resolveFrameTarget(sender, update);
     const existingState = this.autoFrameRegistry.getFrameState(update.tabId, target);
+    const isGlobalMode = (update.autoBoosterScope ?? this.getAutoScopeForTab(update.tabId)) === "global";
+    const shouldObserveInsteadOfFail =
+      isGlobalMode && (update.autoAttachReason === "attach_failed" || update.autoAttachReason === "no_media");
 
     this.autoFrameRegistry.updateFrameState({
       ...(existingState ?? this.createEmptyFrameRuntimeState(update.tabId, target, update)),
@@ -803,7 +806,9 @@ export class WorkerOrchestrator {
       documentId: target.documentId,
       isTopFrame: update.isTopFrame ?? target.frameId === 0,
       frameUrl: update.frameUrl ?? sender?.url ?? update.url,
-      autoAttachState: "failed",
+      autoAttachState: shouldObserveInsteadOfFail ? "observing" : "failed",
+      autoAttachReason:
+        shouldObserveInsteadOfFail && isGlobalMode ? "no_media" : update.autoAttachReason,
       ready: true
     });
     this.audibleTabs.delete(update.tabId);
@@ -964,6 +969,9 @@ export class WorkerOrchestrator {
       );
     } catch (error) {
       const localizedError = this.toErrorMessage(error);
+      const shouldObserveInsteadOfFail =
+        this.shouldKeepAutoFrameInObservingMode(scope, localizedError);
+
       this.autoFrameRegistry.updateFrameState({
         ...(this.autoFrameRegistry.getFrameState(tabId, target) ??
           this.createEmptyFrameRuntimeState(tabId, target, {
@@ -980,9 +988,12 @@ export class WorkerOrchestrator {
         documentId: target.documentId,
         isTopFrame: payload.isTopFrame ?? target.frameId === 0,
         frameUrl: payload.frameUrl ?? sender?.url ?? payload.url,
-        autoAttachState: localizedError.key === "errorAutoPermissionMissing" ? "failed" : "failed",
-        autoAttachReason:
-          localizedError.key === "errorAutoPermissionMissing" ? "permission_missing" : "attach_failed",
+        autoAttachState: shouldObserveInsteadOfFail ? "observing" : "failed",
+        autoAttachReason: shouldObserveInsteadOfFail
+          ? "no_media"
+          : localizedError.key === "errorAutoPermissionMissing"
+            ? "permission_missing"
+            : "attach_failed",
         autoBoosterScope: scope,
         gainPercent,
         lastError: localizedError,
@@ -1179,24 +1190,49 @@ export class WorkerOrchestrator {
     }
 
     await this.disableAllSiteAutoTabs();
-    await this.registerGlobalContentScripts();
+
+    try {
+      await this.registerGlobalContentScripts();
+    } catch {
+      // Registration can fail in restrictive environments; fallback to dynamic injection.
+    }
 
     if (this.manualSessions.has(currentTabId)) {
-      await this.stopManualCapture(currentTabId);
+      try {
+        await this.stopManualCapture(currentTabId);
+      } catch {
+        // Keep global enable path alive even if manual capture teardown races.
+      }
     }
 
     this.autoBoosterMode = await this.settingsRepository.setAutoBoosterMode("global");
     const globalGainPercent = await this.settingsRepository.setGlobalAutoGainPercent(gainPercent);
     this.autoSuppressedTabs.clear();
 
-    const injectableTabs = await this.autoBoosterClient.queryInjectableTabs();
+    let injectableTabs: chrome.tabs.Tab[] = [];
+    try {
+      injectableTabs = await this.autoBoosterClient.queryInjectableTabs();
+    } catch {
+      injectableTabs = [];
+    }
+
+    if (injectableTabs.length === 0) {
+      const currentTab = await chrome.tabs.get(currentTabId).catch(() => null);
+      if (currentTab?.id && isSupportedTabUrl(currentTab.url)) {
+        injectableTabs = [currentTab];
+      }
+    }
 
     for (const tab of injectableTabs) {
       if (!tab.id || !isSupportedTabUrl(tab.url)) {
         continue;
       }
 
-      await this.activateAutoBoosterForTab(tab, "global", globalGainPercent);
+      try {
+        await this.activateAutoBoosterForTab(tab, "global", globalGainPercent);
+      } catch {
+        // Keep global mode enabled even if one tab fails while configuring.
+      }
     }
   }
 
@@ -1386,11 +1422,20 @@ export class WorkerOrchestrator {
     } catch (error) {
       const localizedError = this.toErrorMessage(error);
       this.autoSessions.delete(tab.id);
+      const shouldObserveInsteadOfFail = this.shouldKeepAutoLaneInObservingMode(scope, localizedError);
+
       this.autoTabStates.set(tab.id, {
         ...state,
-        autoAttachState: localizedError.key === "errorAutoPermissionMissing" ? "unsupported" : "failed",
-        autoAttachReason:
-          localizedError.key === "errorAutoPermissionMissing" ? "permission_missing" : "attach_failed",
+        autoAttachState: shouldObserveInsteadOfFail
+          ? "observing"
+          : localizedError.key === "errorAutoPermissionMissing"
+            ? "unsupported"
+            : "failed",
+        autoAttachReason: shouldObserveInsteadOfFail
+          ? "no_media"
+          : localizedError.key === "errorAutoPermissionMissing"
+            ? "permission_missing"
+            : "attach_failed",
         lastError: localizedError
       });
       this.rebuildEffectiveSessions();
@@ -1399,6 +1444,21 @@ export class WorkerOrchestrator {
         throw localizedError;
       }
     }
+  }
+
+  private shouldKeepAutoLaneInObservingMode(scope: AutoBoosterScope, error: LocalizedMessage): boolean {
+    return scope === "global" && error.key !== "errorAutoPermissionMissing";
+  }
+
+  private shouldKeepAutoFrameInObservingMode(
+    scope: AutoBoosterScope | null | undefined,
+    error?: LocalizedMessage
+  ): boolean {
+    if (scope !== "global") {
+      return false;
+    }
+
+    return !error || error.key !== "errorAutoPermissionMissing";
   }
 
   private async pauseAutoLaneForManual(tabId: number): Promise<void> {
