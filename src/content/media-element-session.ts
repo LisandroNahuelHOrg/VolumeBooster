@@ -131,18 +131,6 @@ export class MediaElementSession {
       );
     }
 
-    if (!isUserActivationAllowedForAudioContext()) {
-      await audioContext.close().catch(() => undefined);
-      throw new MediaElementSessionError(
-        "autoplay_blocked",
-        "AudioContext requires a user gesture before starting.",
-        {
-          audioContextState: audioContext.state,
-          autoplayPolicy: mediaAutoplayPolicy
-        }
-      );
-    }
-
     const audioContextAutoplayPolicy = getAudioContextAutoplayPolicy(audioContext);
 
     if (!isAutoplayPolicyAllowed(audioContextAutoplayPolicy)) {
@@ -428,11 +416,7 @@ function getMediaAutoplayPolicy(mediaElement: HTMLMediaElement): string | undefi
 export function shouldAttemptAutomaticMediaAttach(mediaElement: HTMLMediaElement): boolean {
   const autoplayPolicy = getMediaAutoplayPolicy(mediaElement);
 
-  return (
-    hasAttachablePlayback(mediaElement) &&
-    isAutoplayPolicyAllowed(autoplayPolicy) &&
-    isUserActivationAllowedForAudioContext()
-  );
+  return hasAttachablePlayback(mediaElement) && isAutoplayPolicyAllowed(autoplayPolicy);
 }
 
 /**
@@ -491,27 +475,6 @@ function isAutoplayPolicyAllowed(autoplayPolicy?: string): boolean {
   }
 
   return !autoplayPolicy.toLowerCase().includes("disallowed");
-}
-
-/**
- * Devuelve `true` si hay evidencia de gesto de usuario disponible para arrancar
- * audio.
- */
-function isUserActivationAllowedForAudioContext(): boolean {
-  const userActivation = (
-    navigator as Navigator & {
-      userActivation?: {
-        isActive: boolean;
-        hasBeenActive: boolean;
-      };
-    }
-  ).userActivation;
-
-  if (!userActivation) {
-    return true;
-  }
-
-  return Boolean(userActivation.isActive || userActivation.hasBeenActive);
 }
 
 /**
