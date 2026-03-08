@@ -119,7 +119,6 @@ export class AutoBoosterController {
   private refreshInFlight = false;
   private refreshQueued = false;
   private bridgeListenersBound = false;
-  private lastAutoRetryAt = 0;
 
   async configure(payload: AutoBoosterConfigPayload): Promise<void> {
     this.ensureBridgeListeners();
@@ -141,7 +140,6 @@ export class AutoBoosterController {
     this.lastAudioContextState = "none";
     this.lastAutoplayPolicy = undefined;
     this.lastTechnicalError = undefined;
-    this.lastAutoRetryAt = 0;
 
     if (!payload.enabled) {
       this.postBridgeCommand({
@@ -342,16 +340,6 @@ export class AutoBoosterController {
       }
 
       if (!isMediaElementReadyForAttach(mediaElement)) {
-        if (
-          isPotentialMediaForAutomaticAttach(mediaElement) &&
-          !shouldAttemptAutomaticMediaAttach(mediaElement)
-        ) {
-          this.state.attachState = "awaiting_user_gesture";
-          this.state.attachReason = "autoplay_blocked";
-          this.state.lastError = message("errorAutoAwaitingGesture");
-          this.armGestureRetry();
-        }
-
         this.ensurePendingMediaRetryListeners(mediaElement);
         continue;
       }
@@ -374,8 +362,7 @@ export class AutoBoosterController {
         this.lastAudioContextState = debugState.audioContextState;
         this.lastAutoplayPolicy = debugState.autoplayPolicy;
         this.lastTechnicalError = undefined;
-        this.state.attachState = "attached";
-        this.state.attachReason = undefined;
+        this.state.activeStrategy = "media_element";
         this.state.lastError = undefined;
         this.disarmGestureRetry();
       } catch (error) {
@@ -474,40 +461,82 @@ export class AutoBoosterController {
    * Publica nivel, warning y métricas del lane automático al worker.
    */
   private publishTelemetry(): void {
+    if (!this.state.enabled || this.state.suspended || this.state.tabId === null) {
+      return;
+    }
+
     if (
-      !this.state.enabled ||
-      this.state.suspended ||
-      this.state.tabId === null ||
-      this.state.attachState !== "attached"
+      (this.state.attachState === "observing" && this.state.attachReason === "no_media") ||
+      this.state.attachState === "awaiting_user_gesture"
     ) {
       return;
     }
 
+    const previousAttachState = this.state.attachState;
+    const previousAttachReason = this.state.attachReason;
+    const previousActiveStrategy = this.state.activeStrategy;
+
     const telemetryValues = [...this.trackedSessions.values()].map((trackedSession) => {
+      const debugState = trackedSession.session.getDebugState();
+
+      this.lastAudioContextState = debugState.audioContextState;
+      this.lastAutoplayPolicy = debugState.autoplayPolicy;
+
       trackedSession.lastTelemetry = trackedSession.session.sampleTelemetry();
       return trackedSession.lastTelemetry;
     });
 
-    if (this.bridgeTelemetry.activeStrategy !== "none") {
+    const bridgeTelemetryValue =
+      this.bridgeStatus.attachState === "attached" && this.bridgeTelemetry.activeStrategy === "web_audio_bridge"
+        ? {
+            level: this.bridgeTelemetry.level,
+            warning: this.bridgeTelemetry.warning,
+            metrics: {
+              protectorActionDb: this.bridgeTelemetry.metrics.protectorActionDb,
+              clipEvents: this.bridgeTelemetry.metrics.clipEvents,
+              clipPeak: this.bridgeTelemetry.metrics.clipPeak,
+              protectionBypassed: this.bridgeTelemetry.metrics.protectionBypassed,
+              inputPeak: this.bridgeTelemetry.level,
+              outputPeak: this.bridgeTelemetry.metrics.outputPeak
+            }
+          }
+        : null;
+
+    if (bridgeTelemetryValue) {
       telemetryValues.push({
-        level: this.bridgeTelemetry.level,
-        warning: this.bridgeTelemetry.warning,
-        metrics: {
-          protectorActionDb: this.bridgeTelemetry.metrics.protectorActionDb,
-          clipEvents: this.bridgeTelemetry.metrics.clipEvents,
-          clipPeak: this.bridgeTelemetry.metrics.clipPeak,
-          protectionBypassed: this.bridgeTelemetry.metrics.protectionBypassed,
-          inputPeak: this.bridgeTelemetry.level,
-          outputPeak: this.bridgeTelemetry.metrics.outputPeak
-        }
+        ...bridgeTelemetryValue
       });
     }
 
     if (telemetryValues.length === 0) {
+      this.lastTelemetryAt = null;
+      this.lastLevel = 0;
       this.syncAttachState();
-      this.reportStatus();
+      if (
+        previousAttachState !== this.state.attachState ||
+        previousAttachReason !== this.state.attachReason ||
+        previousActiveStrategy !== this.state.activeStrategy
+      ) {
+        this.reportStatus();
+      }
       return;
     }
+
+    const aggregatedTelemetry = {
+      level: roundTo(Math.max(...telemetryValues.map((telemetry) => telemetry.level)), 4),
+      warning: pickHighestWarning(telemetryValues.map((telemetry) => telemetry.warning)),
+      protectorActionDb: roundTo(
+        Math.max(...telemetryValues.map((telemetry) => telemetry.metrics.protectorActionDb)),
+        2
+      ),
+      clipEvents: telemetryValues.reduce((sum, telemetry) => sum + telemetry.metrics.clipEvents, 0),
+      clipPeak: roundTo(Math.max(...telemetryValues.map((telemetry) => telemetry.metrics.clipPeak)), 4),
+      protectionBypassed: telemetryValues.some((telemetry) => telemetry.metrics.protectionBypassed),
+      outputPeak: roundTo(Math.max(...telemetryValues.map((telemetry) => telemetry.metrics.outputPeak)), 4)
+    };
+
+    this.lastTelemetryAt = Math.max(Date.now(), this.bridgeTelemetry.lastTelemetryAt || 0);
+    this.lastLevel = aggregatedTelemetry.level;
 
     const payload: AutoSessionLevelPayload = {
       tabId: this.state.tabId,
@@ -524,13 +553,22 @@ export class AutoBoosterController {
       protectionBypassed: telemetryValues.some((telemetry) => telemetry.metrics.protectionBypassed),
       outputPeak: roundTo(Math.max(...telemetryValues.map((telemetry) => telemetry.metrics.outputPeak)), 4)
     };
-    this.lastTelemetryAt = Math.max(Date.now(), this.bridgeTelemetry.lastTelemetryAt || 0);
+    this.lastTelemetryAt = Math.max(Date.now(), this.lastTelemetryAt || 0);
     this.lastLevel = payload.level;
 
     void this.postRuntimeMessage({
       type: "AUTO_SESSION_LEVEL_UPDATE",
       payload
     });
+
+    this.syncAttachState();
+    if (
+      previousAttachState !== this.state.attachState ||
+      previousAttachReason !== this.state.attachReason ||
+      previousActiveStrategy !== this.state.activeStrategy
+    ) {
+      this.reportStatus();
+    }
   }
 
   /**
@@ -545,15 +583,17 @@ export class AutoBoosterController {
       return;
     }
 
-    const hasMediaStrategy = this.trackedSessions.size > 0;
+    const hasMediaSession = [...this.trackedSessions.values()].some((trackedSession) =>
+      trackedSession.session.getDebugState().audioContextState === "running"
+    );
     const hasBridgeStrategy =
-      this.bridgeStatus.attachState === "attached" && this.bridgeStatus.activeStrategy === "web_audio_bridge";
+      this.bridgeStatus.attachState === "attached" && this.bridgeTelemetry.activeStrategy === "web_audio_bridge";
 
-    if (hasMediaStrategy || hasBridgeStrategy) {
+    if (hasMediaSession || hasBridgeStrategy) {
       this.state.attachState = "attached";
       this.state.attachReason = undefined;
       this.state.activeStrategy =
-        hasMediaStrategy && hasBridgeStrategy
+        hasMediaSession && hasBridgeStrategy
           ? "hybrid"
           : hasBridgeStrategy
             ? "web_audio_bridge"
@@ -656,24 +696,19 @@ export class AutoBoosterController {
    */
   private syncLocationState(): void {
     if (window.location.href === this.lastLocationHref) {
-      if (
-        this.state.enabled &&
-        !this.state.suspended &&
-        this.state.advancedAudioSettings &&
-        this.trackedSessions.size === 0
-      ) {
-        const shouldRetryObserving =
-          this.state.attachState === "observing" && this.state.attachReason === "no_media";
-        const shouldRetryAwaiting = this.state.attachState === "awaiting_user_gesture";
+      if (this.state.enabled && !this.state.suspended && this.state.advancedAudioSettings) {
+        const previousAttachState = this.state.attachState;
+        const previousAttachReason = this.state.attachReason;
+        const previousActiveStrategy = this.state.activeStrategy;
 
-        if (shouldRetryObserving || shouldRetryAwaiting) {
-          const now = Date.now();
-          const retryIntervalMs = shouldRetryAwaiting ? 1250 : 500;
+        this.syncAttachState();
 
-          if (now - this.lastAutoRetryAt >= retryIntervalMs) {
-            this.lastAutoRetryAt = now;
-            void this.runRefreshMediaTracking();
-          }
+        if (
+          previousAttachState !== this.state.attachState ||
+          previousAttachReason !== this.state.attachReason ||
+          previousActiveStrategy !== this.state.activeStrategy
+        ) {
+          this.reportStatus();
         }
       }
 
@@ -681,7 +716,6 @@ export class AutoBoosterController {
     }
 
     this.lastLocationHref = window.location.href;
-    this.lastAutoRetryAt = 0;
     this.pruneDetachedSessions();
     this.lastTechnicalError = undefined;
     this.syncAttachState();
@@ -904,21 +938,7 @@ function roundTo(value: number, precision: number): number {
  * autoplay prematuros.
  */
 function isMediaElementReadyForAttach(mediaElement: HTMLMediaElement): boolean {
-  return (
-    isPotentialMediaForAutomaticAttach(mediaElement) && shouldAttemptAutomaticMediaAttach(mediaElement)
-  );
-}
-
-/**
- * Indica si el media element tiene metadata, no está finalizado y ya expone
- * una fuente utilizable para intentar attach automático.
- */
-function isPotentialMediaForAutomaticAttach(mediaElement: HTMLMediaElement): boolean {
-  const haveMetadata =
-    typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_METADATA : 1;
-  const hasSource = Boolean(mediaElement.currentSrc || mediaElement.srcObject);
-
-  return hasSource && !mediaElement.ended && mediaElement.readyState >= haveMetadata;
+  return shouldAttemptAutomaticMediaAttach(mediaElement);
 }
 
 /**
@@ -935,3 +955,4 @@ function pickHighestWarning(values: LevelWarning[]): LevelWarning {
 
   return "none";
 }
+

@@ -368,6 +368,8 @@ describe("AutoBoosterController", () => {
     const controller = new AutoBoosterController();
 
     await controller.configure(makePayload());
+    await Promise.resolve();
+    await Promise.resolve();
 
     const debugState = controller.getDebugState();
     expect(debugState.attachState).toBe("attached");
@@ -749,6 +751,74 @@ describe("AutoBoosterController", () => {
     expect(scanForMediaElementsSpy).not.toHaveBeenCalled();
   });
 
+  it("switches to observing/no_media when the currently tracked media element becomes paused", async () => {
+    const controller = new AutoBoosterController();
+    const pausedMediaElement: HTMLMediaElement = {
+      ...fakeMediaElement,
+      paused: true
+    } as HTMLMediaElement;
+
+    (
+      controller as unknown as {
+        trackedSessions: Map<HTMLMediaElement, { session: ReturnType<typeof createFakeSession>; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        state: {
+          enabled: boolean;
+          suspended: boolean;
+          advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS | null;
+          attachState: "attached" | "observing";
+          tabId: number | null;
+          activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+          attachReason?: "no_media";
+        };
+      }
+    ).trackedSessions.set(pausedMediaElement, {
+      session: createFakeSession(),
+      lastTelemetry: makeTelemetry()
+    });
+    (
+      controller as unknown as {
+        state: {
+          enabled: boolean;
+          suspended: boolean;
+          advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS | null;
+          attachState: "attached" | "observing";
+          tabId: number | null;
+          activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+          attachReason?: "no_media";
+        };
+      }
+    ).state = {
+      ...(
+        controller as unknown as {
+          state: {
+            enabled: boolean;
+            suspended: boolean;
+            advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS | null;
+            attachState: "attached" | "observing";
+            tabId: number | null;
+            activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+            attachReason?: "no_media";
+          };
+        }
+      ).state,
+      enabled: true,
+      suspended: false,
+      advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      attachState: "attached",
+      tabId: 7,
+      activeStrategy: "media_element",
+      attachReason: undefined
+    };
+
+    runtimeSendMessage.mockClear();
+    (controller as unknown as { syncLocationState: () => void }).syncLocationState();
+
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      attachReason: undefined
+    });
+  });
+
   it("falls back to an untitled title and prefers the explicit favicon when present", async () => {
     documentQuerySelector.mockImplementation((selector: string) => {
       if (selector === 'link[rel~="icon"][href]') {
@@ -1003,7 +1073,7 @@ describe("AutoBoosterController", () => {
       lastLevel: 0.81,
       lastTelemetryAt: expect.any(Number)
     });
-    expect(runtimeSendMessage).toHaveBeenLastCalledWith({
+    expect(runtimeSendMessage).toHaveBeenCalledWith({
       type: "AUTO_SESSION_LEVEL_UPDATE",
       payload: {
         tabId: 7,
@@ -1054,7 +1124,8 @@ describe("AutoBoosterController", () => {
         enabled: true,
         suspended: false,
         tabId: 7,
-        attachState: "observing" as const
+        attachState: "observing" as const,
+        attachReason: "no_media" as const
       }
     ]
   ])("does not sample or post telemetry when %s", (_label, stateOverride) => {
@@ -1492,6 +1563,8 @@ describe("AutoBoosterController", () => {
     const controller = new AutoBoosterController();
 
     await controller.configure(makePayload());
+    await Promise.resolve();
+    await Promise.resolve();
     fakeSession.sampleTelemetry.mockReset();
     fakeSession.sampleTelemetry
       .mockReturnValueOnce(
