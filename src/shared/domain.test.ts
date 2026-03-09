@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Covers domain parsing, favicon derivation, and supported-tab
+ * summary helpers.
+ * @module shared/domain.test
+ */
+
 import { buildTabSummary, getDomainFromUrl, getDuckDuckGoFaviconUrl, isSupportedTabUrl } from "./domain";
 
 describe("domain helpers", () => {

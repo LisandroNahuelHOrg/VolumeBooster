@@ -28,8 +28,8 @@ export default {
   plugins: ["@stryker-mutator/vitest-runner"],
   checkers: [],
   mutate: resolveMutatePatterns(),
-  coverageAnalysis: "perTest",
-  ignoreStatic: true,
+  coverageAnalysis: "all",
+  ignoreStatic: false,
   reporters: ["clear-text", "progress", "html", "json"],
   concurrency: 2,
   timeoutMS: 10000,
@@ -43,6 +43,6 @@ export default {
   },
   vitest: {
     configFile: "vitest.config.ts",
-    related: true
+    related: false
   }
 };

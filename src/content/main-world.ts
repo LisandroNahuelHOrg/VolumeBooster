@@ -1,6 +1,12 @@
 /**
  * @fileoverview Bridge experimental en MAIN world que intercepta conexiones de
  * Web Audio y publica estado/telemetría hacia el content script aislado.
+ *
+ * Guardrail crítico:
+ * Este archivo alimenta el lane `All Sites / All Tabs` a través del registered
+ * main-world content script. Debe permanecer como runtime side-effect-only.
+ * No agregar top-level exports aquí. Una regresión previa rompió por completo
+ * el modo global al cambiar la forma del módulo para exponer helpers de test.
  */
 import {
   applyQualityProtector,

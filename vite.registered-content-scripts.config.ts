@@ -24,6 +24,10 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
     lib: {
+      // Guardrail:
+      // The global auto-booster main-world script must keep this registered
+      // entrypoint + IIFE shape. Regressions here can leave `All Sites / All
+      // Tabs` completely non-functional even when typecheck and unit tests pass.
       entry: resolve(
         __dirname,
         isMainWorld ? "src/content/registered-main.ts" : "src/content/registered-isolated.ts"

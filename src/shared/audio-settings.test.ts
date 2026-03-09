@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Verifies advanced audio-setting presets, sanitization, and DSP
+ * runtime mapping helpers.
+ * @module shared/audio-settings.test
+ */
+
 import {
   DEFAULT_ADVANCED_AUDIO_SETTINGS,
   applyQualityProtector,
@@ -444,5 +450,106 @@ describe("audio-settings", () => {
         0.4
       ).protectionBypassed
     ).toBe(false);
+  });
+
+  it("exposes the exact static preset and protector tables used by the popup", () => {
+    expect(applyQualityPreset("maximum_loudness")).toEqual({
+      qualityPreset: "maximum_loudness",
+      qualityProtectorMode: "balanced",
+      ceilingDb: -0.8,
+      lookaheadMs: 3,
+      releaseMs: 120,
+      multibandDepth: 62,
+      softClipMix: 28
+    });
+
+    expect(getQualityProtectorDefinition("balanced")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: -0.45,
+      lowBandMakeupDb: 0.1,
+      lowBandThresholdOffsetDb: -1.25,
+      lowBandRatioBias: 0.08,
+      midHighThresholdOffsetDb: -0.35,
+      ceilingOffsetDb: -0.08,
+      softClipMultiplier: 0.92,
+      softClipAdd: 0.8,
+      clarityPresenceTiltDb: 0.1
+    });
+
+    expect(getQualityProtectorDefinition("clarity")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: -1.75,
+      lowBandMakeupDb: -0.35,
+      lowBandThresholdOffsetDb: -2.6,
+      lowBandRatioBias: 0.18,
+      midHighThresholdOffsetDb: -0.9,
+      ceilingOffsetDb: -0.16,
+      softClipMultiplier: 0.72,
+      softClipAdd: 0,
+      clarityPresenceTiltDb: 1.5
+    });
+
+    expect(getQualityProtectorDefinition("maximum_protection")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: -1.15,
+      lowBandMakeupDb: -0.25,
+      lowBandThresholdOffsetDb: -4.4,
+      lowBandRatioBias: 0.42,
+      midHighThresholdOffsetDb: -2.5,
+      ceilingOffsetDb: -0.36,
+      softClipMultiplier: 1.18,
+      softClipAdd: 3.5,
+      clarityPresenceTiltDb: 0.35
+    });
+  });
+
+  it("keeps threshold boundaries exact for bypassed warnings and custom-drive interpolation clamps", () => {
+    expect(
+      deriveWarningFromMetrics({
+        ...createDefaultMetrics(true),
+        clipEvents: 0,
+        clipPeak: 1.015,
+        inputPeak: 0.2,
+        outputPeak: 1.0005
+      })
+    ).toBe("high");
+
+    expect(
+      deriveWarningFromMetrics({
+        ...createDefaultMetrics(true),
+        clipEvents: 1,
+        clipPeak: 1.0004,
+        inputPeak: 0.2,
+        outputPeak: 1.0004
+      })
+    ).toBe("danger");
+
+    const customQuiet = buildDspRuntimeParameters(
+      100,
+      sanitizeAdvancedAudioSettings({
+        qualityPreset: "custom",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -0.3,
+        multibandDepth: 0,
+        softClipMix: 0
+      })
+    );
+    const customExtreme = buildDspRuntimeParameters(
+      10_000,
+      sanitizeAdvancedAudioSettings({
+        qualityPreset: "custom",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -2,
+        multibandDepth: 100,
+        softClipMix: 40
+      })
+    );
+
+    expect(customQuiet.inputDriveDb).toBe(0);
+    expect(customExtreme.inputDriveDb).toBe(30);
+    expect(customExtreme.outputSoftClipMix).toBe(40);
   });
 });

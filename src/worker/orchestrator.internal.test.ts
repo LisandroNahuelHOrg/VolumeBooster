@@ -481,6 +481,82 @@ describe("WorkerOrchestrator internals", () => {
     expect(activateSpy).not.toHaveBeenCalled();
   });
 
+  it("bootstraps global mode only when permission is present and exact script hooks exist", async () => {
+    const denied = createHarness();
+    await denied.storage.setAutoBoosterMode("global");
+    const deniedSyncSpy = vi.fn(async () => undefined);
+    const deniedGlobalSyncSpy = vi.fn(async () => undefined);
+    const deniedRegisterSpy = vi.fn(async () => undefined);
+    const deniedUnregisterSpy = vi.fn(async () => undefined);
+    denied.internals.syncFromOffscreen = deniedSyncSpy;
+    denied.internals.syncGlobalAutoBoosterAcrossTabs = deniedGlobalSyncSpy;
+    (
+      denied.autoBoosterClient as typeof denied.autoBoosterClient & {
+        registerGlobalContentScripts: () => Promise<void>;
+        unregisterGlobalContentScripts: () => Promise<void>;
+      }
+    ).registerGlobalContentScripts = deniedRegisterSpy;
+    (
+      denied.autoBoosterClient as typeof denied.autoBoosterClient & {
+        registerGlobalContentScripts: () => Promise<void>;
+        unregisterGlobalContentScripts: () => Promise<void>;
+      }
+    ).unregisterGlobalContentScripts = deniedUnregisterSpy;
+    denied.autoBoosterClient.hasGlobalPermission.mockResolvedValueOnce(false);
+
+    await denied.orchestrator.bootstrap();
+
+    expect(await denied.storage.getAutoBoosterMode()).toBe("off");
+    expect(deniedRegisterSpy).not.toHaveBeenCalled();
+    expect(deniedUnregisterSpy).toHaveBeenCalledTimes(1);
+    expect(deniedSyncSpy).toHaveBeenCalledTimes(1);
+    expect(deniedGlobalSyncSpy).not.toHaveBeenCalled();
+
+    const allowed = createHarness();
+    await allowed.storage.setAutoBoosterMode("global");
+    const allowedSyncSpy = vi.fn(async () => undefined);
+    const allowedGlobalSyncSpy = vi.fn(async () => undefined);
+    const allowedRegisterSpy = vi.fn(async () => undefined);
+    const allowedUnregisterSpy = vi.fn(async () => undefined);
+    allowed.internals.syncFromOffscreen = allowedSyncSpy;
+    allowed.internals.syncGlobalAutoBoosterAcrossTabs = allowedGlobalSyncSpy;
+    (
+      allowed.autoBoosterClient as typeof allowed.autoBoosterClient & {
+        registerGlobalContentScripts: () => Promise<void>;
+        unregisterGlobalContentScripts: () => Promise<void>;
+      }
+    ).registerGlobalContentScripts = allowedRegisterSpy;
+    (
+      allowed.autoBoosterClient as typeof allowed.autoBoosterClient & {
+        registerGlobalContentScripts: () => Promise<void>;
+        unregisterGlobalContentScripts: () => Promise<void>;
+      }
+    ).unregisterGlobalContentScripts = allowedUnregisterSpy;
+    allowed.autoBoosterClient.hasGlobalPermission.mockResolvedValueOnce(true);
+
+    await allowed.orchestrator.bootstrap();
+
+    expect(await allowed.storage.getAutoBoosterMode()).toBe("global");
+    expect(allowedRegisterSpy).toHaveBeenCalledTimes(1);
+    expect(allowedUnregisterSpy).not.toHaveBeenCalled();
+    expect(allowedSyncSpy).toHaveBeenCalledTimes(1);
+    expect(allowedGlobalSyncSpy).toHaveBeenCalledTimes(1);
+
+    const noHooks = createHarness();
+    await expect(
+      (noHooks.internals as unknown as {
+        registerGlobalContentScripts(): Promise<void>;
+        unregisterGlobalContentScripts(): Promise<void>;
+      }).registerGlobalContentScripts()
+    ).resolves.toBeUndefined();
+    await expect(
+      (noHooks.internals as unknown as {
+        registerGlobalContentScripts(): Promise<void>;
+        unregisterGlobalContentScripts(): Promise<void>;
+      }).unregisterGlobalContentScripts()
+    ).resolves.toBeUndefined();
+  });
+
   it("covers activation, pause/resume and site/global stop branches", async () => {
     const { internals, offscreenClient, autoBoosterClient, storage } = createHarness();
     await storage.setDomainGain("youtube.com", 260);
@@ -520,6 +596,21 @@ describe("WorkerOrchestrator internals", () => {
         advancedAudioSettings: DEFAULT_ADVANCED_AUDIO_SETTINGS
       })
     );
+    expect(autoBoosterClient.injectRegisteredScriptsIntoTab).toHaveBeenCalledWith(9);
+    expect(internals.siteEnabledAutoTabs.has(9)).toBe(true);
+    expect(internals.autoTabStates.get(9)).toMatchObject({
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
+      autoBoosterScope: "site",
+      autoActiveStrategy: "none",
+      gainPercent: 260
+    });
+    expect(internals.autoDebugStates.get(9)).toEqual({
+      frameCount: 0,
+      readyFrameCount: 0,
+      attachedFrameCount: 0,
+      toastVisible: false
+    });
 
     autoBoosterClient.configure.mockRejectedValueOnce(message("errorAutoPermissionMissing"));
     await internals.activateAutoBoosterForTab(
@@ -538,6 +629,14 @@ describe("WorkerOrchestrator internals", () => {
         "site"
       )
     ).rejects.toMatchObject({ key: "errorExtensionActionFailed" });
+    expect(internals.autoTabStates.get(11)).toMatchObject({
+      autoAttachState: "failed",
+      autoAttachReason: "attach_failed",
+      autoBoosterScope: "site",
+      autoActiveStrategy: "none",
+      gainPercent: 100,
+      lastError: message("errorExtensionActionFailed")
+    });
 
     tabsGet.mockResolvedValue({ id: 9, title: "YouTube", url: "https://youtube.com/watch?v=1" });
     internals.autoSessions.set(
@@ -585,6 +684,7 @@ describe("WorkerOrchestrator internals", () => {
     internals.autoSuppressedTabs.clear();
     await internals.stopAutoForTab(9);
     expect(internals.siteEnabledAutoTabs.has(9)).toBe(false);
+    expect(autoBoosterClient.disable).toHaveBeenCalledWith(9);
 
     internals.autoTabStates.set(12, {
       tabId: 12,
@@ -598,6 +698,7 @@ describe("WorkerOrchestrator internals", () => {
     });
     await internals.stopAutoForTab(12);
     expect(internals.autoSuppressedTabs.has(12)).toBe(true);
+    expect(autoBoosterClient.disable).toHaveBeenCalledWith(12);
 
     internals.autoSessions.set(
       13,
@@ -641,7 +742,19 @@ describe("WorkerOrchestrator internals", () => {
   it("covers global-enable skips and site-sync fallback settings branches", async () => {
     const { orchestrator, internals, autoBoosterClient, storage } = createHarness();
     const activateSpy = vi.fn(async () => undefined);
+    const registerSpy = vi.fn(async () => undefined);
+    const stopManualCaptureSpy = vi.fn(async () => undefined);
     internals.activateAutoBoosterForTab = activateSpy;
+    (
+      autoBoosterClient as typeof autoBoosterClient & {
+        registerGlobalContentScripts: () => Promise<void>;
+      }
+    ).registerGlobalContentScripts = registerSpy;
+    (
+      internals as unknown as {
+        stopManualCapture(tabId: number): Promise<void>;
+      }
+    ).stopManualCapture = stopManualCaptureSpy;
 
     await storage.setAdvancedAudioSettings({
       ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
@@ -660,6 +773,8 @@ describe("WorkerOrchestrator internals", () => {
       payload: { tabId: 22, gainPercent: 280 }
     });
 
+    expect(registerSpy).toHaveBeenCalledTimes(1);
+    expect(stopManualCaptureSpy).not.toHaveBeenCalled();
     expect(activateSpy).toHaveBeenCalledTimes(1);
     expect(activateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ id: 22 }),
@@ -840,6 +955,64 @@ describe("WorkerOrchestrator internals", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("only activates global tabs on complete or url updates and on supported tab activations", async () => {
+    const { orchestrator, internals, storage } = createHarness();
+    await storage.setAutoBoosterMode("global");
+    internals.autoBoosterMode = "global";
+    const activateSpy = vi.fn(async () => undefined);
+    const unsupportedSpy = vi.fn();
+    internals.activateAutoBoosterForTab = activateSpy;
+    internals.markAutoUnsupported = unsupportedSpy;
+    tabsQuery.mockResolvedValue([]);
+
+    await orchestrator.handleTabUpdated(
+      21,
+      {},
+      { id: 21, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab
+    );
+    expect(activateSpy).not.toHaveBeenCalled();
+    expect(unsupportedSpy).not.toHaveBeenCalled();
+
+    await orchestrator.handleTabUpdated(
+      21,
+      { status: "complete" },
+      { id: 21, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab
+    );
+    await orchestrator.handleTabUpdated(
+      21,
+      { url: "https://youtube.com/watch?v=2" },
+      { id: 21, title: "YouTube", url: "https://youtube.com/watch?v=2" } as chrome.tabs.Tab
+    );
+    expect(activateSpy).toHaveBeenCalledTimes(2);
+
+    await orchestrator.handleTabUpdated(
+      22,
+      { status: "complete" },
+      { id: 22, title: undefined, url: "chrome://extensions" } as chrome.tabs.Tab
+    );
+    expect(unsupportedSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 22 }), "global");
+
+    activateSpy.mockClear();
+    internals.autoBoosterMode = "off";
+    tabsGet.mockReset();
+    tabsGet.mockResolvedValueOnce({ id: 21, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab);
+    await orchestrator.handleTabActivated({ tabId: 21 });
+    expect(activateSpy).not.toHaveBeenCalled();
+
+    activateSpy.mockClear();
+    internals.autoBoosterMode = "global";
+    tabsGet.mockReset();
+    tabsGet.mockResolvedValueOnce({ id: 21, title: "Chrome", url: "chrome://extensions" } as chrome.tabs.Tab);
+    await orchestrator.handleTabActivated({ tabId: 21 });
+    expect(activateSpy).not.toHaveBeenCalled();
+
+    activateSpy.mockClear();
+    tabsGet.mockReset();
+    tabsGet.mockResolvedValueOnce({ id: 21, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab);
+    await orchestrator.handleTabActivated({ tabId: 21 });
+    expect(activateSpy).toHaveBeenCalledWith(expect.objectContaining({ id: 21 }), "global");
+  });
+
   it("keeps global auto mode unset by default and clears site state only for the requested tab", () => {
     const { internals } = createHarness();
 
@@ -996,6 +1169,119 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachReason: "no_media",
       lastError: message("errorExtensionActionFailed")
     });
+  });
+
+  it("keeps the observing helper predicates exact for lane and frame fallbacks", async () => {
+    const { internals } = createHarness();
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoLaneInObservingMode(scope: "global" | "site", error: LocalizedMessage): boolean;
+      }).shouldKeepAutoLaneInObservingMode("global", message("errorExtensionActionFailed"))
+    ).toBe(true);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoLaneInObservingMode(scope: "global" | "site", error: LocalizedMessage): boolean;
+      }).shouldKeepAutoLaneInObservingMode("global", message("errorAutoPermissionMissing"))
+    ).toBe(false);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoFrameInObservingMode(
+          scope: "global" | "site" | null | undefined,
+          error?: LocalizedMessage
+        ): boolean;
+      }).shouldKeepAutoFrameInObservingMode("global")
+    ).toBe(true);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoFrameInObservingMode(
+          scope: "global" | "site" | null | undefined,
+          error?: LocalizedMessage
+        ): boolean;
+      }).shouldKeepAutoFrameInObservingMode("site", undefined)
+    ).toBe(false);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoFrameInObservingMode(
+          scope: "global" | "site" | null | undefined,
+          error?: LocalizedMessage
+        ): boolean;
+      }).shouldKeepAutoFrameInObservingMode("global", message("errorAutoPermissionMissing"))
+    ).toBe(false);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoLaneInObservingMode(scope: "global" | "site", error: LocalizedMessage): boolean;
+      }).shouldKeepAutoLaneInObservingMode("site", message("errorExtensionActionFailed"))
+    ).toBe(false);
+    expect(
+      (internals as unknown as {
+        shouldKeepAutoFrameInObservingMode(
+          scope: "global" | "site" | null | undefined,
+          error?: LocalizedMessage
+        ): boolean;
+      }).shouldKeepAutoFrameInObservingMode("global", message("errorExtensionActionFailed"))
+    ).toBe(true);
+  });
+
+  it("falls back to the current supported tab when enabling global mode and queryInjectableTabs returns nothing", async () => {
+    const { orchestrator, internals, autoBoosterClient, storage } = createHarness();
+    autoBoosterClient.requestGlobalPermission.mockResolvedValueOnce(true);
+    autoBoosterClient.queryInjectableTabs.mockResolvedValueOnce([]);
+    tabsGet.mockResolvedValueOnce({
+      id: 812,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1"
+    } as chrome.tabs.Tab);
+    const activateSpy = vi.fn(async () => undefined);
+    internals.activateAutoBoosterForTab = activateSpy;
+
+    await expect(
+      orchestrator.handlePopupCommand({
+        type: "ENABLE_GLOBAL_AUTO_BOOSTER",
+        payload: { tabId: 812, gainPercent: 240 }
+      })
+    ).resolves.toMatchObject({ ok: true });
+
+    expect(await storage.getAutoBoosterMode()).toBe("global");
+    expect(activateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 812 }),
+      "global",
+      240
+    );
+
+    activateSpy.mockClear();
+    autoBoosterClient.requestGlobalPermission.mockResolvedValueOnce(true);
+    autoBoosterClient.queryInjectableTabs.mockResolvedValueOnce([]);
+    tabsGet.mockRejectedValueOnce(new Error("gone"));
+    await expect(
+      orchestrator.handlePopupCommand({
+        type: "ENABLE_GLOBAL_AUTO_BOOSTER",
+        payload: { tabId: 812, gainPercent: 240 }
+      })
+    ).resolves.toMatchObject({ ok: true });
+    expect(activateSpy).not.toHaveBeenCalled();
+
+    autoBoosterClient.requestGlobalPermission.mockResolvedValueOnce(true);
+    autoBoosterClient.queryInjectableTabs.mockResolvedValueOnce([]);
+    tabsGet.mockResolvedValueOnce({ id: 812, title: "Chrome", url: "chrome://extensions" } as chrome.tabs.Tab);
+    await expect(
+      orchestrator.handlePopupCommand({
+        type: "ENABLE_GLOBAL_AUTO_BOOSTER",
+        payload: { tabId: 812, gainPercent: 240 }
+      })
+    ).resolves.toMatchObject({ ok: true });
+    expect(activateSpy).not.toHaveBeenCalled();
+
+    autoBoosterClient.requestGlobalPermission.mockResolvedValueOnce(true);
+    autoBoosterClient.queryInjectableTabs.mockResolvedValueOnce([]);
+    tabsGet.mockResolvedValueOnce({ title: "Missing", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab);
+    await expect(
+      orchestrator.handlePopupCommand({
+        type: "ENABLE_GLOBAL_AUTO_BOOSTER",
+        payload: { tabId: 812, gainPercent: 240 }
+      })
+    ).resolves.toMatchObject({ ok: true });
+    expect(activateSpy).not.toHaveBeenCalled();
+    expect(await storage.getAutoBoosterMode()).toBe("global");
   });
 
   it("marks unsupported tabs with exact fallback title, reason and error message", () => {
@@ -1261,7 +1547,14 @@ describe("WorkerOrchestrator internals", () => {
       autoAttachState: "observing",
       autoAttachReason: "no_media",
       autoBoosterScope: "global",
+      autoActiveStrategy: "none",
       gainPercent: 305
+    });
+    expect(internals.autoDebugStates.get(70)).toEqual({
+      frameCount: 0,
+      readyFrameCount: 0,
+      attachedFrameCount: 0,
+      toastVisible: false
     });
     expect(autoBoosterClient.configure).toHaveBeenLastCalledWith(
       70,
@@ -1287,6 +1580,7 @@ describe("WorkerOrchestrator internals", () => {
       title: "https://rumble.com/demo",
       autoAttachState: "observing",
       autoAttachReason: "no_media",
+      autoActiveStrategy: "none",
       gainPercent: 480
     });
     expect(autoBoosterClient.configure).toHaveBeenLastCalledWith(
@@ -1294,6 +1588,39 @@ describe("WorkerOrchestrator internals", () => {
       expect.objectContaining({
         suspended: true,
         gainPercent: 480
+      })
+    );
+
+    autoBoosterClient.configure.mockClear();
+    autoBoosterClient.injectRegisteredScriptsIntoTab.mockClear();
+    await internals.activateAutoBoosterForTab(
+      {
+        id: 72,
+        title: "Kick",
+        url: "https://kick.com/demo"
+      } as chrome.tabs.Tab,
+      "site"
+    );
+    expect(internals.siteEnabledAutoTabs.has(72)).toBe(true);
+    expect(internals.autoTabStates.get(72)).toMatchObject({
+      autoBoosterScope: "site",
+      autoActiveStrategy: "none",
+      gainPercent: 100
+    });
+    expect(internals.autoDebugStates.get(72)).toEqual({
+      frameCount: 0,
+      readyFrameCount: 0,
+      attachedFrameCount: 0,
+      toastVisible: false
+    });
+    expect(autoBoosterClient.injectRegisteredScriptsIntoTab).toHaveBeenCalledWith(72);
+    expect(autoBoosterClient.configure).toHaveBeenCalledWith(
+      72,
+      expect.objectContaining({
+        scope: "site",
+        gainPercent: 100,
+        enabled: true,
+        suspended: false
       })
     );
   });
@@ -1391,6 +1718,7 @@ describe("WorkerOrchestrator internals", () => {
       { id: 90, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab,
       { id: 91, title: "Chrome", url: "chrome://extensions" } as chrome.tabs.Tab,
       { id: 92, title: "Rumble", url: "https://rumble.com/demo" } as chrome.tabs.Tab,
+      { id: undefined, title: "Missing", url: "https://kick.com/demo" } as chrome.tabs.Tab,
       { title: "Missing", url: "https://kick.com/demo" } as chrome.tabs.Tab
     ]);
 
@@ -2046,6 +2374,278 @@ describe("WorkerOrchestrator internals", () => {
     });
   });
 
+  it("configures and disables per-frame targets when known frames exist and keeps unsupported debug counters exact", async () => {
+    const { internals, autoBoosterClient } = createHarness();
+    const autoFrameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): unknown;
+      updateFrameState(state: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        frameUrl?: string;
+        isTopFrame: boolean;
+        ready: boolean;
+        gainPercent: number;
+        autoAttachState: "idle" | "observing" | "attached" | "failed" | "unsupported";
+        autoAttachReason?: "no_media" | "attach_failed" | "permission_missing" | "autoplay_blocked" | "site_not_hookable";
+        autoBoosterScope: "global" | "site";
+        streamState: "active" | "inactive" | "pending" | "error";
+        engineStatus: "ready" | "loading" | "error";
+        level: number;
+        warning: "none" | "high" | "danger";
+        protectorActionDb: number;
+        clipEvents: number;
+        clipPeak: number;
+        protectionBypassed: boolean;
+        outputPeak: number;
+      }): unknown;
+    };
+
+    internals.markAutoUnsupported(
+      {
+        id: 880,
+        title: undefined,
+        url: "https://rumble.com/demo"
+      } as chrome.tabs.Tab,
+      "global"
+    );
+    expect(internals.autoDebugStates.get(880)).toEqual({
+      frameCount: 0,
+      readyFrameCount: 0,
+      attachedFrameCount: 0,
+      toastVisible: false
+    });
+
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 811,
+      frameId: 0,
+      documentId: "doc-top",
+      isTopFrame: true,
+      frameUrl: "https://youtube.com/watch?v=1",
+      ready: true
+    });
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 811,
+      frameId: 4,
+      documentId: "doc-frame",
+      isTopFrame: false,
+      frameUrl: "https://youtube.com/embed/1",
+      ready: true
+    });
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 811,
+      frameId: 8,
+      documentId: "doc-extra",
+      isTopFrame: false,
+      frameUrl: "https://youtube.com/embed/extra",
+      ready: true
+    });
+    autoFrameRegistry.updateFrameState({
+      tabId: 811,
+      frameId: 0,
+      documentId: "doc-top",
+      frameUrl: "https://youtube.com/watch?v=1",
+      isTopFrame: true,
+      ready: true,
+      gainPercent: 220,
+      autoAttachState: "attached",
+      autoAttachReason: undefined,
+      autoBoosterScope: "site",
+      streamState: "active",
+      engineStatus: "ready",
+      level: 0.6,
+      warning: "high",
+      protectorActionDb: 2.4,
+      clipEvents: 1,
+      clipPeak: 0.6,
+      protectionBypassed: false,
+      outputPeak: 0.72
+    });
+    autoFrameRegistry.updateFrameState({
+      tabId: 811,
+      frameId: 4,
+      documentId: "doc-frame",
+      frameUrl: "https://youtube.com/embed/1",
+      isTopFrame: false,
+      ready: false,
+      gainPercent: 220,
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
+      autoBoosterScope: "site",
+      streamState: "inactive",
+      engineStatus: "loading",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0
+    });
+    autoFrameRegistry.updateFrameState({
+      tabId: 811,
+      frameId: 8,
+      documentId: "doc-extra",
+      frameUrl: "https://youtube.com/embed/extra",
+      isTopFrame: false,
+      ready: true,
+      gainPercent: 220,
+      autoAttachState: "attached",
+      autoAttachReason: undefined,
+      autoBoosterScope: "site",
+      streamState: "active",
+      engineStatus: "ready",
+      level: 0.45,
+      warning: "high",
+      protectorActionDb: 1.2,
+      clipEvents: 0,
+      clipPeak: 0.3,
+      protectionBypassed: false,
+      outputPeak: 0.51
+    });
+    internals.siteEnabledAutoTabs.add(811);
+    tabsGet.mockResolvedValue({
+      id: 811,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1"
+    } as chrome.tabs.Tab);
+
+    await internals.activateAutoBoosterForTab(
+      { id: 811, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab,
+      "site",
+      240
+    );
+    expect(internals.autoDebugStates.get(811)).toEqual({
+      frameCount: 3,
+      readyFrameCount: 2,
+      attachedFrameCount: 2,
+      toastVisible: false
+    });
+
+    autoBoosterClient.configure.mockClear();
+    await internals.pauseAutoLaneForManual(811);
+
+    expect(autoBoosterClient.configure).toHaveBeenNthCalledWith(
+      1,
+      811,
+      expect.objectContaining({
+        scope: "site",
+        enabled: true,
+        suspended: true
+      }),
+      {
+        frameId: 0,
+        documentId: "doc-top"
+      }
+    );
+    expect(autoBoosterClient.configure).toHaveBeenNthCalledWith(
+      2,
+      811,
+      expect.objectContaining({
+        scope: "site",
+        enabled: true,
+        suspended: true
+      }),
+      {
+        frameId: 4,
+        documentId: "doc-frame"
+      }
+    );
+    expect(autoBoosterClient.configure).toHaveBeenNthCalledWith(
+      3,
+      811,
+      expect.objectContaining({
+        scope: "site",
+        enabled: true,
+        suspended: true
+      }),
+      {
+        frameId: 8,
+        documentId: "doc-extra"
+      }
+    );
+
+    autoBoosterClient.disable.mockClear();
+    await internals.stopAutoForTab(811);
+
+    expect(autoBoosterClient.disable).toHaveBeenNthCalledWith(1, 811, {
+      frameId: 0,
+      documentId: "doc-top"
+    });
+    expect(autoBoosterClient.disable).toHaveBeenNthCalledWith(2, 811, {
+      frameId: 4,
+      documentId: "doc-frame"
+    });
+    expect(autoBoosterClient.disable).toHaveBeenNthCalledWith(3, 811, {
+      frameId: 8,
+      documentId: "doc-extra"
+    });
+    expect(internals.siteEnabledAutoTabs.has(811)).toBe(false);
+    expect(internals.autoTabStates.has(811)).toBe(false);
+  });
+
+  it("disables each known frame instead of the top-level tab when deactivating global mode for frame-scoped tabs", async () => {
+    const { internals, autoBoosterClient } = createHarness();
+    const autoFrameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): unknown;
+    };
+
+    internals.autoBoosterMode = "global";
+    internals.autoTabStates.set(990, {
+      tabId: 990,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1",
+      domain: "youtube.com",
+      favIconUrl: undefined,
+      autoAttachState: "attached",
+      autoAttachReason: undefined,
+      autoBoosterScope: "global",
+      gainPercent: 220
+    });
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 990,
+      frameId: 0,
+      documentId: "doc-top",
+      isTopFrame: true,
+      frameUrl: "https://youtube.com/watch?v=1",
+      ready: true
+    });
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 990,
+      frameId: 7,
+      documentId: "doc-embed",
+      isTopFrame: false,
+      frameUrl: "https://youtube.com/embed/7",
+      ready: true
+    });
+
+    await internals.deactivateGlobalAutoBooster();
+
+    expect(autoBoosterClient.disable).toHaveBeenNthCalledWith(1, 990, {
+      frameId: 0,
+      documentId: "doc-top"
+    });
+    expect(autoBoosterClient.disable).toHaveBeenNthCalledWith(2, 990, {
+      frameId: 7,
+      documentId: "doc-embed"
+    });
+    expect(autoBoosterClient.disable).not.toHaveBeenCalledWith(990);
+  });
+
   it("syncs site tabs without querying global tabs when global mode is off", async () => {
     const { internals, autoBoosterClient } = createHarness();
     const activateSpy = vi.fn(async () => undefined);
@@ -2089,9 +2689,22 @@ describe("WorkerOrchestrator internals", () => {
 
   it("does not suppress site tabs when stopping auto tabs and only collects site-scoped tabs when disabling site mode", async () => {
     const { internals, autoBoosterClient } = createHarness();
+    const autoFrameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): unknown;
+    };
     internals.siteEnabledAutoTabs.add(900);
     await internals.stopAutoForTab(900);
     expect(internals.autoSuppressedTabs.has(900)).toBe(false);
+
+    await internals.stopAutoForTab(904);
+    expect(internals.autoSuppressedTabs.has(904)).toBe(false);
 
     autoBoosterClient.disable.mockClear();
     internals.autoTabStates.set(901, {
@@ -2114,11 +2727,549 @@ describe("WorkerOrchestrator internals", () => {
       })
     );
     internals.siteEnabledAutoTabs.add(903);
+    internals.siteEnabledAutoTabs.add(904);
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 904,
+      frameId: 0,
+      documentId: "doc-904-top",
+      isTopFrame: true,
+      frameUrl: "https://kick.com/demo",
+      ready: true
+    });
+    autoFrameRegistry.upsertKnownFrame({
+      tabId: 904,
+      frameId: 6,
+      documentId: "doc-904-frame",
+      isTopFrame: false,
+      frameUrl: "https://kick.com/embed/1",
+      ready: true
+    });
 
     await internals.disableAllSiteAutoTabs();
 
     expect(autoBoosterClient.disable).toHaveBeenCalledWith(903);
+    expect(autoBoosterClient.disable).toHaveBeenCalledWith(904, {
+      frameId: 0,
+      documentId: "doc-904-top"
+    });
+    expect(autoBoosterClient.disable).toHaveBeenCalledWith(904, {
+      frameId: 6,
+      documentId: "doc-904-frame"
+    });
+    expect(autoBoosterClient.disable).not.toHaveBeenCalledWith(904);
     expect(autoBoosterClient.disable).not.toHaveBeenCalledWith(901);
     expect(autoBoosterClient.disable).not.toHaveBeenCalledWith(902);
+  });
+
+  it("routes offscreen snapshots and frame-ready events through permission and suppression branches", async () => {
+    const { storage, orchestrator, internals, autoBoosterClient } = createHarness();
+    const frameRegistry = internals.autoFrameRegistry as unknown as {
+      getFrameState(tabId: number, target: { frameId: number; documentId?: string }): Record<string, unknown> | undefined;
+    };
+
+    await storage.setGlobalAutoGainPercent(330);
+    internals.autoBoosterMode = "global";
+    autoBoosterClient.configure.mockRejectedValueOnce(message("errorAutoPermissionMissing"));
+
+    await orchestrator.handleBackgroundEvent({
+      type: "OFFSCREEN_SNAPSHOT",
+      payload: {
+        sessions: [makeSession(40, "youtube.com", 220)]
+      }
+    });
+
+    expect(internals.manualSessions.get(40)?.tabId).toBe(40);
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_BOOSTER_FRAME_READY",
+        payload: {
+          tabId: 44,
+          frameId: 2,
+          documentId: "doc-2",
+          isTopFrame: false,
+          title: "Embed",
+          url: "https://youtube.com/embed/1",
+          domain: "youtube.com",
+          favIconUrl: "https://youtube.com/favicon.ico",
+          frameUrl: "https://youtube.com/embed/1"
+        }
+      },
+      {
+        tab: { id: 44 },
+        frameId: 2,
+        documentId: "doc-2",
+        url: "https://youtube.com/embed/1"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(autoBoosterClient.configure).toHaveBeenCalledWith(
+      44,
+      expect.objectContaining({
+        scope: "global",
+        gainPercent: 330,
+        enabled: true,
+        suspended: false
+      }),
+      {
+        frameId: 2,
+        documentId: "doc-2"
+      }
+    );
+    expect(frameRegistry.getFrameState(44, { frameId: 2, documentId: "doc-2" })).toMatchObject({
+      isTopFrame: false,
+      frameUrl: "https://youtube.com/embed/1",
+      autoAttachState: "failed",
+      autoAttachReason: "permission_missing",
+      gainPercent: 330,
+      ready: true,
+      lastError: { key: "errorAutoPermissionMissing" }
+    });
+
+    autoBoosterClient.configure.mockClear();
+    internals.autoSuppressedTabs.add(45);
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_BOOSTER_FRAME_READY",
+        payload: {
+          tabId: 45,
+          title: "Suppressed",
+          url: "https://youtube.com/watch?v=2",
+          domain: "youtube.com"
+        }
+      },
+      {
+        tab: { id: 45 },
+        frameId: 0,
+        url: "https://youtube.com/watch?v=2"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(autoBoosterClient.configure).not.toHaveBeenCalled();
+
+    autoBoosterClient.configure.mockRejectedValueOnce(message("errorAutoPermissionMissing"));
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_BOOSTER_FRAME_READY",
+        payload: {
+          tabId: 46,
+          title: "Top frame",
+          url: "https://youtube.com/watch?v=3",
+          domain: "youtube.com"
+        }
+      },
+      {
+        tab: { id: 46 },
+        frameId: 0,
+        documentId: "doc-top",
+        url: "https://sender.example/frame"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(frameRegistry.getFrameState(46, { frameId: 0, documentId: "doc-top" })).toMatchObject({
+      isTopFrame: true,
+      frameUrl: "https://sender.example/frame",
+      autoAttachState: "failed",
+      autoAttachReason: "permission_missing",
+      ready: true
+    });
+  });
+
+  it("shows and hides fallback toasts based on dismissal state and global failure state", async () => {
+    const { internals, autoBoosterClient } = createHarness();
+    const frameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): void;
+      getTopFrame(tabId: number): { toastVisible: boolean } | null;
+      isToastDismissed(tabId: number, target: { frameId: number; documentId?: string }): boolean;
+    };
+    const clientWithToastMessaging = autoBoosterClient as typeof autoBoosterClient & {
+      sendMessageToFrame: ReturnType<typeof vi.fn>;
+    };
+
+    clientWithToastMessaging.sendMessageToFrame = vi.fn().mockResolvedValue(undefined);
+    internals.autoBoosterMode = "global";
+    frameRegistry.upsertKnownFrame({
+      tabId: 55,
+      frameId: 0,
+      documentId: "top-doc",
+      isTopFrame: true,
+      frameUrl: "https://youtube.com/watch?v=1",
+      ready: true
+    });
+    internals.autoTabStates.set(55, {
+      tabId: 55,
+      title: "YouTube",
+      url: "https://youtube.com/watch?v=1",
+      domain: "youtube.com",
+      favIconUrl: "https://youtube.com/favicon.ico",
+      autoAttachState: "failed",
+      autoAttachReason: "attach_failed",
+      autoBoosterScope: "global",
+      gainPercent: 440,
+      lastError: message("errorAutoAttachFailed")
+    });
+
+    await (internals as unknown as {
+      syncFallbackToastForTab(tabId: number): Promise<void>;
+    }).syncFallbackToastForTab(55);
+
+    expect(clientWithToastMessaging.sendMessageToFrame).toHaveBeenCalledWith(55, expect.objectContaining({
+      frameId: 0,
+      documentId: "top-doc"
+    }), {
+      type: "AUTO_BOOSTER_SHOW_FALLBACK_TOAST",
+      payload: {
+        tabId: 55,
+        documentId: "top-doc",
+        reason: "attach_failed",
+        errorMessage: { key: "errorAutoAttachFailed" }
+      }
+    });
+    expect(frameRegistry.getTopFrame(55)).toMatchObject({ toastVisible: true });
+    clientWithToastMessaging.sendMessageToFrame.mockClear();
+    (internals as unknown as {
+      handleFallbackToastDismissed(
+        payload: { tabId: number },
+        sender?: chrome.runtime.MessageSender
+      ): void;
+    }).handleFallbackToastDismissed(
+      { tabId: 55 },
+      {
+        tab: { id: 55 },
+        frameId: 0,
+        documentId: "top-doc"
+      } as chrome.runtime.MessageSender
+    );
+    expect(frameRegistry.isToastDismissed(55, { frameId: 0, documentId: "top-doc" })).toBe(true);
+    expect(frameRegistry.getTopFrame(55)).toMatchObject({ toastVisible: false });
+
+    await (internals as unknown as {
+      syncFallbackToastForTab(tabId: number): Promise<void>;
+    }).syncFallbackToastForTab(55);
+
+    expect(clientWithToastMessaging.sendMessageToFrame).toHaveBeenCalledWith(55, expect.objectContaining({
+      frameId: 0,
+      documentId: "top-doc"
+    }), {
+      type: "AUTO_BOOSTER_HIDE_FALLBACK_TOAST",
+      payload: {
+        tabId: 55,
+        documentId: "top-doc"
+      }
+    });
+
+    clientWithToastMessaging.sendMessageToFrame.mockClear();
+    internals.manualSessions.set(55, makeSession(55, "youtube.com", 220));
+    internals.autoTabStates.set(55, {
+      ...(internals.autoTabStates.get(55) as AutoTabRuntimeState),
+      autoAttachReason: undefined
+    });
+
+    await (internals as unknown as {
+      syncFallbackToastForTab(tabId: number): Promise<void>;
+    }).syncFallbackToastForTab(55);
+
+    expect(clientWithToastMessaging.sendMessageToFrame).toHaveBeenCalledWith(55, expect.objectContaining({
+      frameId: 0,
+      documentId: "top-doc"
+    }), {
+      type: "AUTO_BOOSTER_HIDE_FALLBACK_TOAST",
+      payload: {
+        tabId: 55,
+        documentId: "top-doc"
+      }
+    });
+  });
+
+  it("marks fallback toast visibility even when the frame messaging hook is missing", async () => {
+    const { internals } = createHarness();
+    const frameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): void;
+      getTopFrame(tabId: number): { toastVisible: boolean } | null;
+    };
+
+    frameRegistry.upsertKnownFrame({
+      tabId: 56,
+      frameId: 0,
+      documentId: "doc-56",
+      isTopFrame: true,
+      frameUrl: "https://youtube.com/watch?v=56",
+      ready: true
+    });
+
+    await (internals as unknown as {
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+    }).showFallbackToastForTab(56, { frameId: 0, documentId: "doc-56" }, "attach_failed", message("errorAutoAttachFailed"));
+
+    expect(frameRegistry.getTopFrame(56)).toMatchObject({ toastVisible: true });
+
+    await (internals as unknown as {
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+    }).hideFallbackToastForTab(56, { frameId: 0, documentId: "doc-56" });
+
+    expect(frameRegistry.getTopFrame(56)).toMatchObject({ toastVisible: false });
+  });
+
+  it("dismisses fallback toasts using payload tab ids and ignores invalid dismiss payloads", () => {
+    const { internals } = createHarness();
+    const frameRegistry = internals.autoFrameRegistry as unknown as {
+      upsertKnownFrame(frame: {
+        tabId: number;
+        frameId: number;
+        documentId?: string;
+        isTopFrame: boolean;
+        frameUrl?: string;
+        ready: boolean;
+      }): void;
+      getTopFrame(tabId: number): { toastVisible: boolean } | null;
+      isToastDismissed(tabId: number, target: { frameId: number; documentId?: string }): boolean;
+    };
+
+    frameRegistry.upsertKnownFrame({
+      tabId: 57,
+      frameId: 3,
+      documentId: "doc-57",
+      isTopFrame: false,
+      frameUrl: "https://youtube.com/embed/57",
+      ready: true
+    });
+    (internals as unknown as {
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+      handleFallbackToastDismissed(payload: { tabId: number }, sender?: chrome.runtime.MessageSender): void;
+    }).handleFallbackToastDismissed(
+      { tabId: 57 },
+      {
+        frameId: 3,
+        documentId: "doc-57"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(frameRegistry.isToastDismissed(57, { frameId: 3, documentId: "doc-57" })).toBe(true);
+    expect(frameRegistry.getTopFrame(57)).toBeNull();
+
+    (internals as unknown as {
+      handleFallbackToastDismissed(
+        payload: { tabId?: number },
+        sender?: chrome.runtime.MessageSender
+      ): void;
+    }).handleFallbackToastDismissed(
+      {},
+      {
+        frameId: 3,
+        documentId: "doc-57"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(frameRegistry.isToastDismissed(57, { frameId: 3, documentId: "doc-57" })).toBe(true);
+  });
+
+  it("promotes manual fallback requests into capture and re-shows the toast if capture fails", async () => {
+    const { orchestrator, internals } = createHarness();
+    const deactivateGlobalAutoBooster = vi.fn(async () => undefined);
+    const startCapture = vi
+      .fn<(tabId: number, gainPercent: number) => Promise<void>>()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(message("errorTabNotCapturable"));
+    const hideFallbackToastForTab = vi.fn(async () => undefined);
+    const showFallbackToastForTab = vi.fn(async () => undefined);
+
+    internals.autoSessions.set(
+      77,
+      makeSession(77, "youtube.com", 550, {
+        engineLane: "auto_media_element",
+        autoAttachState: "failed",
+        autoBoosterScope: "global"
+      })
+    );
+    (internals as unknown as {
+      deactivateGlobalAutoBooster(): Promise<void>;
+      startCapture(tabId: number, gainPercent: number): Promise<void>;
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+    }).deactivateGlobalAutoBooster = deactivateGlobalAutoBooster;
+    (internals as unknown as {
+      startCapture(tabId: number, gainPercent: number): Promise<void>;
+    }).startCapture = startCapture;
+    (internals as unknown as {
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+    }).hideFallbackToastForTab = hideFallbackToastForTab;
+    (internals as unknown as {
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+    }).showFallbackToastForTab = showFallbackToastForTab;
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_MANUAL_FALLBACK_REQUESTED",
+        payload: {
+          tabId: 77,
+          reason: "attach_failed"
+        }
+      },
+      {
+        tab: { id: 77 },
+        frameId: 0
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(deactivateGlobalAutoBooster).toHaveBeenCalledTimes(1);
+    expect(startCapture).toHaveBeenCalledWith(77, 550);
+    expect(hideFallbackToastForTab).toHaveBeenCalledWith(77, {
+      frameId: 0,
+      documentId: undefined
+    });
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_MANUAL_FALLBACK_REQUESTED",
+        payload: {
+          tabId: 77,
+          reason: "attach_failed"
+        }
+      },
+      {
+        tab: { id: 77 },
+        frameId: 0
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(showFallbackToastForTab).toHaveBeenCalledWith(
+      77,
+      {
+        frameId: 0,
+        documentId: undefined
+      },
+      "attach_failed",
+      { key: "errorTabNotCapturable" }
+    );
+  });
+
+  it("uses payload tab ids and stored gains for manual fallback requests, and ignores invalid fallback events", async () => {
+    const { orchestrator, internals, storage } = createHarness();
+    const deactivateGlobalAutoBooster = vi.fn(async () => undefined);
+    const startCapture = vi.fn(async () => undefined);
+    const hideFallbackToastForTab = vi.fn(async () => undefined);
+    const showFallbackToastForTab = vi.fn(async () => undefined);
+
+    await storage.setGlobalAutoGainPercent(777);
+    internals.autoTabStates.set(78, {
+      tabId: 78,
+      title: "Payload only",
+      url: "https://youtube.com/watch?v=78",
+      domain: "youtube.com",
+      favIconUrl: undefined,
+      autoAttachState: "failed",
+      autoAttachReason: "no_media",
+      autoBoosterScope: "global",
+      gainPercent: 610
+    });
+
+    (internals as unknown as {
+      deactivateGlobalAutoBooster(): Promise<void>;
+      startCapture(tabId: number, gainPercent: number): Promise<void>;
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+    }).deactivateGlobalAutoBooster = deactivateGlobalAutoBooster;
+    (internals as unknown as {
+      startCapture(tabId: number, gainPercent: number): Promise<void>;
+    }).startCapture = startCapture;
+    (internals as unknown as {
+      hideFallbackToastForTab(tabId: number, target: { frameId: number; documentId?: string }): Promise<void>;
+    }).hideFallbackToastForTab = hideFallbackToastForTab;
+    (internals as unknown as {
+      showFallbackToastForTab(
+        tabId: number,
+        target: { frameId: number; documentId?: string },
+        reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable",
+        errorMessage?: LocalizedMessage
+      ): Promise<void>;
+    }).showFallbackToastForTab = showFallbackToastForTab;
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_MANUAL_FALLBACK_REQUESTED",
+        payload: {
+          tabId: 78,
+          reason: "no_media"
+        }
+      },
+      {
+        frameId: 4,
+        documentId: "doc-78"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(deactivateGlobalAutoBooster).toHaveBeenCalledTimes(1);
+    expect(startCapture).toHaveBeenCalledWith(78, 610);
+    expect(hideFallbackToastForTab).toHaveBeenCalledWith(78, {
+      frameId: 4,
+      documentId: "doc-78"
+    });
+
+    deactivateGlobalAutoBooster.mockClear();
+    startCapture.mockClear();
+    hideFallbackToastForTab.mockClear();
+    showFallbackToastForTab.mockClear();
+
+    await orchestrator.handleBackgroundEvent(
+      {
+        type: "AUTO_MANUAL_FALLBACK_REQUESTED",
+        payload: {
+          reason: "no_media"
+        } as unknown as {
+          tabId: number;
+          reason: "attach_failed" | "permission_missing" | "no_media" | "autoplay_blocked" | "site_not_hookable";
+        }
+      },
+      {
+        frameId: 5,
+        documentId: "doc-invalid"
+      } as chrome.runtime.MessageSender
+    );
+
+    expect(deactivateGlobalAutoBooster).not.toHaveBeenCalled();
+    expect(startCapture).not.toHaveBeenCalled();
+    expect(hideFallbackToastForTab).not.toHaveBeenCalled();
+    expect(showFallbackToastForTab).not.toHaveBeenCalled();
   });
 });

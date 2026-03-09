@@ -601,3 +601,16 @@ function dbToGain(decibels: number): number {
 function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
+
+export const __testables = {
+  createAnalyser,
+  getSampleSize,
+  readPeak,
+  roundTo,
+  createNativeFallbackGraph,
+  disconnectNativeFallbackGraph,
+  applyNativeFallbackRuntimeParameters,
+  createSoftClipCurve,
+  dbToGain,
+  clampNumber
+};

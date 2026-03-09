@@ -597,4 +597,72 @@ describe("OffscreenSessionManager", () => {
 
     await expect(manager.stopSession(7)).resolves.toEqual({ ok: true, data: { sessions: [] } });
   });
+
+  it("marks a running session as errored on fatal callbacks and ignores repeated fatals", async () => {
+    const audioSession = makeAudioSessionPort();
+    let onFatalError:
+      | ((errorMessage: CaptureSessionState["lastError"]) => void)
+      | undefined;
+
+    const manager = new OffscreenSessionManager(() => 900, (_gainPercent, _settings, callbacks) => {
+      onFatalError = callbacks.onFatalError;
+      return audioSession;
+    });
+
+    await manager.startSession(makeStartPayload(21, 220, "fatal.example"));
+    runtimeSendMessage.mockClear();
+
+    onFatalError?.("faust failed");
+    await vi.waitFor(() => {
+      expect(audioSession.stop).toHaveBeenCalledTimes(1);
+    });
+
+    expect(manager.getSnapshot()[0]).toMatchObject({
+      tabId: 21,
+      streamState: "error",
+      engineStatus: "error",
+      warning: "danger",
+      lastError: "faust failed"
+    });
+    expect(runtimeSendMessage).toHaveBeenCalledWith({
+      type: "SESSION_STATUS_UPDATE",
+      payload: {
+        tabId: 21,
+        streamState: "error",
+        engineStatus: "error",
+        gainPercent: 220,
+        lastError: "faust failed"
+      }
+    });
+
+    runtimeSendMessage.mockClear();
+    onFatalError?.("faust failed again");
+    await Promise.resolve();
+    expect(audioSession.stop).toHaveBeenCalledTimes(1);
+    expect(runtimeSendMessage).not.toHaveBeenCalled();
+  });
+
+  it("swallows rejected runtime promises and ignores late fatal callbacks after teardown", async () => {
+    const audioSession = makeAudioSessionPort();
+    let onFatalError:
+      | ((errorMessage: CaptureSessionState["lastError"]) => void)
+      | undefined;
+
+    runtimeSendMessage.mockImplementation(() => Promise.reject(new Error("sleeping worker")));
+
+    const manager = new OffscreenSessionManager(() => 910, (_gainPercent, _settings, callbacks) => {
+      onFatalError = callbacks.onFatalError;
+      return audioSession;
+    });
+
+    await expect(manager.startSession(makeStartPayload(22, 180, "late-fatal.example"))).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(manager.stopSession(22)).resolves.toEqual({ ok: true, data: { sessions: [] } });
+
+    onFatalError?.("too late");
+    await Promise.resolve();
+    expect(manager.getSnapshot()).toEqual([]);
+    expect(audioSession.stop).toHaveBeenCalledTimes(1);
+  });
 });

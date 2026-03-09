@@ -35,6 +35,12 @@ import type {
   LocalizedMessage
 } from "../shared/types";
 import { AutoBoosterController } from "./controller";
+import {
+  BRIDGE_STATUS_EVENT,
+  BRIDGE_TELEMETRY_EVENT,
+  createBridgeStatusEvent,
+  createBridgeTelemetryEvent
+} from "./bridge-protocol";
 import { MediaElementSession, MediaElementSessionError } from "./media-element-session";
 
 function makeTelemetry(
@@ -230,6 +236,60 @@ describe("AutoBoosterController", () => {
       lastTechnicalError: undefined,
       currentUrl: "https://youtube.com/watch?v=1"
     });
+  });
+
+  it("keeps exact bridge defaults and binds bridge listeners only once when the api exists", () => {
+    const controller = new AutoBoosterController();
+    const internal = controller as unknown as {
+      bridgeStatus: BridgeStatusPayload;
+      bridgeTelemetry: {
+        activeStrategy: "none" | "web_audio_bridge";
+        level: number;
+        warning: LevelWarning;
+        metrics: DspRuntimeMetrics;
+        audioContextCount: number;
+        attachedNodeCount: number;
+        lastTelemetryAt: number;
+      };
+      bridgeListenersBound: boolean;
+      ensureBridgeListeners(): void;
+    };
+
+    expect(internal.bridgeStatus).toEqual({
+      enabled: false,
+      suspended: false,
+      scope: null,
+      attachState: "idle",
+      activeStrategy: "none",
+      audioContextState: "none",
+      autoplayPolicy: undefined,
+      audioContextCount: 0,
+      attachedNodeCount: 0,
+      currentUrl: "https://youtube.com/watch?v=1"
+    });
+    expect(internal.bridgeTelemetry).toEqual({
+      activeStrategy: "none",
+      level: 0,
+      warning: "none",
+      metrics: {
+        protectorActionDb: 0,
+        clipEvents: 0,
+        clipPeak: 0,
+        protectionBypassed: false,
+        outputPeak: 0
+      },
+      audioContextCount: 0,
+      attachedNodeCount: 0,
+      lastTelemetryAt: 0
+    });
+
+    internal.ensureBridgeListeners();
+    internal.ensureBridgeListeners();
+
+    expect(windowAddEventListener).toHaveBeenCalledTimes(2);
+    expect(windowAddEventListener).toHaveBeenNthCalledWith(1, BRIDGE_STATUS_EVENT, expect.any(Function));
+    expect(windowAddEventListener).toHaveBeenNthCalledWith(2, BRIDGE_TELEMETRY_EVENT, expect.any(Function));
+    expect(internal.bridgeListenersBound).toBe(true);
   });
 
   it("reports exact idle and suspended status payloads without booting media sessions", async () => {
@@ -441,6 +501,46 @@ describe("AutoBoosterController", () => {
     );
     expect(documentElementAppendChild).not.toHaveBeenCalled();
     expect(fakeMediaElement.addEventListener).toHaveBeenCalled();
+  });
+
+  it("keeps the lane attached when a later source conflict happens after media was already attached", async () => {
+    const secondMediaElement = {
+      currentSrc: "https://cdn.example.com/second.mp4",
+      srcObject: null,
+      paused: false,
+      ended: false,
+      readyState: 2,
+      currentTime: 1,
+      played: { length: 1 } as TimeRanges,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    } as unknown as HTMLMediaElement;
+    const firstSession = createFakeSession();
+    vi.spyOn(MediaElementSession, "create")
+      .mockResolvedValueOnce(firstSession as never)
+      .mockRejectedValueOnce(
+        new MediaElementSessionError("source_conflict", "already connected", {
+          audioContextState: "running",
+          autoplayPolicy: "allowed"
+        })
+      );
+    documentQuerySelectorAll.mockReturnValue([fakeMediaElement, secondMediaElement]);
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload());
+    runtimeSendMessage.mockClear();
+
+    await (controller as unknown as { refreshMediaTracking(): Promise<void> }).refreshMediaTracking();
+
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      attachReason: undefined,
+      attachedElementCount: 1
+    });
+    expect(runtimeSendMessage).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "AUTO_SESSION_ATTACH_FAILED" })
+    );
+    expect(secondMediaElement.addEventListener).toHaveBeenCalled();
   });
 
   it("reports generic attach failures and keeps the lane usable for fallback", async () => {
@@ -796,6 +896,32 @@ describe("AutoBoosterController", () => {
     );
   });
 
+  it("prefers the shortcut-icon favicon when the generic rel=icon link is missing", async () => {
+    documentQuerySelector.mockImplementation((selector: string) => {
+      if (selector === 'link[rel="shortcut icon"][href]') {
+        return { href: "https://youtube.com/shortcut.ico" };
+      }
+
+      return null;
+    });
+    const controller = new AutoBoosterController();
+
+    await controller.configure(
+      makePayload({
+        enabled: false
+      })
+    );
+
+    expect(runtimeSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "AUTO_SESSION_STATUS_UPDATE",
+        payload: expect.objectContaining({
+          favIconUrl: "https://youtube.com/shortcut.ico"
+        })
+      })
+    );
+  });
+
   it("keeps the lane observing when telemetry runs with no tracked sessions", async () => {
     const controller = new AutoBoosterController();
 
@@ -1020,6 +1146,121 @@ describe("AutoBoosterController", () => {
     });
   });
 
+  it("merges bridge telemetry maxima into the published payload and keeps bridge timestamps in debug state", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1000);
+    const controller = new AutoBoosterController();
+    const fakeSession = createFakeSession({
+      sampleTelemetry: vi.fn().mockReturnValue(
+        makeTelemetry("high", {
+          protectorActionDb: 3.5,
+          clipEvents: 2,
+          clipPeak: 0.55,
+          protectionBypassed: false,
+          outputPeak: 0.44
+        })
+      )
+    });
+    (
+      controller as unknown as {
+        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        bridgeTelemetry: {
+          activeStrategy: "none" | "web_audio_bridge";
+          level: number;
+          warning: LevelWarning;
+          metrics: DspRuntimeMetrics;
+          audioContextCount: number;
+          attachedNodeCount: number;
+          lastTelemetryAt: number;
+        };
+        state: {
+          enabled: boolean;
+          suspended: boolean;
+          tabId: number | null;
+          attachState: "attached";
+        };
+        publishTelemetry(): void;
+      }
+    ).trackedSessions.set(fakeMediaElement, {
+      session: fakeSession,
+      lastTelemetry: makeTelemetry()
+    });
+    (
+      controller as unknown as {
+        bridgeTelemetry: {
+          activeStrategy: "none" | "web_audio_bridge";
+          level: number;
+          warning: LevelWarning;
+          metrics: DspRuntimeMetrics;
+          audioContextCount: number;
+          attachedNodeCount: number;
+          lastTelemetryAt: number;
+        };
+      }
+    ).bridgeTelemetry = {
+      activeStrategy: "web_audio_bridge",
+      level: 0.91,
+      warning: "danger",
+      metrics: {
+        protectorActionDb: 8.75,
+        clipEvents: 5,
+        clipPeak: 1.2,
+        protectionBypassed: true,
+        inputPeak: 0.91,
+        outputPeak: 0.88
+      },
+      audioContextCount: 2,
+      attachedNodeCount: 3,
+      lastTelemetryAt: 1234
+    };
+    (
+      controller as unknown as {
+        state: {
+          enabled: boolean;
+          suspended: boolean;
+          tabId: number | null;
+          attachState: "idle" | "attached";
+        };
+      }
+    ).state = {
+      ...(
+        controller as unknown as {
+          state: {
+            enabled: boolean;
+            suspended: boolean;
+            tabId: number | null;
+            attachState: "idle" | "attached";
+          };
+        }
+      ).state,
+      enabled: true,
+      suspended: false,
+      tabId: 7,
+      attachState: "attached"
+    };
+
+    (controller as unknown as { publishTelemetry(): void }).publishTelemetry();
+
+    expect(controller.getDebugState()).toMatchObject({
+      lastTelemetryAt: 1234,
+      lastLevel: 0.91
+    });
+    expect(runtimeSendMessage).toHaveBeenLastCalledWith({
+      type: "AUTO_SESSION_LEVEL_UPDATE",
+      payload: {
+        tabId: 7,
+        isTopFrame: true,
+        frameUrl: "https://youtube.com/watch?v=1",
+        level: 0.91,
+        warning: "danger",
+        protectorActionDb: 8.75,
+        clipEvents: 7,
+        clipPeak: 1.2,
+        protectionBypassed: true,
+        outputPeak: 0.88
+      }
+    });
+  });
+
   it.each([
     [
       "disabled",
@@ -1095,6 +1336,279 @@ describe("AutoBoosterController", () => {
 
     expect(fakeSession.sampleTelemetry).not.toHaveBeenCalled();
     expect(runtimeSendMessage).not.toHaveBeenCalled();
+  });
+
+  it("keeps observing/no_media stable on same-url polls when retries are not armed", () => {
+    const controller = new AutoBoosterController();
+    const refreshSpy = vi.spyOn(
+      controller as unknown as { runRefreshMediaTracking: () => Promise<void> },
+      "runRefreshMediaTracking"
+    );
+    (
+      controller as unknown as {
+        state: {
+          enabled: boolean;
+          suspended: boolean;
+          advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS | null;
+          attachState: "observing" | "attached";
+          attachReason?: "no_media" | "autoplay_blocked";
+        };
+        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      }
+    ).state = {
+      ...(
+        controller as unknown as {
+          state: {
+            enabled: boolean;
+            suspended: boolean;
+            advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS | null;
+            attachState: "idle" | "observing" | "attached";
+            attachReason?: "no_media" | "autoplay_blocked";
+          };
+        }
+      ).state,
+      enabled: true,
+      suspended: false,
+      advancedAudioSettings: DEFAULT_ADVANCED_AUDIO_SETTINGS,
+      attachState: "attached",
+      attachReason: undefined
+    };
+    (
+      controller as unknown as {
+        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      }
+    ).trackedSessions.set(fakeMediaElement, {
+      session: createFakeSession(),
+      lastTelemetry: makeTelemetry()
+    });
+
+    (controller as unknown as { syncLocationState(): void }).syncLocationState();
+
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+
+  it("retries same-url rescans exactly at the interval boundary and blocks every gated negative case", () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        suspended: boolean;
+        advancedAudioSettings: AutoBoosterConfigPayload["advancedAudioSettings"] | null;
+        attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
+        attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
+      };
+      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      lastLocationHref: string;
+      lastAutoRetryAt: number;
+      syncLocationState(): void;
+      runRefreshMediaTracking(): Promise<void>;
+    };
+    const refreshSpy = vi.fn(async () => undefined);
+    const nowSpy = vi.spyOn(Date, "now");
+
+    controllerInternals.runRefreshMediaTracking = refreshSpy;
+    controllerInternals.lastLocationHref = window.location.href;
+    controllerInternals.lastAutoRetryAt = 1_000;
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.suspended = false;
+    controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+    controllerInternals.state.attachState = "observing";
+    controllerInternals.state.attachReason = "no_media";
+    controllerInternals.trackedSessions.clear();
+
+    nowSpy.mockReturnValueOnce(1_500);
+    controllerInternals.syncLocationState();
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+
+    const blockedCases: Array<{ label: string; setup: () => void }> = [
+      {
+        label: "disabled",
+        setup: () => {
+          controllerInternals.state.enabled = false;
+          controllerInternals.state.suspended = false;
+          controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+          controllerInternals.state.attachState = "observing";
+          controllerInternals.state.attachReason = "no_media";
+          controllerInternals.trackedSessions.clear();
+        }
+      },
+      {
+        label: "suspended",
+        setup: () => {
+          controllerInternals.state.enabled = true;
+          controllerInternals.state.suspended = true;
+          controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+          controllerInternals.state.attachState = "observing";
+          controllerInternals.state.attachReason = "no_media";
+          controllerInternals.trackedSessions.clear();
+        }
+      },
+      {
+        label: "missing settings",
+        setup: () => {
+          controllerInternals.state.enabled = true;
+          controllerInternals.state.suspended = false;
+          controllerInternals.state.advancedAudioSettings = null;
+          controllerInternals.state.attachState = "observing";
+          controllerInternals.state.attachReason = "no_media";
+          controllerInternals.trackedSessions.clear();
+        }
+      },
+      {
+        label: "tracked sessions present",
+        setup: () => {
+          controllerInternals.state.enabled = true;
+          controllerInternals.state.suspended = false;
+          controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+          controllerInternals.state.attachState = "observing";
+          controllerInternals.state.attachReason = "no_media";
+          controllerInternals.trackedSessions.clear();
+          controllerInternals.trackedSessions.set({} as HTMLMediaElement, {
+            session: createFakeSession() as unknown as MediaElementSession,
+            lastTelemetry: makeTelemetry()
+          });
+        }
+      },
+      {
+        label: "attach state mismatch",
+        setup: () => {
+          controllerInternals.state.enabled = true;
+          controllerInternals.state.suspended = false;
+          controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+          controllerInternals.state.attachState = "attached";
+          controllerInternals.state.attachReason = "no_media";
+          controllerInternals.trackedSessions.clear();
+        }
+      },
+      {
+        label: "attach reason mismatch",
+        setup: () => {
+          controllerInternals.state.enabled = true;
+          controllerInternals.state.suspended = false;
+          controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+          controllerInternals.state.attachState = "observing";
+          controllerInternals.state.attachReason = "attach_failed";
+          controllerInternals.trackedSessions.clear();
+        }
+      }
+    ];
+
+    for (const blockedCase of blockedCases) {
+      refreshSpy.mockClear();
+      controllerInternals.lastAutoRetryAt = 0;
+      blockedCase.setup();
+      nowSpy.mockReturnValueOnce(2_000);
+      controllerInternals.syncLocationState();
+      expect(refreshSpy, blockedCase.label).not.toHaveBeenCalled();
+    }
+
+    nowSpy.mockRestore();
+  });
+
+  it("switches cleanly between bridge waiting and attached states and keeps exact stream status payloads", () => {
+    const controller = new AutoBoosterController();
+    const internal = controller as unknown as {
+      state: {
+        tabId: number | null;
+        scope: "global" | "site" | null;
+        enabled: boolean;
+        gainPercent: number;
+        attachState: "idle" | "observing" | "awaiting_user_gesture" | "attached" | "failed";
+        attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
+        activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+        lastError?: LocalizedMessage;
+      };
+      bridgeStatus: BridgeStatusPayload;
+      handleBridgeStatusEvent(event: Event): void;
+      reportStatus(): void;
+      reportAttachFailure(): void;
+    };
+
+    internal.state = {
+      ...internal.state,
+      tabId: 7,
+      scope: "site",
+      enabled: true,
+      gainPercent: 220,
+      attachState: "observing",
+      attachReason: "no_media",
+      activeStrategy: "none",
+      lastError: undefined
+    };
+
+    internal.handleBridgeStatusEvent(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "site",
+        attachState: "awaiting_user_gesture",
+        attachReason: "autoplay_blocked",
+        activeStrategy: "none",
+        audioContextState: "suspended",
+        autoplayPolicy: "disallowed",
+        audioContextCount: 1,
+        attachedNodeCount: 0,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "awaiting_user_gesture",
+      attachReason: "autoplay_blocked",
+      lastError: { key: "errorAutoAwaitingGesture" }
+    });
+
+    runtimeSendMessage.mockClear();
+    internal.handleBridgeStatusEvent(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "site",
+        attachState: "attached",
+        attachReason: undefined,
+        activeStrategy: "web_audio_bridge",
+        audioContextState: "running",
+        autoplayPolicy: "allowed",
+        audioContextCount: 1,
+        attachedNodeCount: 2,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      attachReason: undefined,
+      lastError: undefined
+    });
+
+    internal.reportStatus();
+    internal.state.attachState = "failed";
+    internal.state.attachReason = "attach_failed";
+    internal.state.lastError = { key: "errorAutoAttachFailed" };
+    internal.reportAttachFailure();
+
+    expect(runtimeSendMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        type: "AUTO_SESSION_STATUS_UPDATE",
+        payload: expect.objectContaining({
+          streamState: "active",
+          engineStatus: "ready",
+          autoAttachState: "attached",
+          autoAttachReason: undefined
+        })
+      })
+    );
+    expect(runtimeSendMessage).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        type: "AUTO_SESSION_ATTACH_FAILED",
+        payload: expect.objectContaining({
+          streamState: "error",
+          engineStatus: "error",
+          autoAttachState: "failed",
+          autoAttachReason: "attach_failed"
+        })
+      })
+    );
   });
 
   it("keeps waiting and failed attach states stable and reports exact status/failure payloads", async () => {
@@ -1259,6 +1773,108 @@ describe("AutoBoosterController", () => {
     });
   });
 
+  it("prefers the live document title for attach-failure payloads instead of the untitled fallbacks", () => {
+    const controller = new AutoBoosterController();
+    Object.defineProperty(document, "title", {
+      configurable: true,
+      value: "Live stream title"
+    });
+    i18nGetMessage.mockReturnValue("Localized untitled");
+    runtimeSendMessage.mockClear();
+
+    (
+      controller as unknown as {
+        state: {
+          tabId: number | null;
+          attachState: "idle" | "attached" | "failed";
+          attachReason?: "attach_failed";
+        };
+        reportAttachFailure(): void;
+      }
+    ).state = {
+      ...(
+        controller as unknown as {
+          state: {
+            tabId: number | null;
+            attachState: "idle" | "attached" | "failed";
+            attachReason?: "attach_failed";
+          };
+        }
+      ).state,
+      tabId: 7,
+      attachState: "failed",
+      attachReason: "attach_failed"
+    };
+
+    (controller as unknown as { reportAttachFailure(): void }).reportAttachFailure();
+
+    expect(runtimeSendMessage).toHaveBeenCalledWith({
+      type: "AUTO_SESSION_ATTACH_FAILED",
+      payload: expect.objectContaining({
+        title: "Live stream title"
+      })
+    });
+  });
+
+  it("keeps exact disabled and media-element strategy state transitions in syncAttachState", async () => {
+    const fakeSession = createFakeSession();
+    vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
+    const controller = new AutoBoosterController();
+    const internal = controller as unknown as {
+      state: {
+        enabled: boolean;
+        attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
+        attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
+        activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+      };
+      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      syncAttachState(): void;
+    };
+
+    await controller.configure(makePayload());
+
+    internal.state.enabled = false;
+    internal.state.attachState = "attached";
+    internal.state.attachReason = "no_media";
+    internal.state.activeStrategy = "hybrid";
+    internal.syncAttachState();
+    expect(internal.state).toMatchObject({
+      attachState: "idle",
+      attachReason: undefined,
+      activeStrategy: "none"
+    });
+
+    internal.state.enabled = true;
+    internal.state.attachState = "observing";
+    internal.state.attachReason = "no_media";
+    internal.state.activeStrategy = "none";
+    internal.trackedSessions.clear();
+    internal.trackedSessions.set(fakeMediaElement, {
+      session: fakeSession,
+      lastTelemetry: makeTelemetry()
+    });
+    internal.syncAttachState();
+
+    expect(internal.state).toMatchObject({
+      attachState: "attached",
+      attachReason: undefined,
+      activeStrategy: "media_element"
+    });
+  });
+
+  it("does not recreate media sessions for already processed elements", async () => {
+    const fakeSession = createFakeSession();
+    const createSpy = vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload());
+    createSpy.mockClear();
+
+    await (controller as unknown as { scanForMediaElements(): Promise<void> }).scanForMediaElements();
+
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
   it("preserves prior debug hints when a media-session error omits debug state and still classifies generic media failures as attach_failed", async () => {
     vi.spyOn(MediaElementSession, "create").mockRejectedValue(
       new MediaElementSessionError("attach_failed", "generic media failure")
@@ -1391,6 +2007,78 @@ describe("AutoBoosterController", () => {
     await Promise.resolve();
 
     expect(handleGestureRetrySpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves prior bridge errors until attachment succeeds and disarms gesture retry exactly once", () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
+        attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
+        lastError?: LocalizedMessage;
+      };
+      lastTechnicalError?: string;
+      gestureRetryAbortController: AbortController | null;
+      armGestureRetry(): void;
+      handleBridgeStatusEvent(event: Event): void;
+    };
+
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.attachState = "awaiting_user_gesture";
+    controllerInternals.state.attachReason = "autoplay_blocked";
+    controllerInternals.state.lastError = { key: "errorAutoAwaitingGesture" };
+    controllerInternals.lastTechnicalError = "previous error";
+    controllerInternals.armGestureRetry();
+
+    const abortSpy = vi.spyOn(controllerInternals.gestureRetryAbortController as AbortController, "abort");
+
+    controllerInternals.handleBridgeStatusEvent(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "global",
+        attachState: "failed",
+        attachReason: "attach_failed",
+        activeStrategy: "none",
+        audioContextState: "running",
+        autoplayPolicy: "allowed",
+        audioContextCount: 1,
+        attachedNodeCount: 0,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+
+    expect(controller.getDebugState()).toMatchObject({
+      lastTechnicalError: "previous error",
+      lastError: { key: "errorAutoAwaitingGesture" }
+    });
+    expect(abortSpy).not.toHaveBeenCalled();
+
+    controllerInternals.handleBridgeStatusEvent(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "global",
+        attachState: "attached",
+        attachReason: undefined,
+        activeStrategy: "web_audio_bridge",
+        audioContextState: "running",
+        autoplayPolicy: "allowed",
+        audioContextCount: 1,
+        attachedNodeCount: 1,
+        currentUrl: "https://youtube.com/watch?v=1",
+        lastTechnicalError: "fresh error"
+      })
+    );
+
+    expect(abortSpy).toHaveBeenCalledTimes(1);
+    expect(controllerInternals.gestureRetryAbortController).toBeNull();
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      lastError: undefined,
+      lastTechnicalError: "fresh error"
+    });
   });
 
   it("stops gesture retry processing immediately when the lane is suspended", async () => {
@@ -1536,6 +2224,69 @@ describe("AutoBoosterController", () => {
     );
   });
 
+  it("uses the newer bridge telemetry timestamp when it exceeds the wall clock", () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        suspended: boolean;
+        tabId: number | null;
+        attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
+      };
+      bridgeTelemetry: {
+        activeStrategy: "none" | "web_audio_bridge";
+        level: number;
+        warning: LevelWarning;
+        metrics: DspRuntimeMetrics;
+        audioContextCount: number;
+        attachedNodeCount: number;
+        lastTelemetryAt: number;
+      };
+      publishTelemetry(): void;
+    };
+    const nowSpy = vi.spyOn(Date, "now").mockReturnValue(500);
+
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.suspended = false;
+    controllerInternals.state.tabId = 7;
+    controllerInternals.state.attachState = "attached";
+    controllerInternals.bridgeTelemetry = {
+      activeStrategy: "web_audio_bridge",
+      level: 0.57,
+      warning: "high",
+      metrics: {
+        protectorActionDb: 3.2,
+        clipEvents: 2,
+        clipPeak: 0.61,
+        protectionBypassed: false,
+        inputPeak: 0.57,
+        outputPeak: 0.42
+      },
+      audioContextCount: 1,
+      attachedNodeCount: 1,
+      lastTelemetryAt: 750
+    };
+    runtimeSendMessage.mockClear();
+
+    controllerInternals.publishTelemetry();
+
+    expect(controller.getDebugState()).toMatchObject({
+      lastTelemetryAt: 750,
+      lastLevel: 0.57
+    });
+    expect(runtimeSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "AUTO_SESSION_LEVEL_UPDATE",
+        payload: expect.objectContaining({
+          level: 0.57,
+          warning: "high"
+        })
+      })
+    );
+
+    nowSpy.mockRestore();
+  });
+
   it("keeps silent early returns for status/failure reporting when tab id is missing", async () => {
     const controller = new AutoBoosterController();
 
@@ -1564,5 +2315,541 @@ describe("AutoBoosterController", () => {
       frameCount: 1,
       readyFrameCount: 1
     });
+  });
+
+  it("merges bridge state into a hybrid lane and exposes bridge counts in the debug snapshot", async () => {
+    const fakeSession = createFakeSession({
+      sampleTelemetry: vi.fn().mockReturnValue(
+        makeTelemetry("none", {
+          protectorActionDb: 1.2,
+          clipEvents: 1,
+          clipPeak: 0.24,
+          outputPeak: 0.35
+        })
+      )
+    });
+    vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      handleBridgeStatusEvent(event: Event): void;
+      handleBridgeTelemetryEvent(event: Event): void;
+      publishTelemetry(): void;
+    };
+
+    await controller.configure(makePayload());
+    runtimeSendMessage.mockClear();
+
+    controllerInternals.handleBridgeStatusEvent(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "global",
+        attachState: "attached",
+        activeStrategy: "web_audio_bridge",
+        audioContextState: "running",
+        autoplayPolicy: "allowed",
+        audioContextCount: 2,
+        attachedNodeCount: 3,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+    controllerInternals.handleBridgeTelemetryEvent(
+      createBridgeTelemetryEvent({
+        activeStrategy: "web_audio_bridge",
+        level: 0.81,
+        warning: "high",
+        metrics: {
+          protectorActionDb: 4.8,
+          clipEvents: 2,
+          clipPeak: 0.92,
+          protectionBypassed: true,
+          outputPeak: 0.74
+        },
+        audioContextCount: 2,
+        attachedNodeCount: 3,
+        lastTelemetryAt: 123
+      })
+    );
+    controllerInternals.publishTelemetry();
+
+    expect(controller.getDebugState(true)).toMatchObject({
+      activeStrategy: "hybrid",
+      attachedElementCount: 4,
+      bridgeContextCount: 2,
+      bridgeAttachedNodeCount: 3,
+      lastLevel: 0.81,
+      toastVisible: true
+    });
+    expect(runtimeSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "AUTO_SESSION_LEVEL_UPDATE",
+        payload: expect.objectContaining({
+          warning: "high",
+          clipEvents: 3,
+          protectionBypassed: true,
+          outputPeak: 0.74
+        })
+      })
+    );
+  });
+
+  it("removes bridge listeners on destroy and swallows tracked-session stop failures", async () => {
+    const fakeSession = createFakeSession({
+      stop: vi.fn().mockRejectedValue(new Error("stop failed"))
+    });
+    vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
+    const removeEventListener = vi.fn();
+    (window as Window & { removeEventListener: typeof removeEventListener }).removeEventListener = removeEventListener;
+
+    const controller = new AutoBoosterController();
+    await controller.configure(makePayload());
+
+    await expect(controller.destroy()).resolves.toBeUndefined();
+    expect(removeEventListener).toHaveBeenCalledWith(BRIDGE_STATUS_EVENT, expect.any(Function));
+    expect(removeEventListener).toHaveBeenCalledWith(BRIDGE_TELEMETRY_EVENT, expect.any(Function));
+    expect(fakeSession.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it("dedupes pending retry listeners and periodically requeues observing rescans on a stable url", () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        suspended: boolean;
+        advancedAudioSettings: AutoBoosterConfigPayload["advancedAudioSettings"] | null;
+        attachState: string;
+        attachReason?: string;
+      };
+      pendingMediaRetryControllers: Map<HTMLMediaElement, AbortController>;
+      lastLocationHref: string;
+      lastAutoRetryAt: number;
+      ensurePendingMediaRetryListeners(mediaElement: HTMLMediaElement): void;
+      syncLocationState(): void;
+      runRefreshMediaTracking(): Promise<void>;
+    };
+    const mediaWithoutListeners = {
+      paused: true,
+      ended: false,
+      readyState: 0,
+      currentTime: 0,
+      played: { length: 0 } as TimeRanges
+    } as unknown as HTMLMediaElement;
+    const refreshSpy = vi.fn(async () => undefined);
+    const nowSpy = vi.spyOn(Date, "now");
+
+    controllerInternals.ensurePendingMediaRetryListeners(mediaWithoutListeners);
+    expect(controllerInternals.pendingMediaRetryControllers.size).toBe(0);
+
+    controllerInternals.ensurePendingMediaRetryListeners(fakeMediaElement);
+    controllerInternals.ensurePendingMediaRetryListeners(fakeMediaElement);
+    expect(fakeMediaElement.addEventListener).toHaveBeenCalledTimes(6);
+
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.suspended = false;
+    controllerInternals.state.advancedAudioSettings = { ...DEFAULT_ADVANCED_AUDIO_SETTINGS };
+    controllerInternals.state.attachState = "observing";
+    controllerInternals.state.attachReason = "no_media";
+    controllerInternals.lastLocationHref = window.location.href;
+    controllerInternals.lastAutoRetryAt = 0;
+    controllerInternals.runRefreshMediaTracking = refreshSpy;
+
+    nowSpy.mockReturnValueOnce(1_000).mockReturnValueOnce(1_200).mockReturnValueOnce(1_600);
+    controllerInternals.syncLocationState();
+    controllerInternals.syncLocationState();
+    controllerInternals.syncLocationState();
+
+    expect(refreshSpy).toHaveBeenCalledTimes(2);
+    nowSpy.mockRestore();
+  });
+
+  it("only retries pending media listeners when the controller is active and the element becomes ready", () => {
+    const controller = new AutoBoosterController();
+    const readyCallbacks = new Map<string, () => void>();
+    const notReadyCallbacks = new Map<string, () => void>();
+    const readyMediaElement = {
+      paused: false,
+      ended: false,
+      currentSrc: "https://cdn.example.com/live.mp4",
+      srcObject: null,
+      readyState: 2,
+      currentTime: 1,
+      played: { length: 1 } as TimeRanges,
+      addEventListener: vi.fn((eventName: string, callback: () => void, options?: AddEventListenerOptions) => {
+        readyCallbacks.set(eventName, callback);
+        expect(options).toEqual(expect.objectContaining({ signal: expect.any(AbortSignal) }));
+      })
+    } as unknown as HTMLMediaElement;
+    const notReadyMediaElement = {
+      paused: true,
+      ended: false,
+      currentSrc: "https://cdn.example.com/later.mp4",
+      srcObject: null,
+      readyState: 0,
+      currentTime: 0,
+      played: { length: 0 } as TimeRanges,
+      addEventListener: vi.fn((eventName: string, callback: () => void) => {
+        notReadyCallbacks.set(eventName, callback);
+      })
+    } as unknown as HTMLMediaElement;
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        suspended: boolean;
+      };
+      pendingMediaRetryControllers: Map<HTMLMediaElement, AbortController>;
+      ensurePendingMediaRetryListeners(mediaElement: HTMLMediaElement): void;
+      runRefreshMediaTracking(): Promise<void>;
+    };
+    const refreshSpy = vi.fn(async () => undefined);
+
+    controllerInternals.runRefreshMediaTracking = refreshSpy;
+    controllerInternals.ensurePendingMediaRetryListeners(readyMediaElement);
+    controllerInternals.ensurePendingMediaRetryListeners(notReadyMediaElement);
+
+    expect([...readyCallbacks.keys()]).toEqual([
+      "play",
+      "playing",
+      "canplay",
+      "loadedmetadata",
+      "timeupdate",
+      "volumechange"
+    ]);
+
+    controllerInternals.state.enabled = false;
+    controllerInternals.state.suspended = false;
+    readyCallbacks.get("play")?.();
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.suspended = true;
+    readyCallbacks.get("playing")?.();
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    controllerInternals.state.suspended = false;
+    notReadyCallbacks.get("play")?.();
+    expect(refreshSpy).not.toHaveBeenCalled();
+
+    readyCallbacks.get("canplay")?.();
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(controllerInternals.pendingMediaRetryControllers.has(readyMediaElement)).toBe(false);
+    expect(controllerInternals.pendingMediaRetryControllers.has(notReadyMediaElement)).toBe(true);
+  });
+
+  it("aborts pending retry listeners in bulk and preserves in-document tracked entries during pruning", () => {
+    const controller = new AutoBoosterController();
+    const trackedSession = createFakeSession();
+    const retainedMediaElement = { id: "retained" } as unknown as HTMLMediaElement;
+    const retainedPendingMediaElement = { id: "retained-pending" } as unknown as HTMLMediaElement;
+    const detachedPendingMediaElement = { id: "detached-pending" } as unknown as HTMLMediaElement;
+    const retainedAbortController = new AbortController();
+    const detachedAbortController = new AbortController();
+    const retainedAbortSpy = vi.spyOn(retainedAbortController, "abort");
+    const detachedAbortSpy = vi.spyOn(detachedAbortController, "abort");
+    const controllerInternals = controller as unknown as {
+      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      pendingMediaRetryControllers: Map<HTMLMediaElement, AbortController>;
+      pruneDetachedSessions(): void;
+      clearAllPendingMediaRetryListeners(): void;
+    };
+
+    controllerInternals.trackedSessions.set(retainedMediaElement, {
+      session: trackedSession,
+      lastTelemetry: makeTelemetry()
+    });
+    controllerInternals.pendingMediaRetryControllers.set(retainedPendingMediaElement, retainedAbortController);
+    controllerInternals.pendingMediaRetryControllers.set(detachedPendingMediaElement, detachedAbortController);
+    documentContains.mockImplementation((node: Node) => {
+      return node === retainedMediaElement || node === retainedPendingMediaElement;
+    });
+
+    controllerInternals.pruneDetachedSessions();
+
+    expect(trackedSession.stop).not.toHaveBeenCalled();
+    expect(controllerInternals.trackedSessions.has(retainedMediaElement)).toBe(true);
+    expect(retainedAbortSpy).not.toHaveBeenCalled();
+    expect(detachedAbortSpy).toHaveBeenCalledTimes(1);
+    expect(controllerInternals.pendingMediaRetryControllers.has(detachedPendingMediaElement)).toBe(false);
+
+    retainedAbortSpy.mockClear();
+    controllerInternals.clearAllPendingMediaRetryListeners();
+
+    expect(retainedAbortSpy).toHaveBeenCalledTimes(1);
+    expect(controllerInternals.pendingMediaRetryControllers.size).toBe(0);
+  });
+
+  it("processes registered bridge listeners for invalid, waiting and attached bridge states", async () => {
+    const controller = new AutoBoosterController();
+    const dispatchEvent = vi.fn();
+    (window as Window & { dispatchEvent: typeof dispatchEvent }).dispatchEvent = dispatchEvent;
+
+    await controller.configure(makePayload());
+
+    const statusListener = windowAddEventListener.mock.calls.find(([eventName]) => eventName === BRIDGE_STATUS_EVENT)?.[1] as EventListener;
+    const telemetryListener = windowAddEventListener.mock.calls.find(([eventName]) => eventName === BRIDGE_TELEMETRY_EVENT)?.[1] as EventListener;
+
+    runtimeSendMessage.mockClear();
+    statusListener(new CustomEvent(BRIDGE_STATUS_EVENT, { detail: { source: "other" } }));
+    telemetryListener(new CustomEvent(BRIDGE_TELEMETRY_EVENT, { detail: { source: "other" } }));
+    expect(runtimeSendMessage).not.toHaveBeenCalled();
+
+    statusListener(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "global",
+        attachState: "awaiting_user_gesture",
+        attachReason: "autoplay_blocked",
+        activeStrategy: "none",
+        audioContextState: "suspended",
+        autoplayPolicy: "disallowed",
+        audioContextCount: 1,
+        attachedNodeCount: 0,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "awaiting_user_gesture",
+      attachReason: "autoplay_blocked",
+      lastError: { key: "errorAutoAwaitingGesture" }
+    });
+
+    statusListener(
+      createBridgeStatusEvent({
+        enabled: true,
+        suspended: false,
+        scope: "global",
+        attachState: "attached",
+        activeStrategy: "web_audio_bridge",
+        audioContextState: "running",
+        autoplayPolicy: "allowed",
+        audioContextCount: 1,
+        attachedNodeCount: 1,
+        currentUrl: "https://youtube.com/watch?v=1"
+      })
+    );
+    telemetryListener(
+      createBridgeTelemetryEvent({
+        activeStrategy: "web_audio_bridge",
+        level: 0.91,
+        warning: "high",
+        metrics: {
+          protectorActionDb: 5,
+          clipEvents: 2,
+          clipPeak: 0.8,
+          protectionBypassed: false,
+          outputPeak: 0.72
+        },
+        audioContextCount: 1,
+        attachedNodeCount: 1,
+        lastTelemetryAt: 456
+      })
+    );
+
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      activeStrategy: "web_audio_bridge",
+      bridgeContextCount: 1,
+      bridgeAttachedNodeCount: 1,
+      lastLevel: 0.91
+    });
+    expect(dispatchEvent).toHaveBeenCalled();
+  });
+
+  it("keeps the higher telemetry snapshot and exact sync fallbacks across bridge edge cases", async () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      state: {
+        enabled: boolean;
+        attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
+        attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
+        activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
+      };
+      bridgeStatus: BridgeStatusPayload;
+      lastTelemetryAt: number | null;
+      lastLevel: number;
+      handleBridgeTelemetryEvent(event: Event): void;
+      syncAttachState(): void;
+    };
+
+    await controller.configure(makePayload({ enabled: false }));
+    controllerInternals.lastTelemetryAt = 800;
+    controllerInternals.lastLevel = 0.88;
+    controllerInternals.handleBridgeTelemetryEvent(
+      createBridgeTelemetryEvent({
+        activeStrategy: "web_audio_bridge",
+        level: 0.41,
+        warning: "none",
+        metrics: {
+          protectorActionDb: 0.8,
+          clipEvents: 0,
+          clipPeak: 0.14,
+          protectionBypassed: false,
+          outputPeak: 0.19
+        },
+        audioContextCount: 1,
+        attachedNodeCount: 1,
+        lastTelemetryAt: 650
+      })
+    );
+
+    expect(controller.getDebugState()).toMatchObject({
+      lastTelemetryAt: 800,
+      lastLevel: 0.88
+    });
+
+    controllerInternals.state.enabled = true;
+    controllerInternals.state.attachState = "observing";
+    controllerInternals.state.attachReason = "no_media";
+    controllerInternals.state.activeStrategy = "none";
+    controllerInternals.bridgeStatus = {
+      ...controllerInternals.bridgeStatus,
+      attachState: "attached",
+      activeStrategy: "none",
+      attachReason: undefined
+    };
+    controllerInternals.syncAttachState();
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "observing",
+      attachReason: "no_media"
+    });
+    expect(controller.getDebugState()).not.toHaveProperty("activeStrategy");
+
+    controllerInternals.bridgeStatus = {
+      ...controllerInternals.bridgeStatus,
+      attachState: "failed",
+      activeStrategy: "web_audio_bridge",
+      attachReason: undefined
+    };
+    controllerInternals.state.attachState = "failed";
+    controllerInternals.state.attachReason = undefined;
+    controllerInternals.syncAttachState();
+
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "failed",
+      attachReason: "attach_failed"
+    });
+    expect(controller.getDebugState()).not.toHaveProperty("activeStrategy");
+  });
+
+  it("skips bridge listener binding when the page cannot register events", async () => {
+    (window as Window & { addEventListener?: typeof windowAddEventListener }).addEventListener = undefined;
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload({ enabled: false }));
+
+    expect(
+      (
+        controller as unknown as {
+          bridgeListenersBound: boolean;
+        }
+      ).bridgeListenersBound
+    ).toBe(false);
+    expect(windowAddEventListener).not.toHaveBeenCalled();
+  });
+
+  it("enters awaiting_user_gesture before session creation when playback exists but autoplay readiness is missing", async () => {
+    vi.stubGlobal(
+      "navigator",
+      {
+        userActivation: {
+          isActive: false
+        }
+      } as unknown as Navigator
+    );
+    const autoplayBlockedMediaElement = {
+      paused: false,
+      ended: false,
+      currentSrc: "https://cdn.example.com/ready.mp4",
+      srcObject: null,
+      readyState: 2,
+      currentTime: 1,
+      played: { length: 1 } as TimeRanges,
+      addEventListener: vi.fn()
+    } as unknown as HTMLMediaElement;
+    const createSpy = vi.spyOn(MediaElementSession, "create");
+    documentQuerySelectorAll.mockReturnValue([autoplayBlockedMediaElement]);
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload());
+
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "awaiting_user_gesture",
+      attachReason: "autoplay_blocked",
+      lastError: { key: "errorAutoAwaitingGesture" }
+    });
+    expect(autoplayBlockedMediaElement.addEventListener).toHaveBeenCalled();
+  });
+
+  it("keeps the lane attached when a later element hits source_conflict after one session is already active", async () => {
+    const firstSession = createFakeSession();
+    const conflictingMediaElement = {
+      ...fakeMediaElement,
+      currentSrc: "https://cdn.example.com/other.mp4",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn()
+    } as unknown as HTMLMediaElement;
+    const createSpy = vi.spyOn(MediaElementSession, "create");
+    createSpy
+      .mockResolvedValueOnce(firstSession as never)
+      .mockRejectedValueOnce(new MediaElementSessionError("source_conflict", "other graph active"));
+    documentQuerySelectorAll.mockReturnValue([fakeMediaElement, conflictingMediaElement]);
+    const controller = new AutoBoosterController();
+
+    await controller.configure(makePayload());
+
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "attached",
+      attachedElementCount: 1
+    });
+    expect(createSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses literal fallbacks when i18n is empty and stringifies generic attach failures", async () => {
+    const controller = new AutoBoosterController();
+    const controllerInternals = controller as unknown as {
+      reportStatus(): void;
+      postBridgeCommand(payload: { type: "disable"; payload: { tabId: number } }): void;
+    };
+
+    documentQuerySelectorAll = vi.fn(() => []);
+    Object.defineProperty(document, "title", {
+      configurable: true,
+      value: ""
+    });
+    i18nGetMessage.mockReturnValue("");
+    vi.spyOn(MediaElementSession, "create").mockRejectedValue("bridge exploded");
+
+    await controller.configure(makePayload());
+    expect(controller.getDebugState()).toMatchObject({
+      attachState: "failed",
+      attachReason: "attach_failed",
+      lastTechnicalError: "bridge exploded"
+    });
+
+    runtimeSendMessage.mockClear();
+    controllerInternals.reportStatus();
+    expect(runtimeSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "AUTO_SESSION_STATUS_UPDATE",
+        payload: expect.objectContaining({
+          title: "Untitled tab"
+        })
+      })
+    );
+
+    const originalCustomEvent = globalThis.CustomEvent;
+    (window as Window & { dispatchEvent?: (event: Event) => void }).dispatchEvent = undefined;
+    controllerInternals.postBridgeCommand({
+      type: "disable",
+      payload: { tabId: 7 }
+    });
+    vi.stubGlobal("CustomEvent", undefined as unknown as typeof CustomEvent);
+    (window as Window & { dispatchEvent?: ReturnType<typeof vi.fn> }).dispatchEvent = vi.fn();
+    controllerInternals.postBridgeCommand({
+      type: "disable",
+      payload: { tabId: 7 }
+    });
+    vi.stubGlobal("CustomEvent", originalCustomEvent);
   });
 });

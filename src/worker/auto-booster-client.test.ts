@@ -244,4 +244,112 @@ describe("AutoBoosterClient", () => {
     expect(executeScript).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalled();
   });
+
+  it("targets specific frames directly and forwards document ids without reinjecting the tab", async () => {
+    const client = new AutoBoosterClient();
+    const payload = {
+      tabId: 31,
+      scope: "site" as const,
+      enabled: true,
+      suspended: false,
+      gainPercent: 275,
+      advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
+    };
+    const target = {
+      frameId: 3,
+      documentId: "doc-3"
+    };
+
+    sendMessage
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({ attachState: "attached" });
+
+    await client.configure(31, payload, target);
+    await client.disable(31, target);
+    await expect(client.getDebugState(31, target)).resolves.toEqual({ attachState: "attached" });
+
+    expect(executeScript).not.toHaveBeenCalled();
+    expect(sendMessage).toHaveBeenNthCalledWith(1, 31, {
+      type: "AUTO_BOOSTER_CONFIGURE",
+      payload
+    }, {
+      frameId: 3,
+      documentId: "doc-3"
+    });
+    expect(sendMessage).toHaveBeenNthCalledWith(2, 31, {
+      type: "AUTO_BOOSTER_DISABLE",
+      payload: { tabId: 31 }
+    }, {
+      frameId: 3,
+      documentId: "doc-3"
+    });
+    expect(sendMessage).toHaveBeenNthCalledWith(3, 31, {
+      type: "AUTO_BOOSTER_GET_DEBUG_STATE"
+    }, {
+      frameId: 3,
+      documentId: "doc-3"
+    });
+  });
+
+  it("returns safe fallbacks when optional permission and registration APIs are unavailable", async () => {
+    const client = new AutoBoosterClient();
+    const chromeWithMissingApis = chrome as typeof chrome & {
+      permissions: {
+        request?: typeof requestPermission;
+        contains?: typeof containsPermission;
+      };
+      scripting: {
+        registerContentScripts?: typeof registerContentScripts;
+      };
+    };
+
+    chromeWithMissingApis.permissions.request = undefined;
+    chromeWithMissingApis.permissions.contains = undefined;
+    chromeWithMissingApis.scripting.registerContentScripts = undefined;
+    queryTabs.mockRejectedValueOnce(new Error("tabs unavailable"));
+    unregisterContentScripts.mockRejectedValueOnce(new Error("not registered"));
+
+    await expect(client.requestGlobalPermission()).resolves.toBe(false);
+    await expect(client.hasGlobalPermission()).resolves.toBe(false);
+    await expect(client.queryInjectableTabs()).resolves.toEqual([]);
+    await expect(client.registerGlobalContentScripts()).resolves.toBeUndefined();
+    await expect(client.unregisterGlobalContentScripts()).resolves.toBeUndefined();
+  });
+
+  it("falls back to top-frame-only injection when all-frame injection fails", async () => {
+    const client = new AutoBoosterClient();
+
+    executeScript.mockRejectedValueOnce(new Error("all frames blocked"));
+    executeScript.mockResolvedValue(undefined);
+
+    await expect(client.injectRegisteredScriptsIntoTab(44)).resolves.toBeUndefined();
+
+    expect(executeScript).toHaveBeenNthCalledWith(1, {
+      target: { tabId: 44, allFrames: true },
+      files: ["content-scripts/auto-booster-isolated.js"]
+    });
+    expect(executeScript).toHaveBeenNthCalledWith(2, {
+      target: { tabId: 44, allFrames: true },
+      files: ["content-scripts/auto-booster-main.js"],
+      world: "MAIN"
+    });
+    expect(executeScript).toHaveBeenNthCalledWith(3, {
+      target: { tabId: 44, allFrames: false },
+      files: ["content-scripts/auto-booster-isolated.js"]
+    });
+    expect(executeScript).toHaveBeenNthCalledWith(4, {
+      target: { tabId: 44, allFrames: false },
+      files: ["content-scripts/auto-booster-main.js"],
+      world: "MAIN"
+    });
+  });
+
+  it("normalizes missing frame debug responses to null", async () => {
+    const client = new AutoBoosterClient();
+
+    sendMessage.mockResolvedValueOnce(undefined);
+
+    await expect(client.getDebugState(52, { frameId: 9 })).resolves.toBeNull();
+  });
 });
