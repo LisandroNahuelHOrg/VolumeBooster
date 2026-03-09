@@ -1385,7 +1385,7 @@ describe("WorkerOrchestrator internals", () => {
     actionSetBadgeBackgroundColor.mockClear();
     internals.badgePulseHighlighted = true;
     await internals.syncActionBadges();
-    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#112638" });
+    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#12293b" });
 
     internals.audibleTabs.set(31, now);
     expect(internals.isTabAudible(31)).toBe(false);

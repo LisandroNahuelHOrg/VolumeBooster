@@ -381,10 +381,10 @@
     "message": "Está activo: Boostear solo la pestaña actual"
   },
   "laneMode1Label": {
-    "message": "Modo 1: Boost Current Tab"
+    "message": "Modo manual: Boostear pestaña actual"
   },
   "laneMode2Label": {
-    "message": "Modo 2: Auto-Boost All Sites and Tabs"
+    "message": "Modo auto: Auto-boost en todos los sitios y pestañas"
   },
   "laneStatusTitle": {
     "message": "Modo de boost seleccionado"
@@ -417,13 +417,13 @@
     "message": "Cargando…"
   },
   "lookaheadHelpLabel": {
-    "message": "Más información sobre el lookahead"
+    "message": "Más información sobre la anticipación"
   },
   "lookaheadHelpText": {
     "message": "Controla con cuánta anticipación reacciona el procesador antes de que un pico llegue a la salida."
   },
   "lookaheadLabel": {
-    "message": "Lookahead"
+    "message": "Anticipación"
   },
   "multibandDepthHelpLabel": {
     "message": "Más información sobre la profundidad multibanda"
@@ -462,10 +462,10 @@
     "message": "Mantiene el tono general neutro y controlado para musica, video y streams en el uso diario."
   },
   "presetBassBoost": {
-    "message": "Bass Boost"
+    "message": "Refuerzo de graves"
   },
   "presetBassBoostSubtitle": {
-    "message": "Añade mas peso y golpe en el low-end mientras mantiene estable el resto del espectro."
+    "message": "Añade más peso y pegada en los graves mientras mantiene estable el resto del espectro."
   },
   "presetCustom": {
     "message": "Personalizado"
@@ -492,7 +492,7 @@
     "message": "Aumenta pegada y energia frontal para que bombos, golpes y trailers se sientan mas rapidos e intensos."
   },
   "presetsLabel": {
-    "message": "Presets rápidos en porcentaje (%)"
+    "message": "Presets rápidos (%)"
   },
   "presetSmoothBright": {
     "message": "Brillo suave"
@@ -513,7 +513,7 @@
     "message": "Suma cuerpo, profundidad y suavidad para peliculas, ambient y sesiones largas de escucha."
   },
   "protectionActionBypassed": {
-    "message": "Bypassed"
+    "message": "Sin procesar"
   },
   "protectionActionHelpLabel": {
     "message": "Más información sobre la acción de protección"
@@ -540,10 +540,10 @@
     "message": "Protección neutral para uso diario con un tono equilibrado."
   },
   "qualityProtectorBassAware": {
-    "message": "Bass-Aware"
+    "message": "Protección de graves"
   },
   "qualityProtectorBassAwareSubtitle": {
-    "message": "Preserva más bajos y descarga la protección sobre medios y agudos."
+    "message": "Preserva más graves y descarga la protección sobre medios y agudos."
   },
   "qualityProtectorBypassedState": {
     "message": "Sin protección"
@@ -552,7 +552,7 @@
     "message": "Claridad"
   },
   "qualityProtectorClaritySubtitle": {
-    "message": "Ajusta el low-end y favorece la claridad de voces e instrumentos."
+    "message": "Ajusta los graves y favorece la claridad de voces e instrumentos."
   },
   "qualityProtectorMaximumProtection": {
     "message": "Protección máx."
@@ -561,7 +561,7 @@
     "message": "El modo más controlado para boosts agresivos."
   },
   "qualityProtectorOff": {
-    "message": "Off"
+    "message": "Apagado"
   },
   "qualityProtectorOffSubtitle": {
     "message": "Sin protección de calidad. Puede aparecer distorsión."
@@ -570,10 +570,10 @@
     "message": "Protegido"
   },
   "qualityProtectorPunchPreserve": {
-    "message": "Punch Preserve"
+    "message": "Conservar pegada"
   },
   "qualityProtectorPunchPreserveSubtitle": {
-    "message": "Protege picos sin matar el golpe de bombos, cajas y transientes."
+    "message": "Protege picos sin matar la pegada de bombos, cajas y transientes."
   },
   "qualityProtectorSubtitle": {
     "message": "Elige como el DSP protege la calidad cuando llevas el boost mas arriba."
@@ -582,16 +582,16 @@
     "message": "Protector de calidad de audio"
   },
   "qualityProtectorTrebleSafe": {
-    "message": "Treble Safe"
+    "message": "Agudos suaves"
   },
   "qualityProtectorTrebleSafeSubtitle": {
     "message": "Suaviza agudos filosos y sibilancia para que el audio brillante siga claro sin ponerse áspero."
   },
   "qualityProtectorVocalFocus": {
-    "message": "Vocal Focus"
+    "message": "Enfoque vocal"
   },
   "qualityProtectorVocalFocusSubtitle": {
-    "message": "Hace que voces y diálogos salgan al frente mientras controla rumble y low-end embarrado."
+    "message": "Hace que voces y diálogos salgan al frente mientras controla el retumbe y los graves embarrados."
   },
   "qualityProtectorWarmth": {
     "message": "Calidez"
@@ -600,13 +600,13 @@
     "message": "Conserva cuerpo y suavidad mientras aplica una protección más amable sobre los agudos duros."
   },
   "releaseHelpLabel": {
-    "message": "Más información sobre el release"
+    "message": "Más información sobre la liberación"
   },
   "releaseHelpText": {
     "message": "Controla qué tan rápido deja de actuar el procesador después de reducir un pico fuerte."
   },
   "releaseLabel": {
-    "message": "Release"
+    "message": "Liberación"
   },
   "rememberedForDomain": {
     "message": "Recordado para $DOMAIN$",
@@ -660,13 +660,13 @@
     "message": "este sitio"
   },
   "softClipMixHelpLabel": {
-    "message": "Más información sobre el soft clip mix"
+    "message": "Más información sobre la mezcla de saturación suave"
   },
   "softClipMixHelpText": {
     "message": "Controla cuánta saturación suave se mezcla para suavizar picos agresivos con boosts altos."
   },
   "softClipMixLabel": {
-    "message": "Soft clip mix"
+    "message": "Mezcla de saturación suave"
   },
   "statusActive": {
     "message": "Amplificando"

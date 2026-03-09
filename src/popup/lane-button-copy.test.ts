@@ -5,8 +5,8 @@ describe("lane-button-copy", () => {
     const messages: Record<string, string> = {
       laneActionActivate: "Activate",
       laneActionDeactivate: "Deactivate",
-      laneMode1Label: "Mode 1: Boost Current Tab",
-      laneMode2Label: "Mode 2: Auto-Boost All Sites and Tabs"
+      laneMode1Label: "Manual Mode: Boost Current Tab",
+      laneMode2Label: "Auto Mode: Auto-Boost All Sites and Tabs"
     };
 
     vi.stubGlobal("chrome", {
@@ -26,11 +26,11 @@ describe("lane-button-copy", () => {
 
     expect(getLaneButtonCopy("current-tab", false, catalog)).toEqual({
       action: "Activate",
-      mode: "Mode 1: Boost Current Tab"
+      mode: "Manual Mode: Boost Current Tab"
     });
     expect(getLaneButtonCopy("current-tab", true, catalog)).toEqual({
       action: "Deactivate",
-      mode: "Mode 1: Boost Current Tab"
+      mode: "Manual Mode: Boost Current Tab"
     });
   });
 
@@ -39,11 +39,11 @@ describe("lane-button-copy", () => {
 
     expect(getLaneButtonCopy("all-sites", false, catalog)).toEqual({
       action: "Activate",
-      mode: "Mode 2: Auto-Boost All Sites and Tabs"
+      mode: "Auto Mode: Auto-Boost All Sites and Tabs"
     });
     expect(getLaneButtonCopy("all-sites", true, catalog)).toEqual({
       action: "Deactivate",
-      mode: "Mode 2: Auto-Boost All Sites and Tabs"
+      mode: "Auto Mode: Auto-Boost All Sites and Tabs"
     });
   });
 });
