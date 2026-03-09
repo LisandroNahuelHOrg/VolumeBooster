@@ -4,6 +4,8 @@
  */
 import { AUTO_BOOSTER_FALLBACK_TOAST_ID } from "../shared/constants";
 import type { AutoFallbackToastCommandPayload, LocalizedMessage } from "../shared/types";
+import { UI_FONT_STACK } from "../shared/ui-font-stack";
+import { ensureContentUiFontFaces } from "./ui-font-runtime";
 import { getI18nMessageSafe } from "./runtime-api";
 
 interface AutoFallbackToastOptions {
@@ -59,6 +61,8 @@ export class AutoFallbackToast {
       return this.root;
     }
 
+    ensureContentUiFontFaces(document);
+
     const root = document.createElement("div");
     const title = document.createElement("strong");
     const body = document.createElement("p");
@@ -82,18 +86,21 @@ export class AutoFallbackToast {
       border: "1px solid rgba(255, 177, 64, 0.36)",
       boxShadow: "0 24px 60px rgba(0, 0, 0, 0.32)",
       color: "#f7f3ed",
-      fontFamily: "\"Segoe UI\", sans-serif"
+      fontFamily: UI_FONT_STACK
     } satisfies Partial<CSSStyleDeclaration>);
 
     title.textContent = getI18nMessageSafe("autoBoosterFallbackToastTitle");
     title.style.display = "block";
     title.style.marginBottom = "8px";
     title.style.fontSize = "14px";
+    title.style.fontWeight = "700";
+    title.style.letterSpacing = "-0.01em";
 
     body.dataset.role = "body";
     body.style.margin = "0";
     body.style.fontSize = "13px";
     body.style.lineHeight = "1.45";
+    body.style.fontWeight = "500";
 
     actions.style.display = "flex";
     actions.style.gap = "8px";
@@ -153,7 +160,10 @@ function stylePrimaryButton(button: HTMLButtonElement): void {
     padding: "10px 14px",
     background: "#f7b04c",
     color: "#11161e",
+    fontFamily: UI_FONT_STACK,
     fontWeight: "700",
+    fontSize: "12px",
+    letterSpacing: "0.03em",
     cursor: "pointer"
   } satisfies Partial<CSSStyleDeclaration>);
 }
@@ -166,7 +176,10 @@ function styleSecondaryButton(button: HTMLButtonElement): void {
     padding: "10px 14px",
     background: "transparent",
     color: "#f7f3ed",
+    fontFamily: UI_FONT_STACK,
     fontWeight: "600",
+    fontSize: "12px",
+    letterSpacing: "0.02em",
     cursor: "pointer"
   } satisfies Partial<CSSStyleDeclaration>);
 }
