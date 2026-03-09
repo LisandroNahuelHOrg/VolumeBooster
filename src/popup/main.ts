@@ -631,13 +631,6 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                     )}</strong>
                     <p data-role="quality-protector-subtitle">${escapeHtml(qualityProtectorSubtitle)}</p>
                   </div>
-                  <span
-                    class="quality-protector__state"
-                    data-role="quality-protector-state"
-                    data-bypass="${protectionBypassed}"
-                  >
-                    ${escapeHtml(qualityProtectorStateCopy(protectionBypassed))}
-                  </span>
                 </div>
               </div>
               <div class="quality-protector__body">
@@ -650,7 +643,9 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                         type="button"
                         ${controlsLocked ? "disabled" : ""}
                       >
-                        ${escapeHtml(qualityProtectorButtonCopy(mode))}
+                        <span class="ghost-button__label ghost-button__label--compact">
+                          ${escapeHtml(qualityProtectorButtonCopy(mode))}
+                        </span>
                       </button>
                     `
                   ).join("")}
@@ -730,7 +725,9 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                         type="button"
                         ${controlsLocked ? "disabled" : ""}
                       >
-                        ${escapeHtml(qualityPresetCopy(preset))}
+                        <span class="ghost-button__label ghost-button__label--compact">
+                          ${escapeHtml(qualityPresetCopy(preset))}
+                        </span>
                       </button>
                     `
                   ).join("")}
@@ -1817,13 +1814,6 @@ function syncDynamicUi(
 
   setText("[data-role='quality-protector-mode-value']", qualityProtectorModeCopy(advancedAudioSettings.qualityProtectorMode));
   setText("[data-role='quality-protector-subtitle']", qualityProtectorSubtitleCopy(advancedAudioSettings.qualityProtectorMode));
-  setText("[data-role='quality-protector-state']", qualityProtectorStateCopy(protectionBypassed));
-
-  const qualityProtectorState = rootElement.querySelector<HTMLElement>("[data-role='quality-protector-state']");
-
-  if (qualityProtectorState) {
-    qualityProtectorState.dataset.bypass = String(protectionBypassed);
-  }
 
   if (shouldSyncProtectorTelemetryUi(protectionTelemetryDisplayKey)) {
     setText("[data-role='protection-action-value']", protectionAction);
@@ -2410,16 +2400,6 @@ function qualityProtectorButtonCopy(mode: AudioQualityProtectorMode): string {
 
 function qualityProtectorSubtitleCopy(mode: AudioQualityProtectorMode): string {
   return getQualityProtectorSubtitleCopy(mode, currentCatalog);
-}
-
-function qualityProtectorStateCopy(protectionBypassed: boolean): string {
-  if (!currentCatalog) {
-    return protectionBypassed ? "Unprotected" : "Protected";
-  }
-
-  return protectionBypassed
-    ? translate(currentCatalog, "qualityProtectorBypassedState")
-    : translate(currentCatalog, "qualityProtectorProtectedState");
 }
 
 function getLaneStatus(viewModel: ReturnType<typeof buildPopupViewModel>): LaneStatusDescriptor {

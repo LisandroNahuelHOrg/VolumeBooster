@@ -47,7 +47,7 @@ import { AutoFrameRegistry } from "./auto-frame-registry";
 const ACTION_BADGE_TEXT = "🔊";
 const ACTION_BADGE_TEXT_COLOR = "#ffcf63";
 const ACTION_BADGE_IDLE_COLOR = "#000000";
-const ACTION_BADGE_PULSE_COLOR = "#112638";
+const ACTION_BADGE_PULSE_COLOR = "#12293b";
 const ACTION_BADGE_AUDIBLE_THRESHOLD = 0.025;
 const ACTION_BADGE_AUDIBLE_HOLD_MS = 1500;
 const ACTION_BADGE_PULSE_MS = 1000;

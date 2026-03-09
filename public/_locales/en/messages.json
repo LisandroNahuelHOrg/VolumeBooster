@@ -494,11 +494,11 @@
     "description": "Title shown when the robust manual lane is active."
   },
   "laneMode1Label": {
-    "message": "Mode 1: Boost Current Tab",
+    "message": "Manual Mode: Boost Current Tab",
     "description": "Short mode label shown on the current-tab booster CTA button."
   },
   "laneMode2Label": {
-    "message": "Mode 2: Auto-Boost All Sites and Tabs",
+    "message": "Auto Mode: Auto-Boost All Sites and Tabs",
     "description": "Short mode label shown on the global auto-boost CTA button."
   },
   "laneStatusTitle": {
@@ -642,8 +642,8 @@
     "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Increases punch and forward energy so drums, hits, and trailers feel faster and more impactful.\"."
   },
   "presetsLabel": {
-    "message": "Quick Presets in Percentage (%)",
-    "description": "Preset button label shown in the Sound Mode selector: \"Quick Presets in Percentage (%)\"."
+    "message": "Quick Presets (%)",
+    "description": "Preset button label shown above the gain quick preset buttons: \"Quick Presets (%)\"."
   },
   "presetSmoothBright": {
     "message": "Smooth Bright",
