@@ -5,29 +5,41 @@
   "advancedGlobalHint": {
     "message": "Se aplica al instante a cada sesión activa."
   },
-  "autoBoosterFailureToast": {
-    "message": "El booster automático no pudo enganchar esta página. Usa el booster manual desde el popup."
-  },
-  "autoBoosterFallbackToastTitle": {
-    "message": "El boost automático no pudo completarse en esta página."
-  },
-  "autoBoosterFallbackToastBody": {
-    "message": "Esta página no expuso una ruta de audio enganchable. Cambiá al modo manual para obtener el resultado más confiable."
-  },
-  "autoBoosterFallbackToastPermissionBody": {
-    "message": "Esta página bloqueó el runtime automático. Igual podés boostear esta pestaña con la ruta manual."
-  },
-  "autoBoosterFallbackToastManualAction": {
-    "message": "Cambiar a modo manual"
-  },
-  "autoBoosterFallbackToastDismissAction": {
-    "message": "Descartar"
-  },
   "advancedSubtitle": {
     "message": "Ajusta en detalle el motor DSP premium global que se aplica a cada sesión activa."
   },
   "advancedTitle": {
     "message": "Modo de sonido"
+  },
+  "autoBoosterFailureToast": {
+    "message": "El booster automático no pudo enganchar esta página. Usa el booster manual desde el popup."
+  },
+  "autoBoosterFallbackToastBody": {
+    "message": "Esta página no expuso una ruta de audio enganchable. Cambiá al modo manual para obtener el resultado más confiable."
+  },
+  "autoBoosterFallbackToastDismissAction": {
+    "message": "Descartar"
+  },
+  "autoBoosterFallbackToastManualAction": {
+    "message": "Cambiar a modo manual"
+  },
+  "autoBoosterFallbackToastPermissionBody": {
+    "message": "Esta página bloqueó el runtime automático. Igual podés boostear esta pestaña con la ruta manual."
+  },
+  "autoBoosterFallbackToastTitle": {
+    "message": "El boost automático no pudo completarse en esta página."
+  },
+  "automationBridgeBody": {
+    "message": "Página interna utilizada por el arnés de Playwright para restaurar el acceso global cuando Chrome lo limita y para enviar comandos a la extensión."
+  },
+  "automationBridgeTitle": {
+    "message": "Puente de automatización de Prism"
+  },
+  "automationDocumentTitle": {
+    "message": "Automatización de Prism"
+  },
+  "automationRestoreAllSitesAccess": {
+    "message": "Restaurar acceso a todos los sitios"
   },
   "boostingCount": {
     "message": "$COUNT$ sesiones activas",
@@ -98,17 +110,14 @@
   "boostLabel": {
     "message": "Boost"
   },
-  "ceilingLabel": {
-    "message": "Techo"
-  },
   "ceilingHelpLabel": {
     "message": "Más información sobre el techo"
   },
   "ceilingHelpText": {
     "message": "Define el techo de salida que el modo de sonido intenta respetar antes de llegar al clipping."
   },
-  "clipEventsLabel": {
-    "message": "Eventos de clipping"
+  "ceilingLabel": {
+    "message": "Techo"
   },
   "clipEventsHelpLabel": {
     "message": "Más información sobre eventos de clipping"
@@ -116,23 +125,8 @@
   "clipEventsHelpText": {
     "message": "Muestra cuántos eventos de clipping se detectaron durante la sesión actual."
   },
-  "clippingSafetyIdle": {
-    "message": "En reposo"
-  },
-  "clippingSafetyLabel": {
-    "message": "Seguridad anti-clipping"
-  },
-  "clippingSafetyHelpLabel": {
-    "message": "Más información sobre la seguridad anti-clipping"
-  },
-  "clippingSafetyHelpText": {
-    "message": "Muestra cuánto margen seguro queda antes de que la salida llegue al clipping."
-  },
-  "clippingSafetyMax": {
-    "message": "9,9+ dB"
-  },
-  "clipPeakLabel": {
-    "message": "Pico de clip"
+  "clipEventsLabel": {
+    "message": "Eventos de clipping"
   },
   "clipPeakHelpLabel": {
     "message": "Más información sobre el pico de clip"
@@ -140,14 +134,44 @@
   "clipPeakHelpText": {
     "message": "Muestra el pico de clipping más alto detectado durante la sesión actual."
   },
+  "clipPeakLabel": {
+    "message": "Pico de clip"
+  },
   "clipPeakNone": {
     "message": "Limpio"
+  },
+  "clippingSafetyHelpLabel": {
+    "message": "Más información sobre la seguridad anti-clipping"
+  },
+  "clippingSafetyHelpText": {
+    "message": "Muestra cuánto margen seguro queda antes de que la salida llegue al clipping."
+  },
+  "clippingSafetyIdle": {
+    "message": "En reposo"
+  },
+  "clippingSafetyLabel": {
+    "message": "Seguridad anti-clipping"
+  },
+  "clippingSafetyMax": {
+    "message": "9,9+ dB"
   },
   "currentTabLabel": {
     "message": "Pestaña actual"
   },
   "disableBooster": {
     "message": "Desactivar booster"
+  },
+  "disableBoosterInAllSites": {
+    "message": "Desactivar auto-boost en todos los sitios y pestañas"
+  },
+  "disableBoosterInThisSite": {
+    "message": "Desactivar boost en la pestaña actual"
+  },
+  "enableBoosterInAllSites": {
+    "message": "Auto-boost en todos los sitios y pestañas"
+  },
+  "enableBoosterInThisSite": {
+    "message": "Boostear solo la pestaña actual"
   },
   "errorAudioPipelineStart": {
     "message": "La cadena de audio no pudo iniciarse."
@@ -164,11 +188,11 @@
   "errorAutoPermissionMissing": {
     "message": "Esta página no concede los permisos necesarios para el boost automático."
   },
-  "errorAutoUnsupportedSite": {
-    "message": "Esta página no puede engancharse automáticamente. Usa el booster manual robusto."
-  },
   "errorAutoSourceConflict": {
     "message": "Esta página ya controla el grafo de audio de una forma que impide el enganche automático. Usá el booster manual robusto."
+  },
+  "errorAutoUnsupportedSite": {
+    "message": "Esta página no puede engancharse automáticamente. Usa el booster manual robusto."
   },
   "errorCaptureStopped": {
     "message": "La sesión de captura de la pestaña se detuvo."
@@ -242,20 +266,17 @@
       }
     }
   },
-  "disableBoosterInAllSites": {
-    "message": "Desactivar auto-boost en todos los sitios y pestañas"
+  "globalAutoSwitchWarningBody": {
+    "message": "Esto cambiará la extensión al modo Global y desactivará primero el modo Single Tab. A partir de ahí, todos los sitios compatibles intentarán boostearse automáticamente. Algunas páginas pueden fallar por cómo están construidas, no porque a la extensión le falte capacidad. Cuando eso pase, usá el booster manual robusto."
   },
-  "disableBoosterInThisSite": {
-    "message": "Desactivar boost en la pestaña actual"
+  "globalAutoWarningBody": {
+    "message": "Esto intentará boostear automáticamente todos los sitios compatibles a partir de ahora. Algunas páginas pueden fallar por cómo están construidas, no porque a la extensión le falte capacidad. Cuando eso pase, usá el booster manual robusto."
   },
-  "enableBoosterInAllSites": {
-    "message": "Auto-boost en todos los sitios y pestañas"
+  "globalAutoWarningTitle": {
+    "message": "¿Activar booster automático en todos los sitios?"
   },
   "grantGlobalAutoPermission": {
     "message": "Restaurar acceso a todos los sitios"
-  },
-  "enableBoosterInThisSite": {
-    "message": "Boostear solo la pestaña actual"
   },
   "laneActionActivate": {
     "message": "Activar"
@@ -263,26 +284,14 @@
   "laneActionDeactivate": {
     "message": "Desactivar"
   },
-  "laneMode1Label": {
-    "message": "Modo 1: Boost Current Tab"
-  },
-  "laneMode2Label": {
-    "message": "Modo 2: Auto-Boost All Sites and Tabs"
-  },
-  "languageEnglish": {
-    "message": "Inglés"
-  },
-  "languageLabel": {
-    "message": "Idioma"
-  },
-  "languageSpanish": {
-    "message": "Español"
-  },
-  "levelLabel": {
-    "message": "Actividad en vivo"
+  "laneAutomaticGlobalBridgeDetail": {
+    "message": "Esta pestaña ya se está boosteando a través de su pipeline de Web Audio, y la extensión también empezará a boostear automáticamente otros sitios y pestañas compatibles en cuanto detecte contenido reproducible."
   },
   "laneAutomaticGlobalDetail": {
     "message": "Esta pestaña ya se está boosteando, y la extensión también empezará a boostear automáticamente otros sitios y pestañas compatibles en cuanto detecte contenido reproducible."
+  },
+  "laneAutomaticGlobalHybridDetail": {
+    "message": "Esta pestaña ya se está boosteando con detección de media y detección de Web Audio al mismo tiempo, y la extensión también seguirá auto-iniciándose en otros sitios y pestañas compatibles."
   },
   "laneAutomaticGlobalTitle": {
     "message": "Está activo: Auto-boost en todos los sitios y pestañas"
@@ -308,23 +317,23 @@
   "laneBadgeIdle": {
     "message": "Listo"
   },
-  "laneBadgeManual": {
-    "message": "Pestaña actual"
-  },
-  "laneBadgeUnavailable": {
-    "message": "No disponible"
-  },
-  "laneBadgeWatching": {
-    "message": "Preparando"
-  },
   "laneBadgeInteraction": {
     "message": "Iniciando"
   },
   "laneBadgeLimited": {
     "message": "Limitado"
   },
+  "laneBadgeManual": {
+    "message": "Pestaña actual"
+  },
   "laneBadgeRecovering": {
     "message": "Recuperando"
+  },
+  "laneBadgeUnavailable": {
+    "message": "No disponible"
+  },
+  "laneBadgeWatching": {
+    "message": "Preparando"
   },
   "laneFailedDetail": {
     "message": "El booster automático no pudo engancharse en esta página por ahora. La página puede seguir cargando media o bloquear el acceso automático."
@@ -338,32 +347,17 @@
   "laneGlobalArmedTitle": {
     "message": "Auto-boost en todos los sitios y pestañas está listo"
   },
-  "laneGlobalPermissionTitle": {
-    "message": "Auto-boost en todos los sitios y pestañas necesita restaurar el acceso global"
-  },
   "laneGlobalPermissionDetail": {
     "message": "Chrome está limitando ahora mismo el acceso global de esta extensión. Restaurá ese acceso para que este modo vuelva a iniciar boost automáticamente en sitios y pestañas compatibles. Hasta entonces, solo podrás boostear manualmente la pestaña actual."
+  },
+  "laneGlobalPermissionTitle": {
+    "message": "Auto-boost en todos los sitios y pestañas necesita restaurar el acceso global"
   },
   "laneIdleDetail": {
     "message": "Boostear solo la pestaña actual limita el boost a esta pestaña. Auto-boost en todos los sitios y pestañas boostea esta pestaña y también se inicia automáticamente en otros sitios y pestañas compatibles."
   },
   "laneIdleTitle": {
     "message": "Elegí cómo querés que funcione el boost"
-  },
-  "laneManualDetail": {
-    "message": "Esta pestaña ya se está boosteando, y la extensión mantendrá el boost limitado a la pestaña actual en lugar de auto-iniciarlo en otros sitios y pestañas compatibles salvo que los actives manualmente."
-  },
-  "laneManualTitle": {
-    "message": "Está activo: Boostear solo la pestaña actual"
-  },
-  "laneStatusTitle": {
-    "message": "Modo de boost seleccionado"
-  },
-  "laneUnsupportedDetail": {
-    "message": "Esta página no puede engancharse automáticamente. Usá el booster manual robusto cuando esté disponible."
-  },
-  "laneUnsupportedTitle": {
-    "message": "La ruta automática no está disponible"
   },
   "laneInteractionGlobalDetail": {
     "message": "Este modo ya está seleccionado y la extensión sigue intentando enganchar el audio en esta página. Seguirá reintentando aquí y además continuará auto-iniciándose en otros sitios y pestañas compatibles."
@@ -380,11 +374,26 @@
   "laneInteractionTitle": {
     "message": "Esperando interacción de la página"
   },
-  "laneAutomaticGlobalBridgeDetail": {
-    "message": "Esta pestaña ya se está boosteando a través de su pipeline de Web Audio, y la extensión también empezará a boostear automáticamente otros sitios y pestañas compatibles en cuanto detecte contenido reproducible."
+  "laneManualDetail": {
+    "message": "Esta pestaña ya se está boosteando, y la extensión mantendrá el boost limitado a la pestaña actual en lugar de auto-iniciarlo en otros sitios y pestañas compatibles salvo que los actives manualmente."
   },
-  "laneAutomaticGlobalHybridDetail": {
-    "message": "Esta pestaña ya se está boosteando con detección de media y detección de Web Audio al mismo tiempo, y la extensión también seguirá auto-iniciándose en otros sitios y pestañas compatibles."
+  "laneManualTitle": {
+    "message": "Está activo: Boostear solo la pestaña actual"
+  },
+  "laneMode1Label": {
+    "message": "Modo 1: Boost Current Tab"
+  },
+  "laneMode2Label": {
+    "message": "Modo 2: Auto-Boost All Sites and Tabs"
+  },
+  "laneStatusTitle": {
+    "message": "Modo de boost seleccionado"
+  },
+  "laneUnsupportedDetail": {
+    "message": "Esta página no puede engancharse automáticamente. Usá el booster manual robusto cuando esté disponible."
+  },
+  "laneUnsupportedTitle": {
+    "message": "La ruta automática no está disponible"
   },
   "laneWatchingGlobalDetail": {
     "message": "Este modo ya está seleccionado y listo. Esta pestaña y cualquier otra pestaña compatible empezarán a boostear automáticamente apenas aparezca audio o video reproducible."
@@ -401,14 +410,11 @@
   "laneWatchingTitle": {
     "message": "Esperando contenido multimedia"
   },
+  "levelLabel": {
+    "message": "Actividad en vivo"
+  },
   "loadingLabel": {
     "message": "Cargando…"
-  },
-  "localeSaved": {
-    "message": "Idioma guardado"
-  },
-  "lookaheadLabel": {
-    "message": "Lookahead"
   },
   "lookaheadHelpLabel": {
     "message": "Más información sobre el lookahead"
@@ -416,14 +422,17 @@
   "lookaheadHelpText": {
     "message": "Controla con cuánta anticipación reacciona el procesador antes de que un pico llegue a la salida."
   },
-  "multibandDepthLabel": {
-    "message": "Profundidad multibanda"
+  "lookaheadLabel": {
+    "message": "Lookahead"
   },
   "multibandDepthHelpLabel": {
     "message": "Más información sobre la profundidad multibanda"
   },
   "multibandDepthHelpText": {
     "message": "Controla con cuánta fuerza el modo de sonido moldea el audio en graves, medios y agudos."
+  },
+  "multibandDepthLabel": {
+    "message": "Profundidad multibanda"
   },
   "noOtherSessions": {
     "message": "No hay sesiones activas en este momento."
@@ -436,18 +445,6 @@
   },
   "otherSessionsTitle": {
     "message": "Sesiones activas"
-  },
-  "sessionCarouselNext": {
-    "message": "Mostrar más sesiones activas"
-  },
-  "sessionCarouselPrevious": {
-    "message": "Mostrar sesiones activas anteriores"
-  },
-  "sessionPlaceholderDetail": {
-    "message": "Activa boost en otra pestaña y aparecerá aquí."
-  },
-  "sessionPlaceholderTitle": {
-    "message": "Esperando una sesión"
   },
   "popupDocumentTitle": {
     "message": "Prism Volume Booster"
@@ -494,6 +491,9 @@
   "presetPunchDriveSubtitle": {
     "message": "Aumenta pegada y energia frontal para que bombos, golpes y trailers se sientan mas rapidos e intensos."
   },
+  "presetsLabel": {
+    "message": "Presets rápidos en porcentaje (%)"
+  },
   "presetSmoothBright": {
     "message": "Brillo suave"
   },
@@ -512,14 +512,8 @@
   "presetWarmCinematicSubtitle": {
     "message": "Suma cuerpo, profundidad y suavidad para peliculas, ambient y sesiones largas de escucha."
   },
-  "presetsLabel": {
-    "message": "Presets rápidos en porcentaje (%)"
-  },
   "protectionActionBypassed": {
     "message": "Bypassed"
-  },
-  "protectionActionLabel": {
-    "message": "Acción de protección"
   },
   "protectionActionHelpLabel": {
     "message": "Más información sobre la acción de protección"
@@ -527,8 +521,8 @@
   "protectionActionHelpText": {
     "message": "Muestra cuánta reducción o procesamiento aplica el protector para evitar distorsión."
   },
-  "protectionLoadLabel": {
-    "message": "Carga de protección"
+  "protectionActionLabel": {
+    "message": "Acción de protección"
   },
   "protectionLoadHelpLabel": {
     "message": "Más información sobre la carga de protección"
@@ -536,29 +530,20 @@
   "protectionLoadHelpText": {
     "message": "Muestra cuánto está trabajando el protector en este momento para mantener el audio estable."
   },
+  "protectionLoadLabel": {
+    "message": "Carga de protección"
+  },
   "qualityProtectorBalanced": {
     "message": "Balanceado"
   },
   "qualityProtectorBalancedSubtitle": {
     "message": "Protección neutral para uso diario con un tono equilibrado."
   },
-  "qualityProtectorWarmth": {
-    "message": "Calidez"
-  },
-  "qualityProtectorWarmthSubtitle": {
-    "message": "Conserva cuerpo y suavidad mientras aplica una protección más amable sobre los agudos duros."
-  },
   "qualityProtectorBassAware": {
     "message": "Bass-Aware"
   },
   "qualityProtectorBassAwareSubtitle": {
     "message": "Preserva más bajos y descarga la protección sobre medios y agudos."
-  },
-  "qualityProtectorVocalFocus": {
-    "message": "Vocal Focus"
-  },
-  "qualityProtectorVocalFocusSubtitle": {
-    "message": "Hace que voces y diálogos salgan al frente mientras controla rumble y low-end embarrado."
   },
   "qualityProtectorBypassedState": {
     "message": "Sin protección"
@@ -568,18 +553,6 @@
   },
   "qualityProtectorClaritySubtitle": {
     "message": "Ajusta el low-end y favorece la claridad de voces e instrumentos."
-  },
-  "qualityProtectorTrebleSafe": {
-    "message": "Treble Safe"
-  },
-  "qualityProtectorTrebleSafeSubtitle": {
-    "message": "Suaviza agudos filosos y sibilancia para que el audio brillante siga claro sin ponerse áspero."
-  },
-  "qualityProtectorPunchPreserve": {
-    "message": "Punch Preserve"
-  },
-  "qualityProtectorPunchPreserveSubtitle": {
-    "message": "Protege picos sin matar el golpe de bombos, cajas y transientes."
   },
   "qualityProtectorMaximumProtection": {
     "message": "Protección máx."
@@ -596,29 +569,44 @@
   "qualityProtectorProtectedState": {
     "message": "Protegido"
   },
+  "qualityProtectorPunchPreserve": {
+    "message": "Punch Preserve"
+  },
+  "qualityProtectorPunchPreserveSubtitle": {
+    "message": "Protege picos sin matar el golpe de bombos, cajas y transientes."
+  },
   "qualityProtectorSubtitle": {
     "message": "Elige como el DSP protege la calidad cuando llevas el boost mas arriba."
   },
   "qualityProtectorTitle": {
     "message": "Protector de calidad de audio"
   },
-  "globalAutoWarningBody": {
-    "message": "Esto intentará boostear automáticamente todos los sitios compatibles a partir de ahora. Algunas páginas pueden fallar por cómo están construidas, no porque a la extensión le falte capacidad. Cuando eso pase, usá el booster manual robusto."
+  "qualityProtectorTrebleSafe": {
+    "message": "Treble Safe"
   },
-  "globalAutoSwitchWarningBody": {
-    "message": "Esto cambiará la extensión al modo Global y desactivará primero el modo Single Tab. A partir de ahí, todos los sitios compatibles intentarán boostearse automáticamente. Algunas páginas pueden fallar por cómo están construidas, no porque a la extensión le falte capacidad. Cuando eso pase, usá el booster manual robusto."
+  "qualityProtectorTrebleSafeSubtitle": {
+    "message": "Suaviza agudos filosos y sibilancia para que el audio brillante siga claro sin ponerse áspero."
   },
-  "globalAutoWarningTitle": {
-    "message": "¿Activar booster automático en todos los sitios?"
+  "qualityProtectorVocalFocus": {
+    "message": "Vocal Focus"
   },
-  "releaseLabel": {
-    "message": "Release"
+  "qualityProtectorVocalFocusSubtitle": {
+    "message": "Hace que voces y diálogos salgan al frente mientras controla rumble y low-end embarrado."
+  },
+  "qualityProtectorWarmth": {
+    "message": "Calidez"
+  },
+  "qualityProtectorWarmthSubtitle": {
+    "message": "Conserva cuerpo y suavidad mientras aplica una protección más amable sobre los agudos duros."
   },
   "releaseHelpLabel": {
     "message": "Más información sobre el release"
   },
   "releaseHelpText": {
     "message": "Controla qué tan rápido deja de actuar el procesador después de reducir un pico fuerte."
+  },
+  "releaseLabel": {
+    "message": "Release"
   },
   "rememberedForDomain": {
     "message": "Recordado para $DOMAIN$",
@@ -647,26 +635,38 @@
       }
     }
   },
-  "siteLabel": {
-    "message": "este sitio"
+  "sessionCarouselNext": {
+    "message": "Mostrar más sesiones activas"
   },
-  "siteAutoWarningBody": {
-    "message": "Esto solo activa el booster automático para la sesión actual de esta pestaña. Si recargás la página o abrís otra pestaña, vas a tener que activarlo manualmente otra vez."
+  "sessionCarouselPrevious": {
+    "message": "Mostrar sesiones activas anteriores"
+  },
+  "sessionPlaceholderDetail": {
+    "message": "Activa boost en otra pestaña y aparecerá aquí."
+  },
+  "sessionPlaceholderTitle": {
+    "message": "Esperando una sesión"
   },
   "siteAutoSwitchWarningBody": {
     "message": "Esto cambiará la extensión al modo Single Tab y desactivará primero el modo Global. El booster automático solo quedará activo para la sesión actual de esta pestaña. Si recargás la página o abrís otra pestaña, vas a tener que activarlo manualmente otra vez."
   },
+  "siteAutoWarningBody": {
+    "message": "Esto solo activa el booster automático para la sesión actual de esta pestaña. Si recargás la página o abrís otra pestaña, vas a tener que activarlo manualmente otra vez."
+  },
   "siteAutoWarningTitle": {
     "message": "¿Activar booster automático en este sitio?"
   },
-  "softClipMixLabel": {
-    "message": "Soft clip mix"
+  "siteLabel": {
+    "message": "este sitio"
   },
   "softClipMixHelpLabel": {
     "message": "Más información sobre el soft clip mix"
   },
   "softClipMixHelpText": {
     "message": "Controla cuánta saturación suave se mezcla para suavizar picos agresivos con boosts altos."
+  },
+  "softClipMixLabel": {
+    "message": "Soft clip mix"
   },
   "statusActive": {
     "message": "Amplificando"

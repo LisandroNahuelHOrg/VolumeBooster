@@ -35,6 +35,10 @@ describe("automation main entrypoint", () => {
     vi.stubGlobal(
       "chrome",
       {
+        i18n: {
+          getMessage: vi.fn(() => ""),
+          getUILanguage: vi.fn(() => "en")
+        },
         permissions: {
           contains
         },
@@ -47,6 +51,8 @@ describe("automation main entrypoint", () => {
     await import("./main");
 
     expect(document.title).toBe("Prism Automation");
+    expect(document.documentElement.lang).toBe("en");
+    expect(document.documentElement.dir).toBe("ltr");
     expect(document.querySelector("[data-action='request-global-permission']")).not.toBeNull();
     expect(document.querySelector("[data-action='request-global-permission']")?.textContent).toContain(
       "Restore all-sites access"
@@ -109,6 +115,10 @@ describe("automation main entrypoint", () => {
     vi.stubGlobal(
       "chrome",
       {
+        i18n: {
+          getMessage: vi.fn(() => ""),
+          getUILanguage: vi.fn(() => "en")
+        },
         permissions: {
           contains: vi.fn().mockResolvedValue(false)
         },

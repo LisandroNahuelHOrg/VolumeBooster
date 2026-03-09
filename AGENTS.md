@@ -46,6 +46,35 @@ Rules every agent must follow:
    `npm test -- src/worker/auto-booster-client.test.ts src/worker/orchestrator.behavior.test.ts src/automation/main.test.ts src/shared/manifest-permissions.test.ts`
    `npm run build`
 
+## i18n Readiness Contract
+
+The repository now treats internationalization as a release gate, not a best-effort polish pass.
+The canonical catalog is `public/_locales/en/messages.json`, the generated English fallback lives in
+`src/generated/i18n-fallback.ts`, and the repo-level policy is defined in `i18n_config.json`.
+
+Rules every agent must follow:
+
+1. Add or rename message keys only in `public/_locales/en/messages.json`, then regenerate artifacts with
+   `npm run i18n:generate`.
+2. Do not place visible fallback copy inline in TypeScript or HTML. Runtime fallback for user-facing text must
+   resolve through `src/shared/runtime-i18n.ts` / `src/content/runtime-api.ts` from the generated English catalog.
+3. Keep visible user-facing strings out of `src/content`, `src/automation`, `src/popup`, `src/offscreen`,
+   `popup.html`, and `offscreen.html` unless they are resolved through i18n helpers.
+4. If a non-English locale intentionally keeps an English product term, add its key to
+   `scripts/i18n-identical-allowlist.json`. Do not rely on untranslated copy passing unnoticed.
+5. Keep message descriptions in the English catalog contextual and translator-facing. Boilerplate descriptions such as
+   `Localized UI copy for ...` or `Label text for ...` are forbidden.
+6. Before shipping any i18n-related change, run:
+   `npm run i18n:generate`
+   `npm run i18n:check`
+   `npm run i18n:audit`
+   `npm run verify`
+
+Reference:
+- `docs/i18n/README.md`
+- `docs/i18n/glossary.md`
+- `docs/i18n/locale-onboarding.md`
+
 ## Available skills for this context
 
 - WorktreeDerAbajo: Abrir o crear el worktree fijo del monitor derecho inferior.

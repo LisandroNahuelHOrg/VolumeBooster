@@ -1,0 +1,18 @@
+{
+  "identicalMessageKeys": [
+    "boostLabel",
+    "extName",
+    "lookaheadLabel",
+    "popupDocumentTitle",
+    "popupTitle",
+    "presetBassBoost",
+    "protectionActionBypassed",
+    "qualityProtectorBassAware",
+    "qualityProtectorOff",
+    "qualityProtectorPunchPreserve",
+    "qualityProtectorTrebleSafe",
+    "qualityProtectorVocalFocus",
+    "releaseLabel",
+    "webLabel"
+  ]
+}

@@ -85,9 +85,7 @@ export class AutoFallbackToast {
       fontFamily: "\"Segoe UI\", sans-serif"
     } satisfies Partial<CSSStyleDeclaration>);
 
-    title.textContent =
-      getI18nMessageSafe("autoBoosterFallbackToastTitle") ||
-      "Automatic boosting could not finish on this page.";
+    title.textContent = getI18nMessageSafe("autoBoosterFallbackToastTitle");
     title.style.display = "block";
     title.style.marginBottom = "8px";
     title.style.fontSize = "14px";
@@ -102,16 +100,14 @@ export class AutoFallbackToast {
     actions.style.marginTop = "14px";
 
     manualButton.type = "button";
-    manualButton.textContent =
-      getI18nMessageSafe("autoBoosterFallbackToastManualAction") || "Switch to manual mode";
+    manualButton.textContent = getI18nMessageSafe("autoBoosterFallbackToastManualAction");
     stylePrimaryButton(manualButton);
     manualButton.addEventListener("click", () => {
       this.options.onManualFallback();
     });
 
     dismissButton.type = "button";
-    dismissButton.textContent =
-      getI18nMessageSafe("autoBoosterFallbackToastDismissAction") || "Dismiss";
+    dismissButton.textContent = getI18nMessageSafe("autoBoosterFallbackToastDismissAction");
     styleSecondaryButton(dismissButton);
     dismissButton.addEventListener("click", () => {
       this.options.onDismiss();
@@ -135,16 +131,10 @@ export class AutoFallbackToast {
     }
 
     if (reason === "permission_missing") {
-      return (
-        getI18nMessageSafe("autoBoosterFallbackToastPermissionBody") ||
-        "This page blocked the automatic booster runtime. You can still boost this tab with the manual lane."
-      );
+      return getI18nMessageSafe("autoBoosterFallbackToastPermissionBody");
     }
 
-    return (
-      getI18nMessageSafe("autoBoosterFallbackToastBody") ||
-      "This page did not expose a hookable audio path. Switch to the manual lane for the most reliable result."
-    );
+    return getI18nMessageSafe("autoBoosterFallbackToastBody");
   }
 }
 

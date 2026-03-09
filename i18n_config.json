@@ -1,0 +1,50 @@
+{
+  "includeGlobs": [
+    "popup.html",
+    "offscreen.html",
+    "src/popup/**/*.{ts,tsx,js,jsx}",
+    "src/offscreen/**/*.{ts,tsx,js,jsx}",
+    "src/worker/**/*.{ts,tsx,js,jsx}",
+    "src/shared/**/*.{ts,tsx,js,jsx}",
+    "src/content/**/*.{ts,tsx,js,jsx}",
+    "src/automation/**/*.{ts,tsx,js,jsx}"
+  ],
+  "excludeGlobs": [
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/coverage/**",
+    "**/src/generated/**",
+    "**/*.test.ts",
+    "**/*.d.ts"
+  ],
+  "localeDirectories": [
+    "public/_locales"
+  ],
+  "scanExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx",
+    ".html"
+  ],
+  "i18nCallNames": [
+    "t",
+    "tp",
+    "translate",
+    "chrome.i18n.getMessage",
+    "getI18nMessageSafe"
+  ],
+  "verificationCommands": [
+    "npm run i18n:check",
+    "npm run i18n:audit"
+  ],
+  "includeHtmlAttributes": [
+    "aria-label",
+    "title",
+    "placeholder",
+    "alt",
+    "label",
+    "value",
+    "content"
+  ]
+}

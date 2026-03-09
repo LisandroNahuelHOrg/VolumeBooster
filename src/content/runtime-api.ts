@@ -6,6 +6,9 @@
  * throw synchronously. These helpers keep stale scripts quiet.
  */
 
+import type { I18nKey } from "../generated/i18n-types";
+import { getFallbackMessage } from "../shared/runtime-i18n";
+
 export async function sendRuntimeMessageSafe<T = unknown>(message: unknown): Promise<T | undefined> {
   try {
     return (await chrome.runtime.sendMessage(message)) as T | undefined;
@@ -25,12 +28,18 @@ export function addRuntimeMessageListenerSafe(
   }
 }
 
-export function getI18nMessageSafe(key: string, substitutions?: string[]): string {
+export function getI18nMessageSafe(key: I18nKey | string, substitutions?: string[]): string {
   try {
-    return chrome.i18n?.getMessage?.(key, substitutions) ?? "";
+    const message = chrome.i18n?.getMessage?.(key, substitutions) ?? "";
+
+    if (message) {
+      return message;
+    }
   } catch {
-    return "";
+    // Fall through to the generated English catalog when the extension context is stale.
   }
+
+  return getFallbackMessage(key, substitutions) ?? key;
 }
 
 export function getRuntimeUrlSafe(path: string): string | null {

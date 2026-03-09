@@ -57,7 +57,7 @@ describe("runtime-api", () => {
     expect(addRuntimeMessageListenerSafe(listener)).toBe(false);
   });
 
-  it("reads i18n messages safely and falls back to an empty string", () => {
+  it("reads i18n messages safely and falls back to the generated English catalog", () => {
     const getMessage = vi
       .fn()
       .mockReturnValueOnce("Boost")
@@ -76,8 +76,8 @@ describe("runtime-api", () => {
     );
 
     expect(getI18nMessageSafe("boostLabel", ["250"])).toBe("Boost");
-    expect(getI18nMessageSafe("boostLabel")).toBe("");
-    expect(getI18nMessageSafe("boostLabel")).toBe("");
+    expect(getI18nMessageSafe("boostLabel")).toBe("Boost");
+    expect(getI18nMessageSafe("automationRestoreAllSitesAccess")).toBe("Restore all-sites access");
   });
 
   it("reads extension URLs safely and returns null on stale contexts", () => {

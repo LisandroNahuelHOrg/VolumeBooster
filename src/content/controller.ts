@@ -592,7 +592,7 @@ export class AutoBoosterController {
 
     const payload: AutoSessionStatusPayload = {
       tabId: this.state.tabId,
-      title: document.title || getI18nMessageSafe("tabUntitled") || "Untitled tab",
+      title: document.title || getI18nMessageSafe("tabUntitled"),
       url: window.location.href,
       domain: getDomainFromUrl(window.location.href),
       favIconUrl: getPageFaviconUrl(),
@@ -625,7 +625,7 @@ export class AutoBoosterController {
 
     const payload: AutoSessionAttachFailedPayload = {
       tabId: this.state.tabId,
-      title: document.title || getI18nMessageSafe("tabUntitled") || "Untitled tab",
+      title: document.title || getI18nMessageSafe("tabUntitled"),
       url: window.location.href,
       domain: getDomainFromUrl(window.location.href),
       favIconUrl: getPageFaviconUrl(),
