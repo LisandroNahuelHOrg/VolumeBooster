@@ -84,8 +84,10 @@ describe("runtime i18n", () => {
 
     expect(getUiLanguage(null)).toBe("es-AR");
     expect(getBrowserLocale()).toBe("es-AR");
-    expect(await loadLocaleCatalog("es")).toEqual({});
-    expect(translate({}, "advancedTitle")).toBe("advancedTitle");
+    await expect(loadLocaleCatalog("es")).resolves.toMatchObject({
+      advancedTitle: "Sound Mode"
+    });
+    expect(translate({}, "advancedTitle")).toBe("Sound Mode");
 
     vi.unstubAllGlobals();
     expect(getUiLanguage(null)).toBe(navigator.language);
@@ -132,9 +134,9 @@ describe("runtime i18n", () => {
       }
     };
 
-    expect(t("advancedTitle", undefined, api)).toBe("advancedTitle");
-    expect(tp("boostingCount", 5, { count: 5 }, api, "en")).toBe("boostingCount_other");
-    expect(tp("boostingCount", 0, undefined, api, "en")).toBe("boostingCount_zero");
+    expect(t("advancedTitle", undefined, api)).toBe("Sound Mode");
+    expect(tp("boostingCount", 5, { count: 5 }, api, "en")).toBe("5 booster sessions are active right now.");
+    expect(tp("boostingCount", 0, undefined, api, "en")).toBe("No booster sessions are active right now.");
     expect(tp("not_real_key" as never, 5, undefined, null, "xx-XX")).toBe("5");
     expect(isPluralBaseKey("boostingCount")).toBe(true);
     expect(isPluralBaseKey("not_real_key")).toBe(false);
@@ -152,7 +154,7 @@ describe("runtime i18n", () => {
       }
     };
 
-    expect(t("rememberSite", undefined as never, api)).toBe("rememberSite");
+    expect(t("rememberSite", undefined as never, api)).toBe("Remember my settings for ");
     expect(getMessage).toHaveBeenCalledTimes(1);
     expect(getMessage).toHaveBeenCalledWith("rememberSite");
   });
@@ -190,5 +192,10 @@ describe("runtime i18n", () => {
     const ltrDocumentElement = { lang: "", dir: "" };
     const ltrDoc = { documentElement: ltrDocumentElement } as unknown as Document;
     expect(setDocumentLocaleAttributes(ltrDoc, "es-AR")).toEqual({ lang: "es-AR", dir: "ltr" });
+  });
+
+  it("uses the canonical English fallback when chrome.i18n is unavailable", () => {
+    expect(t("automationBridgeTitle", undefined, null)).toBe("Prism Automation Bridge");
+    expect(t("rememberSite", { domain: "youtube.com" }, null)).toBe("Remember my settings for youtube.com");
   });
 });

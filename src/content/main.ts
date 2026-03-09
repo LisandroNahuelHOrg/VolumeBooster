@@ -72,7 +72,7 @@ if (!window.__PRISM_AUTO_BOOSTER_BOOTED__) {
     payload: {
       isTopFrame: frameContext.isTopFrame,
       frameUrl: frameContext.frameUrl,
-      title: document.title || getI18nMessageSafe("tabUntitled") || "Untitled tab",
+      title: document.title || getI18nMessageSafe("tabUntitled"),
       url: pageUrl,
       domain: getDomainFromUrl(pageUrl),
       favIconUrl: getPageFaviconUrl()

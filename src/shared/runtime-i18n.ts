@@ -12,6 +12,7 @@ import {
   type I18nPluralBase,
   type I18nSubstitutionsFor
 } from "../generated/i18n-types";
+import { I18N_FALLBACK_MESSAGES } from "../generated/i18n-fallback";
 import type { LocalizedMessage } from "./types";
 
 const RTL_LOCALE_PREFIXES = ["ar", "fa", "he", "ps", "sd", "ug", "ur", "yi"] as const;
@@ -19,7 +20,7 @@ const I18N_KEY_SET = new Set<string>(I18N_KEYS);
 const I18N_PLURAL_BASE_SET = new Set<string>(I18N_PLURAL_BASES);
 
 export type UiMessageKey = I18nKey;
-export type UiCatalog = Record<string, never>;
+export type UiCatalog = Readonly<Record<string, string>>;
 
 /** Narrow surface used by tests and runtime helpers instead of the global Chrome object. */
 export interface ChromeI18nLike {
@@ -77,7 +78,7 @@ export function setDocumentLocaleAttributes(
 
 /** Legacy compatibility shim. The project now resolves text directly from Chrome i18n. */
 export async function loadLocaleCatalog(_locale?: string): Promise<UiCatalog> {
-  return {};
+  return I18N_FALLBACK_MESSAGES;
 }
 
 /**
@@ -94,18 +95,20 @@ export function t<K extends I18nKey>(
   api: ChromeI18nLike | null = getChromeI18n()
 ): string {
   const chromeI18n = api ?? getChromeI18n();
+  const orderedSubstitutions = toOrderedSubstitutions(key, substitutions);
 
-  if (!chromeI18n) {
-    return key;
+  if (chromeI18n) {
+    const message =
+      orderedSubstitutions.length === 0
+        ? chromeI18n.getMessage(key)
+        : chromeI18n.getMessage(key, orderedSubstitutions);
+
+    if (message) {
+      return message;
+    }
   }
 
-  const orderedSubstitutions = toOrderedSubstitutions(key, substitutions);
-  const message =
-    orderedSubstitutions.length === 0
-      ? chromeI18n.getMessage(key)
-      : chromeI18n.getMessage(key, orderedSubstitutions);
-
-  return message || key;
+  return getFallbackMessage(key, orderedSubstitutions) ?? key;
 }
 
 /**
@@ -147,6 +150,36 @@ export function translate<K extends I18nKey>(
   substitutions?: I18nSubstitutionsFor<K>
 ): string {
   return t(key, substitutions);
+}
+
+/**
+ * Resolves the canonical English fallback message for a known i18n key.
+ *
+ * @param key - Message key to resolve.
+ * @param substitutions - Optional ordered substitutions.
+ * @returns English fallback string when the key exists in the canonical catalog.
+ */
+export function getFallbackMessage(key: string, substitutions?: readonly (string | number)[]): string | null {
+  const template = I18N_FALLBACK_MESSAGES[key as keyof typeof I18N_FALLBACK_MESSAGES];
+
+  if (typeof template !== "string" || template.length === 0) {
+    return null;
+  }
+
+  const substitutionValues = substitutions?.map((value) => String(value)) ?? [];
+  const orderedKeys = I18N_PLACEHOLDER_ORDER[key as I18nKey] ?? [];
+  let resolved: string = template;
+
+  orderedKeys.forEach((placeholderKey, index) => {
+    const replacement = substitutionValues[index] ?? "";
+    resolved = resolved.replaceAll(new RegExp(`\\$${escapeRegExp(placeholderKey)}\\$`, "gi"), replacement);
+  });
+
+  substitutionValues.forEach((replacement, index) => {
+    resolved = resolved.replaceAll(`$${index + 1}`, replacement);
+  });
+
+  return resolved;
 }
 
 /**
@@ -192,4 +225,8 @@ function getPluralCandidateKeys(baseKey: I18nPluralBase, count: number, locale: 
       : [`${baseKey}_${category}`, `${baseKey}_other`];
 
   return [...new Set(candidates)];
+}
+
+function escapeRegExp(value: string): string {
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
