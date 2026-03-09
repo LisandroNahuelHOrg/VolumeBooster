@@ -6,6 +6,8 @@ import { sendMessageSafe } from "../shared/messages";
 import type { PopupCommand } from "../shared/messages";
 import { setDocumentLocaleAttributes, t } from "../shared/runtime-i18n";
 import type { AutoBoosterDebugState, RuntimeResponse, WorkerState } from "../shared/types";
+import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
+import { UI_FONT_STACK } from "../shared/ui-font-stack";
 
 declare global {
   interface Window {
@@ -34,22 +36,23 @@ if (!root) {
   throw new Error("Automation root not found.");
 }
 
+ensureExtensionUiFontFaces(document);
 setDocumentLocaleAttributes(document);
 document.title = t("automationDocumentTitle");
 root.innerHTML = `
-  <main style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #f4f6f8; background: #0f1720; min-height: 100vh;">
-    <h1 style="margin: 0 0 12px; font-size: 20px;">${t("automationBridgeTitle")}</h1>
-    <p style="margin: 0 0 16px; line-height: 1.5; color: #c6d3dd;">
+  <main style="font-family: ${UI_FONT_STACK}; padding: 20px; color: #f4f6f8; background: #0f1720; min-height: 100vh; -webkit-font-smoothing: antialiased;">
+    <h1 style="margin: 0 0 12px; font-size: 21px; font-weight: 700; line-height: 1.1; letter-spacing: -0.025em;">${t("automationBridgeTitle")}</h1>
+    <p style="margin: 0 0 16px; line-height: 1.6; font-size: 14px; font-weight: 500; color: #c6d3dd;">
       ${t("automationBridgeBody")}
     </p>
     <button
       type="button"
       data-action="request-global-permission"
-      style="padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: #1d6bff; color: white; font-weight: 700; cursor: pointer;"
+      style="padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: #1d6bff; color: white; font-family: ${UI_FONT_STACK}; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer;"
     >
       ${t("automationRestoreAllSitesAccess")}
     </button>
-    <pre data-role="output" style="margin-top: 16px; white-space: pre-wrap; background: rgba(255,255,255,0.06); padding: 12px; border-radius: 12px;"></pre>
+    <pre data-role="output" style="margin-top: 16px; white-space: pre-wrap; background: rgba(255,255,255,0.06); padding: 12px; border-radius: 12px; font-family: ${UI_FONT_STACK}; font-size: 12px; line-height: 1.5;"></pre>
   </main>
 `;
 

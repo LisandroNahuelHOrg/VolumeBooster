@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { AUTO_BOOSTER_FALLBACK_TOAST_ID } from "../shared/constants";
+import { UI_FONT_STYLE_ID } from "../shared/ui-font-stack";
 import { AutoFallbackToast } from "./fallback-toast";
 
 describe("AutoFallbackToast", () => {
@@ -26,6 +27,9 @@ describe("AutoFallbackToast", () => {
       {
         i18n: {
           getMessage: i18nGetMessage
+        },
+        runtime: {
+          getURL: vi.fn((path: string) => `chrome-extension://id/${path}`)
         }
       } as unknown as typeof chrome
     );
@@ -218,7 +222,8 @@ describe("AutoFallbackToast", () => {
     expect(root?.style.border).toBe("1px solid rgba(255, 177, 64, 0.36)");
     expect(root?.style.boxShadow).toBe("0 24px 60px rgba(0, 0, 0, 0.32)");
     expect(root?.style.color).toBe("#f7f3ed");
-    expect(root?.style.fontFamily).toContain("Segoe UI");
+    expect(root?.style.fontFamily).toContain("Montserrat");
+    expect(document.getElementById(UI_FONT_STYLE_ID)?.textContent).toContain("chrome-extension://id/assets/montserrat-latin.woff2");
     expect(title?.textContent).toBe("Automatic boosting could not finish on this page.");
     expect(title?.style.display).toBe("block");
     expect(title?.style.marginBottom).toBe("8px");

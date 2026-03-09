@@ -34,6 +34,7 @@ import {
   translate,
   type UiCatalog
 } from "../shared/runtime-i18n";
+import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
 import type {
   AdvancedAudioSettings,
   AudioQualityProtectorMode,
@@ -234,6 +235,7 @@ function syncPopupViewportHeight(): void {
 async function bootstrap(): Promise<void> {
   bindRootEvents();
   startStatePolling();
+  ensureExtensionUiFontFaces(document);
   setDocumentLocaleAttributes(document);
   document.title = t("popupDocumentTitle");
   currentCatalog = await loadLocaleCatalog();
