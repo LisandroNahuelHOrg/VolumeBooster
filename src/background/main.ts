@@ -2,46 +2,125 @@
  * @fileoverview Entry point del service worker MV3 que conecta eventos de
  * Chrome con el orquestador central de sesiones y modos de booster.
  */
-import { isContentEvent, isOffscreenEvent, isPopupCommand } from "../shared/messages";
+import {
+  captureExceptionSafe,
+  initSentryForContext,
+  isSentrySmokeMirrorEnabled,
+  readSentrySmokeMirrorEntries
+} from "../shared/observability/sentry";
+import { fail, isContentEvent, isOffscreenEvent, isPopupCommand, message as localizedMessage } from "../shared/messages";
 import { WorkerOrchestrator } from "../worker/orchestrator";
 
-const orchestrator = new WorkerOrchestrator();
+initSentryForContext("background");
 
-void orchestrator.bootstrap().catch(() => undefined);
+const orchestrator = new WorkerOrchestrator();
+const sentrySmokeMirrorEnabled = isSentrySmokeMirrorEnabled(import.meta.env);
+
+runBackgroundTask(orchestrator.bootstrap(), "bootstrap");
 
 chrome.runtime.onStartup.addListener(() => {
-  void orchestrator.bootstrap().catch(() => undefined);
+  runBackgroundTask(orchestrator.bootstrap(), "startup");
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  void orchestrator.bootstrap().catch(() => undefined);
+  runBackgroundTask(orchestrator.bootstrap(), "install");
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (sentrySmokeMirrorEnabled && isSentrySmokeTriggerCommand(message)) {
+    captureExceptionSafe(new Error(message.payload.marker), "background", {
+      mechanism: "manual-smoke",
+      operation: "background-smoke-trigger"
+    });
+    sendResponse({ ok: true });
+    return false;
+  }
+
+  if (sentrySmokeMirrorEnabled && isSentrySmokeReadMirrorCommand(message)) {
+    sendResponse({ ok: true, data: readSentrySmokeMirrorEntries() });
+    return false;
+  }
+
   if (isPopupCommand(message)) {
-    void orchestrator.handlePopupCommand(message).then(sendResponse);
+    void orchestrator
+      .handlePopupCommand(message)
+      .then(sendResponse)
+      .catch((error) => {
+        captureExceptionSafe(error, "background", {
+          commandType: message.type,
+          operation: "handlePopupCommand"
+        });
+        sendResponse(fail(localizedMessage("errorExtensionActionFailed")));
+      });
     return true;
   }
 
   if (isOffscreenEvent(message) || isContentEvent(message)) {
-    void orchestrator.handleBackgroundEvent(message, sender).catch(() => undefined);
+    runBackgroundTask(orchestrator.handleBackgroundEvent(message, sender), "background-event", {
+      eventType: message.type
+    });
   }
 
   return false;
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  void orchestrator.handleTabUpdated(tabId, changeInfo, tab).catch(() => undefined);
+  runBackgroundTask(orchestrator.handleTabUpdated(tabId, changeInfo, tab), "tab-updated", {
+    status: changeInfo.status,
+    tabId
+  });
 });
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
-  void orchestrator.handleTabActivated(activeInfo).catch(() => undefined);
+  runBackgroundTask(orchestrator.handleTabActivated(activeInfo), "tab-activated", {
+    tabId: activeInfo.tabId
+  });
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
-  void orchestrator.handleTabRemoved(tabId).catch(() => undefined);
+  runBackgroundTask(orchestrator.handleTabRemoved(tabId), "tab-removed", {
+    tabId
+  });
 });
 
 chrome.tabCapture.onStatusChanged.addListener((info) => {
-  void orchestrator.handleCaptureStatusChanged(info).catch(() => undefined);
+  runBackgroundTask(orchestrator.handleCaptureStatusChanged(info), "capture-status-changed", {
+    status: info.status,
+    tabId: info.tabId
+  });
 });
+
+function runBackgroundTask(
+  task: Promise<unknown>,
+  operation: string,
+  extras?: Record<string, unknown>
+): void {
+  void task.catch((error) => {
+    captureExceptionSafe(error, "background", {
+      operation,
+      ...extras
+    });
+  });
+}
+
+function isSentrySmokeTriggerCommand(
+  message: unknown
+): message is { type: "__SENTRY_SMOKE_TRIGGER_BACKGROUND_ERROR__"; payload: { marker: string } } {
+  return Boolean(
+    message &&
+      typeof message === "object" &&
+      "type" in message &&
+      (message as { type?: unknown }).type === "__SENTRY_SMOKE_TRIGGER_BACKGROUND_ERROR__" &&
+      "payload" in message &&
+      typeof (message as { payload?: { marker?: unknown } }).payload?.marker === "string"
+  );
+}
+
+function isSentrySmokeReadMirrorCommand(message: unknown): message is { type: "__SENTRY_SMOKE_READ_TRANSPORT__" } {
+  return Boolean(
+    message &&
+      typeof message === "object" &&
+      "type" in message &&
+      (message as { type?: unknown }).type === "__SENTRY_SMOKE_READ_TRANSPORT__"
+  );
+}

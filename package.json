@@ -35,6 +35,7 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "@sentry/vite-plugin": "^5.1.1",
     "@stryker-mutator/core": "^9.6.0",
     "@stryker-mutator/typescript-checker": "^9.6.0",
     "@stryker-mutator/vitest-runner": "^9.6.0",
@@ -48,6 +49,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@grame/faustwasm": "^0.15.7"
+    "@grame/faustwasm": "^0.15.7",
+    "@sentry/browser": "^10.42.0"
   }
 }

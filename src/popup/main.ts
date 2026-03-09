@@ -34,6 +34,7 @@ import {
   translate,
   type UiCatalog
 } from "../shared/runtime-i18n";
+import { initSentryForContext } from "../shared/observability/sentry";
 import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
 import type {
   AdvancedAudioSettings,
@@ -184,6 +185,8 @@ const ADVANCED_CONTROL_CONFIG: Record<
     format: (value) => `${value.toFixed(1)}%`
   }
 };
+initSentryForContext("popup");
+
 const appRoot = document.querySelector<HTMLDivElement>("#app");
 
 if (!appRoot) {

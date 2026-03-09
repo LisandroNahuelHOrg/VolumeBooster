@@ -4,6 +4,7 @@
  */
 import { sendMessageSafe } from "../shared/messages";
 import type { PopupCommand } from "../shared/messages";
+import { initSentryForContext } from "../shared/observability/sentry";
 import { setDocumentLocaleAttributes, t } from "../shared/runtime-i18n";
 import type { AutoBoosterDebugState, RuntimeResponse, WorkerState } from "../shared/types";
 import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
@@ -29,6 +30,8 @@ declare global {
     };
   }
 }
+
+initSentryForContext("automation");
 
 const root = document.querySelector<HTMLDivElement>("#app");
 
