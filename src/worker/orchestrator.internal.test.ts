@@ -25,6 +25,15 @@ interface WorkerOrchestratorInternals {
   manualSessions: Map<number, CaptureSessionState>;
   autoSessions: Map<number, CaptureSessionState>;
   autoTabStates: Map<number, AutoTabRuntimeState>;
+  autoDebugStates: Map<
+    number,
+    {
+      frameCount: number;
+      readyFrameCount: number;
+      attachedFrameCount: number;
+      toastVisible: boolean;
+    }
+  >;
   siteEnabledAutoTabs: Set<number>;
   autoSuppressedTabs: Set<number>;
   audibleTabs: Map<number, number>;

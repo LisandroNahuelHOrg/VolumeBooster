@@ -963,13 +963,36 @@ describe("AudioSession", () => {
       attemptFaustRecovery(): Promise<void>;
     };
     const context = new FakeAudioContext();
-    let resolveRecovery: (() => void) | null = null;
+    let resolveRecovery: (() => void) | undefined;
 
     internal.engineStrategy = "native_fallback";
     internal.audioContext = context;
     internal.inputAnalyserNode = context.inputAnalyser;
     internal.outputAnalyserNode = context.outputAnalyser;
-    internal.currentAsset = (selectFaustAsset as ReturnType<typeof vi.fn>).mock.results[0]?.value ?? (selectFaustAsset as unknown as () => ReturnType<typeof selectFaustAsset>)(1);
+    internal.currentAsset = (selectFaustAsset as ReturnType<typeof vi.fn>).mock.results[0]?.value ?? {
+      meta: { compile_options: "-single" },
+      processorName: "mono",
+      workletModulePath: "mono-worklet.js",
+      controlPaths: {
+        inputDriveDb: "inputDriveDb",
+        lookaheadMs: "lookaheadMs",
+        releaseMs: "releaseMs",
+        multibandDepth: "multibandDepth",
+        protectorEnabled: "protectorEnabled",
+        outputLimiterEnabled: "outputLimiterEnabled",
+        lowBandTrimDb: "lowBandTrimDb",
+        lowBandMakeupDb: "lowBandMakeupDb",
+        lowBandThresholdOffsetDb: "lowBandThresholdOffsetDb",
+        lowBandRatioBias: "lowBandRatioBias",
+        midHighThresholdOffsetDb: "midHighThresholdOffsetDb",
+        outputCeilingDb: "outputCeilingDb",
+        outputSoftClipMix: "outputSoftClipMix",
+        clarityPresenceTiltDb: "clarityPresenceTiltDb",
+        toneLowBandGainDb: "toneLowBandGainDb",
+        toneMidBandGainDb: "toneMidBandGainDb"
+      },
+      loadFactory: hoisted.factoryLoader
+    };
     internal.connectFaustGraph = vi.fn(
       () =>
         new Promise<void>((resolve) => {
@@ -983,7 +1006,8 @@ describe("AudioSession", () => {
     await internal.attemptFaustRecovery();
     expect(internal.connectFaustGraph).toHaveBeenCalledTimes(1);
 
-    resolveRecovery?.();
+    const completeRecovery = resolveRecovery;
+    completeRecovery?.();
     await firstRecovery;
     expect(internal.faustRecoveryInFlight).toBe(false);
     expect(internal.engineStrategy).toBe("faust");

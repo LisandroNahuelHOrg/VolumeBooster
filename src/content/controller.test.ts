@@ -38,6 +38,7 @@ import { AutoBoosterController } from "./controller";
 import {
   BRIDGE_STATUS_EVENT,
   BRIDGE_TELEMETRY_EVENT,
+  type BridgeStatusPayload,
   createBridgeStatusEvent,
   createBridgeTelemetryEvent
 } from "./bridge-protocol";
@@ -81,6 +82,11 @@ type FakeSession = {
   sampleTelemetry: ReturnType<typeof vi.fn>;
   getDebugState: ReturnType<typeof vi.fn>;
   stop: ReturnType<typeof vi.fn>;
+};
+
+type TrackedSessionEntry = {
+  session: unknown;
+  lastTelemetry: ReturnType<typeof makeTelemetry>;
 };
 
 function createFakeSession(overrides: Partial<FakeSession> = {}): FakeSession {
@@ -1007,7 +1013,7 @@ describe("AutoBoosterController", () => {
     const fakeSession = createFakeSession();
     (
       controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       }
     ).trackedSessions.set(fakeMediaElement, {
       session: fakeSession,
@@ -1086,7 +1092,7 @@ describe("AutoBoosterController", () => {
 
     const trackedSessions = (
       controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       }
     ).trackedSessions;
     trackedSessions.set({} as HTMLMediaElement, {
@@ -1162,7 +1168,7 @@ describe("AutoBoosterController", () => {
     });
     (
       controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
         bridgeTelemetry: {
           activeStrategy: "none" | "web_audio_bridge";
           level: number;
@@ -1303,7 +1309,7 @@ describe("AutoBoosterController", () => {
     const fakeSession = createFakeSession();
     (
       controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       }
     ).trackedSessions.set(fakeMediaElement, {
       session: fakeSession,
@@ -1353,7 +1359,7 @@ describe("AutoBoosterController", () => {
           attachState: "observing" | "attached";
           attachReason?: "no_media" | "autoplay_blocked";
         };
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       }
     ).state = {
       ...(
@@ -1375,7 +1381,7 @@ describe("AutoBoosterController", () => {
     };
     (
       controller as unknown as {
-        trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+        trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       }
     ).trackedSessions.set(fakeMediaElement, {
       session: createFakeSession(),
@@ -1397,7 +1403,7 @@ describe("AutoBoosterController", () => {
         attachState: "idle" | "observing" | "attached" | "awaiting_user_gesture" | "failed";
         attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
       };
-      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       lastLocationHref: string;
       lastAutoRetryAt: number;
       syncLocationState(): void;
@@ -1827,7 +1833,7 @@ describe("AutoBoosterController", () => {
         attachReason?: "no_media" | "autoplay_blocked" | "attach_failed";
         activeStrategy: "none" | "media_element" | "web_audio_bridge" | "hybrid";
       };
-      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       syncAttachState(): void;
     };
 
@@ -2399,7 +2405,8 @@ describe("AutoBoosterController", () => {
     });
     vi.spyOn(MediaElementSession, "create").mockResolvedValue(fakeSession as never);
     const removeEventListener = vi.fn();
-    (window as Window & { removeEventListener: typeof removeEventListener }).removeEventListener = removeEventListener;
+    (window as unknown as Window & { removeEventListener: typeof removeEventListener }).removeEventListener =
+      removeEventListener;
 
     const controller = new AutoBoosterController();
     await controller.configure(makePayload());
@@ -2546,7 +2553,7 @@ describe("AutoBoosterController", () => {
     const retainedAbortSpy = vi.spyOn(retainedAbortController, "abort");
     const detachedAbortSpy = vi.spyOn(detachedAbortController, "abort");
     const controllerInternals = controller as unknown as {
-      trackedSessions: Map<HTMLMediaElement, { session: FakeSession; lastTelemetry: ReturnType<typeof makeTelemetry> }>;
+      trackedSessions: Map<HTMLMediaElement, TrackedSessionEntry>;
       pendingMediaRetryControllers: Map<HTMLMediaElement, AbortController>;
       pruneDetachedSessions(): void;
       clearAllPendingMediaRetryListeners(): void;
@@ -2580,7 +2587,7 @@ describe("AutoBoosterController", () => {
   it("processes registered bridge listeners for invalid, waiting and attached bridge states", async () => {
     const controller = new AutoBoosterController();
     const dispatchEvent = vi.fn();
-    (window as Window & { dispatchEvent: typeof dispatchEvent }).dispatchEvent = dispatchEvent;
+    (window as unknown as Window & { dispatchEvent: typeof dispatchEvent }).dispatchEvent = dispatchEvent;
 
     await controller.configure(makePayload());
 
@@ -2732,7 +2739,7 @@ describe("AutoBoosterController", () => {
   });
 
   it("skips bridge listener binding when the page cannot register events", async () => {
-    (window as Window & { addEventListener?: typeof windowAddEventListener }).addEventListener = undefined;
+    delete (window as unknown as { addEventListener?: typeof windowAddEventListener }).addEventListener;
     const controller = new AutoBoosterController();
 
     await controller.configure(makePayload({ enabled: false }));
@@ -2839,13 +2846,13 @@ describe("AutoBoosterController", () => {
     );
 
     const originalCustomEvent = globalThis.CustomEvent;
-    (window as Window & { dispatchEvent?: (event: Event) => void }).dispatchEvent = undefined;
+    delete (window as unknown as { dispatchEvent?: (event: Event) => void }).dispatchEvent;
     controllerInternals.postBridgeCommand({
       type: "disable",
       payload: { tabId: 7 }
     });
     vi.stubGlobal("CustomEvent", undefined as unknown as typeof CustomEvent);
-    (window as Window & { dispatchEvent?: ReturnType<typeof vi.fn> }).dispatchEvent = vi.fn();
+    (window as unknown as Window & { dispatchEvent?: (event: Event) => boolean }).dispatchEvent = vi.fn(() => true);
     controllerInternals.postBridgeCommand({
       type: "disable",
       payload: { tabId: 7 }

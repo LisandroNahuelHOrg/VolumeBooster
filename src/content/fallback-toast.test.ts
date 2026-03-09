@@ -146,13 +146,14 @@ describe("AutoFallbackToast", () => {
     toast.show({
       tabId: 7,
       reason: "attach_failed",
-      errorMessage: {
-        key: "errorAutoNamed",
-        substitutions: {
-          site: "YouTube",
-          lane: "manual"
-        }
-      }
+      errorMessage:
+        ({
+          key: "errorAutoNamed",
+          substitutions: {
+            site: "YouTube",
+            lane: "manual"
+          }
+        } as never)
     });
 
     expect(body?.textContent).toBe("YouTube :: manual");

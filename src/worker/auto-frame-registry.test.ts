@@ -66,19 +66,29 @@ describe("AutoFrameRegistry", () => {
 
     registry.updateFrameState({
       tabId: 50,
+      title: "Frame A",
       frameId: 3,
       documentId: "doc-a",
       isTopFrame: false,
       frameUrl: "https://example.com/frame",
+      url: "https://example.com/frame",
       ready: true,
       toastVisible: true,
-      attachState: "observing",
-      attachReason: "no_media",
-      activeStrategy: "none",
-      audioContextState: "none",
-      audioContextCount: 0,
-      attachedNodeCount: 0,
-      currentUrl: "https://example.com/frame"
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
+      autoActiveStrategy: "none",
+      bridgeContextCount: 0,
+      bridgeAttachedNodeCount: 0,
+      gainPercent: 220,
+      streamState: "inactive",
+      engineStatus: "ready",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0
     });
 
     expect(registry.getKnownFrames(50)[0]).toMatchObject({
@@ -107,18 +117,28 @@ describe("AutoFrameRegistry", () => {
 
     registry.updateFrameState({
       tabId: 51,
+      title: "Top frame",
       frameId: 0,
       documentId: "doc-top",
       isTopFrame: true,
       frameUrl: "https://example.com",
+      url: "https://example.com",
       ready: true,
       toastVisible: false,
-      attachState: "attached",
-      activeStrategy: "web_audio_bridge",
-      audioContextState: "running",
-      audioContextCount: 1,
-      attachedNodeCount: 1,
-      currentUrl: "https://example.com"
+      autoAttachState: "attached",
+      autoActiveStrategy: "web_audio_bridge",
+      bridgeContextCount: 1,
+      bridgeAttachedNodeCount: 1,
+      gainPercent: 220,
+      streamState: "active",
+      engineStatus: "ready",
+      level: 0.4,
+      warning: "high",
+      protectorActionDb: 2,
+      clipEvents: 0,
+      clipPeak: 0.2,
+      protectionBypassed: false,
+      outputPeak: 0.44
     });
     registry.clearTab(51);
 
@@ -131,34 +151,54 @@ describe("AutoFrameRegistry", () => {
 
     registry.updateFrameState({
       tabId: 88,
+      title: "Top frame",
       frameId: 0,
       documentId: "doc-top",
       isTopFrame: true,
       frameUrl: "https://example.com",
+      url: "https://example.com",
       ready: true,
       toastVisible: false,
-      attachState: "attached",
-      activeStrategy: "media_element",
-      audioContextState: "running",
-      audioContextCount: 1,
-      attachedNodeCount: 1,
-      currentUrl: "https://example.com"
+      autoAttachState: "attached",
+      autoActiveStrategy: "media_element",
+      bridgeContextCount: 1,
+      bridgeAttachedNodeCount: 1,
+      gainPercent: 220,
+      streamState: "active",
+      engineStatus: "ready",
+      level: 0.5,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0.4
     });
     registry.updateFrameState({
       tabId: 88,
+      title: "Child frame",
       frameId: 3,
       documentId: "doc-child",
       isTopFrame: false,
       frameUrl: "https://example.com/frame",
+      url: "https://example.com/frame",
       ready: true,
       toastVisible: false,
-      attachState: "observing",
-      attachReason: "no_media",
-      activeStrategy: "none",
-      audioContextState: "none",
-      audioContextCount: 0,
-      attachedNodeCount: 0,
-      currentUrl: "https://example.com/frame"
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
+      autoActiveStrategy: "none",
+      bridgeContextCount: 0,
+      bridgeAttachedNodeCount: 0,
+      gainPercent: 220,
+      streamState: "inactive",
+      engineStatus: "ready",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0
     });
 
     registry.removeFrame(88, { frameId: 3, documentId: "doc-child" });
@@ -184,19 +224,29 @@ describe("AutoFrameRegistry", () => {
     });
     registry.updateFrameState({
       tabId: 90,
+      title: "State only",
       frameId: 1,
       documentId: "state-only",
       isTopFrame: false,
       frameUrl: "https://example.com/frame",
+      url: "https://example.com/frame",
       ready: true,
       toastVisible: true,
-      attachState: "observing",
-      attachReason: "no_media",
-      activeStrategy: "none",
-      audioContextState: "none",
-      audioContextCount: 0,
-      attachedNodeCount: 0,
-      currentUrl: "https://example.com/frame"
+      autoAttachState: "observing",
+      autoAttachReason: "no_media",
+      autoActiveStrategy: "none",
+      bridgeContextCount: 0,
+      bridgeAttachedNodeCount: 0,
+      gainPercent: 220,
+      streamState: "inactive",
+      engineStatus: "ready",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0
     });
 
     registry.removeFrame(90, { frameId: 0, documentId: "known-only" });
@@ -229,18 +279,28 @@ describe("AutoFrameRegistry", () => {
     });
     registry.updateFrameState({
       tabId: 124,
+      title: "Child frame",
       frameId: 7,
       documentId: undefined,
       isTopFrame: false,
       frameUrl: "https://example.com/child",
+      url: "https://example.com/child",
       ready: false,
       toastVisible: false,
-      attachState: "idle",
-      activeStrategy: "none",
-      audioContextState: "none",
-      audioContextCount: 0,
-      attachedNodeCount: 0,
-      currentUrl: "https://example.com/child"
+      autoAttachState: "idle",
+      autoActiveStrategy: "none",
+      bridgeContextCount: 0,
+      bridgeAttachedNodeCount: 0,
+      gainPercent: 220,
+      streamState: "inactive",
+      engineStatus: "ready",
+      level: 0,
+      warning: "none",
+      protectorActionDb: 0,
+      clipEvents: 0,
+      clipPeak: 0,
+      protectionBypassed: false,
+      outputPeak: 0
     });
 
     expect(registry.getKnownFrames(124)[0]).toMatchObject({

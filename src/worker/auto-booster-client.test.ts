@@ -294,7 +294,7 @@ describe("AutoBoosterClient", () => {
 
   it("returns safe fallbacks when optional permission and registration APIs are unavailable", async () => {
     const client = new AutoBoosterClient();
-    const chromeWithMissingApis = chrome as typeof chrome & {
+    const chromeWithMissingApis = chrome as unknown as {
       permissions: {
         request?: typeof requestPermission;
         contains?: typeof containsPermission;
