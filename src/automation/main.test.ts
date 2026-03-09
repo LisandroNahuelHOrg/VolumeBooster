@@ -48,6 +48,9 @@ describe("automation main entrypoint", () => {
 
     expect(document.title).toBe("Prism Automation");
     expect(document.querySelector("[data-action='request-global-permission']")).not.toBeNull();
+    expect(document.querySelector("[data-action='request-global-permission']")?.textContent).toContain(
+      "Restore all-sites access"
+    );
     expect(window.__PRISM_AUTOMATION__).toBeDefined();
 
     await expect(window.__PRISM_AUTOMATION__?.requestGlobalPermission()).resolves.toEqual({

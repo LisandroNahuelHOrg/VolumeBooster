@@ -14,11 +14,24 @@ export type LevelWarning = "none" | "high" | "danger";
 export type AudioQualityProtectorMode =
   | "off"
   | "balanced"
+  | "warmth"
   | "bass_aware"
+  | "vocal_focus"
   | "clarity"
+  | "treble_safe"
+  | "punch_preserve"
   | "maximum_protection";
 /** Advanced sound-shaping presets exposed in the popup. */
-export type QualityPreset = "balanced" | "maximum_clarity" | "maximum_loudness" | "bass_boost" | "custom";
+export type QualityPreset =
+  | "balanced"
+  | "vocal_presence"
+  | "maximum_clarity"
+  | "smooth_bright"
+  | "warm_cinematic"
+  | "maximum_loudness"
+  | "bass_boost"
+  | "punch_drive"
+  | "custom";
 /** Engine readiness state for manual and automatic audio lanes. */
 export type AudioEngineStatus = "loading" | "ready" | "error";
 /** Persisted automatic booster mode. */

@@ -75,6 +75,10 @@ export class AutoBoosterClient {
     }
   }
 
+  /**
+   * Restores the global host access required by the automatic all-sites lane
+   * when Chrome or the user has restricted it after installation.
+   */
   async requestGlobalPermission(): Promise<boolean> {
     if (!chrome.permissions?.request) {
       return false;
@@ -91,6 +95,10 @@ export class AutoBoosterClient {
     }
   }
 
+  /**
+   * Reports whether the extension currently retains effective all-sites host
+   * access for the automatic global lane.
+   */
   async hasGlobalPermission(): Promise<boolean> {
     if (!chrome.permissions?.contains) {
       return false;

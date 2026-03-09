@@ -292,7 +292,7 @@ describe("AutoBoosterClient", () => {
     });
   });
 
-  it("returns safe fallbacks when optional permission and registration APIs are unavailable", async () => {
+  it("returns safe fallbacks when host-access recovery and registration APIs are unavailable", async () => {
     const client = new AutoBoosterClient();
     const chromeWithMissingApis = chrome as unknown as {
       permissions: {

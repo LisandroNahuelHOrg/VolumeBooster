@@ -4,6 +4,7 @@ import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  applyQualityPreset,
   applyQualityProtector,
   buildDspRuntimeParameters,
   createDefaultMetrics,
@@ -416,6 +417,121 @@ describe("main-world bridge", () => {
     });
   });
 
+  it.each([
+    "vocal_presence",
+    "smooth_bright",
+    "warm_cinematic",
+    "punch_drive"
+  ] as const)("maps the %s sound preset into the web-audio bridge nodes", async (preset) => {
+    installBridgeTestGlobals();
+
+    await import("./main-world");
+
+    const context = new AudioContext() as unknown as FakeAudioContext;
+    const externalNode = context.createGain();
+    const bridgeNodes = getBridgeNodes(context);
+    const settings = applyQualityPreset(preset);
+    const runtime = applyQualityProtector(buildDspRuntimeParameters(500, settings));
+
+    window.dispatchEvent(
+      createBridgeCommandEvent({
+        type: "configure",
+        payload: {
+          tabId: 18,
+          scope: "site",
+          enabled: true,
+          suspended: false,
+          gainPercent: 500,
+          advancedAudioSettings: settings
+        }
+      })
+    );
+
+    externalNode.connect(context.destination);
+
+    expect(bridgeNodes.preGain.gain.value).toBeCloseTo(Math.pow(10, runtime.inputDriveDb / 20), 9);
+    expect(bridgeNodes.lowShelf.gain.value).toBeCloseTo(
+      runtime.toneLowBandGainDb + runtime.lowBandTrimDb + runtime.lowBandMakeupDb,
+      9
+    );
+    expect(bridgeNodes.midPeak.gain.value).toBeCloseTo(
+      runtime.toneMidBandGainDb + runtime.clarityPresenceTiltDb - runtime.midHighThresholdOffsetDb * 0.08,
+      9
+    );
+    expect(bridgeNodes.compressor.attack.value).toBeCloseTo(Math.max(runtime.lookaheadMs / 1000, 0.003), 9);
+    expect(bridgeNodes.compressor.release.value).toBeCloseTo(
+      Math.min(1.2, Math.max(0.06, runtime.releaseMs / 1000)),
+      9
+    );
+    expect(bridgeNodes.compressor.ratio.value).toBeCloseTo(
+      Math.min(20, Math.max(1, 1.8 + runtime.multibandDepth * 0.11 + runtime.lowBandRatioBias * 2.4)),
+      9
+    );
+    expect(bridgeNodes.wetGain.gain.value).toBeCloseTo(Math.pow(10, Math.min(0, runtime.outputCeilingDb) / 20), 9);
+    expect(bridgeNodes.shaper.curve?.[512]).toBeCloseTo(
+      expectedCurveValue(runtime.outputSoftClipMix, 512, 1024),
+      6
+    );
+  });
+
+  it.each([
+    "warmth",
+    "vocal_focus",
+    "treble_safe",
+    "punch_preserve"
+  ] as const)("maps the %s protector profile into the web-audio bridge nodes", async (mode) => {
+    installBridgeTestGlobals();
+
+    await import("./main-world");
+
+    const context = new AudioContext() as unknown as FakeAudioContext;
+    const externalNode = context.createGain();
+    const bridgeNodes = getBridgeNodes(context);
+    const settings = {
+      ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
+      qualityProtectorMode: mode
+    };
+    const runtime = applyQualityProtector(buildDspRuntimeParameters(500, settings));
+
+    window.dispatchEvent(
+      createBridgeCommandEvent({
+        type: "configure",
+        payload: {
+          tabId: 8,
+          scope: "site",
+          enabled: true,
+          suspended: false,
+          gainPercent: 500,
+          advancedAudioSettings: settings
+        }
+      })
+    );
+
+    externalNode.connect(context.destination);
+
+    expect(bridgeNodes.lowShelf.gain.value).toBeCloseTo(
+      runtime.toneLowBandGainDb + runtime.lowBandTrimDb + runtime.lowBandMakeupDb,
+      9
+    );
+    expect(bridgeNodes.midPeak.gain.value).toBeCloseTo(
+      runtime.toneMidBandGainDb + runtime.clarityPresenceTiltDb - runtime.midHighThresholdOffsetDb * 0.08,
+      9
+    );
+    expect(bridgeNodes.compressor.threshold.value).toBeCloseTo(
+      Math.min(-6, Math.max(-60, -32 - runtime.multibandDepth * 0.14 + runtime.lowBandThresholdOffsetDb)),
+      9
+    );
+    expect(bridgeNodes.compressor.ratio.value).toBeCloseTo(
+      Math.min(20, Math.max(1, 1.8 + runtime.multibandDepth * 0.11 + runtime.lowBandRatioBias * 2.4)),
+      9
+    );
+    expect(bridgeNodes.wetGain.gain.value).toBeCloseTo(Math.pow(10, Math.min(0, runtime.outputCeilingDb) / 20), 9);
+    expect(bridgeNodes.shaper.curve?.[512]).toBeCloseTo(
+      expectedCurveValue(runtime.outputSoftClipMix, 512, 1024),
+      6
+    );
+  });
+
   it("publishes exact aggregated telemetry and stops emitting when disabled", async () => {
     vi.useFakeTimers();
     installBridgeTestGlobals();
@@ -471,7 +587,12 @@ describe("main-world bridge", () => {
     await vi.advanceTimersByTimeAsync(METER_SAMPLE_MS);
 
     expect(telemetryEvents.length).toBeGreaterThanOrEqual(1);
-    expect(telemetryEvents.at(-1)).toMatchObject({
+    const aggregatedTelemetry = [...telemetryEvents]
+      .reverse()
+      .find((event) => event.activeStrategy === "web_audio_bridge" && event.audioContextCount === 2);
+
+    expect(aggregatedTelemetry).toBeDefined();
+    expect(aggregatedTelemetry).toMatchObject({
       activeStrategy: "web_audio_bridge",
       level: Math.round(Math.max(firstLevel, secondLevel) * 10000) / 10000,
       warning:
@@ -491,7 +612,7 @@ describe("main-world bridge", () => {
       audioContextCount: 2,
       attachedNodeCount: 2
     });
-    expect(telemetryEvents.at(-1)?.lastTelemetryAt).toEqual(expect.any(Number));
+    expect(aggregatedTelemetry?.lastTelemetryAt).toEqual(expect.any(Number));
 
     window.dispatchEvent(
       createBridgeCommandEvent({

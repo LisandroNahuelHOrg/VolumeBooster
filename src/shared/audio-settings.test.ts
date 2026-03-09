@@ -6,6 +6,8 @@
 
 import {
   DEFAULT_ADVANCED_AUDIO_SETTINGS,
+  QUALITY_PRESET_ORDER,
+  QUALITY_PROTECTOR_MODE_ORDER,
   applyQualityProtector,
   applyQualityPreset,
   buildDspRuntimeParameters,
@@ -59,6 +61,82 @@ describe("audio-settings", () => {
     expect(bassBoost.toneLowBandGainDb).toBeGreaterThan(balanced.toneLowBandGainDb);
     expect(bassBoost.toneMidBandGainDb).toBeLessThan(balanced.toneMidBandGainDb);
     expect(bassBoost.inputDriveDb).toBeGreaterThan(0);
+  });
+
+  it("accepts the new sound presets and keeps their exact popup order stable", () => {
+    expect(QUALITY_PRESET_ORDER).toEqual([
+      "balanced",
+      "vocal_presence",
+      "maximum_clarity",
+      "smooth_bright",
+      "warm_cinematic",
+      "maximum_loudness",
+      "bass_boost",
+      "punch_drive",
+      "custom"
+    ]);
+
+    for (const preset of ["vocal_presence", "smooth_bright", "warm_cinematic", "punch_drive"] as const) {
+      expect(
+        sanitizeAdvancedAudioSettings({
+          qualityPreset: preset
+        }).qualityPreset
+      ).toBe(preset);
+    }
+  });
+
+  it.each([
+    [
+      "vocal_presence",
+      {
+        qualityPreset: "vocal_presence",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -1.1,
+        lookaheadMs: 5.4,
+        releaseMs: 185,
+        multibandDepth: 39,
+        softClipMix: 10
+      }
+    ],
+    [
+      "smooth_bright",
+      {
+        qualityPreset: "smooth_bright",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -1.25,
+        lookaheadMs: 6.8,
+        releaseMs: 210,
+        multibandDepth: 33,
+        softClipMix: 7
+      }
+    ],
+    [
+      "warm_cinematic",
+      {
+        qualityPreset: "warm_cinematic",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -1.15,
+        lookaheadMs: 6.6,
+        releaseMs: 245,
+        multibandDepth: 42,
+        softClipMix: 11
+      }
+    ],
+    [
+      "punch_drive",
+      {
+        qualityPreset: "punch_drive",
+        qualityProtectorMode: "balanced",
+        ceilingDb: -0.95,
+        lookaheadMs: 3.6,
+        releaseMs: 145,
+        multibandDepth: 49,
+        softClipMix: 16
+      }
+    ]
+  ] as const)("exposes the exact %s preset snapshot and promotes it back from matching settings", (preset, expected) => {
+    expect(applyQualityPreset(preset)).toEqual(expected);
+    expect(maybePromotePreset(applyQualityPreset(preset)).qualityPreset).toBe(preset);
   });
 
   it("keeps a non-matching manual configuration as custom", () => {
@@ -121,6 +199,29 @@ describe("audio-settings", () => {
     });
 
     expect(sanitized.qualityProtectorMode).toBe("balanced");
+  });
+
+  it("accepts the new protector modes and keeps their exact popup order stable", () => {
+    expect(QUALITY_PROTECTOR_MODE_ORDER).toEqual([
+      "off",
+      "balanced",
+      "warmth",
+      "bass_aware",
+      "vocal_focus",
+      "clarity",
+      "treble_safe",
+      "punch_preserve",
+      "maximum_protection"
+    ]);
+
+    for (const mode of ["warmth", "vocal_focus", "treble_safe", "punch_preserve"] as const) {
+      expect(
+        sanitizeAdvancedAudioSettings({
+          qualityPreset: "custom",
+          qualityProtectorMode: mode
+        }).qualityProtectorMode
+      ).toBe(mode);
+    }
   });
 
   it("applies explicit bass-aware protector parameters that preserve more low-end than balanced", () => {
@@ -491,6 +592,62 @@ describe("audio-settings", () => {
       clarityPresenceTiltDb: 1.5
     });
 
+    expect(getQualityProtectorDefinition("warmth")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: -0.15,
+      lowBandMakeupDb: 0.45,
+      lowBandThresholdOffsetDb: 0.35,
+      lowBandRatioBias: -0.04,
+      midHighThresholdOffsetDb: 0.75,
+      ceilingOffsetDb: -0.1,
+      softClipMultiplier: 0.86,
+      softClipAdd: 0.5,
+      clarityPresenceTiltDb: -0.35
+    });
+
+    expect(getQualityProtectorDefinition("vocal_focus")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: -1.25,
+      lowBandMakeupDb: -0.05,
+      lowBandThresholdOffsetDb: -2.1,
+      lowBandRatioBias: 0.16,
+      midHighThresholdOffsetDb: -0.45,
+      ceilingOffsetDb: -0.14,
+      softClipMultiplier: 0.78,
+      softClipAdd: 0.2,
+      clarityPresenceTiltDb: 1.15
+    });
+
+    expect(getQualityProtectorDefinition("treble_safe")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: 0.1,
+      lowBandMakeupDb: 0.15,
+      lowBandThresholdOffsetDb: -0.3,
+      lowBandRatioBias: 0.12,
+      midHighThresholdOffsetDb: 1.2,
+      ceilingOffsetDb: -0.22,
+      softClipMultiplier: 1.04,
+      softClipAdd: 1.6,
+      clarityPresenceTiltDb: -0.7
+    });
+
+    expect(getQualityProtectorDefinition("punch_preserve")).toEqual({
+      protectorEnabled: true,
+      outputLimiterEnabled: true,
+      lowBandTrimDb: 0.2,
+      lowBandMakeupDb: 0.55,
+      lowBandThresholdOffsetDb: 0.9,
+      lowBandRatioBias: -0.22,
+      midHighThresholdOffsetDb: -0.3,
+      ceilingOffsetDb: -0.09,
+      softClipMultiplier: 0.82,
+      softClipAdd: 0.35,
+      clarityPresenceTiltDb: 0.3
+    });
+
     expect(getQualityProtectorDefinition("maximum_protection")).toEqual({
       protectorEnabled: true,
       outputLimiterEnabled: true,
@@ -505,6 +662,79 @@ describe("audio-settings", () => {
       clarityPresenceTiltDb: 0.35
     });
   });
+
+  it.each([
+    [
+      "warmth",
+      {
+        lowBandTrimDb: -0.15,
+        lowBandMakeupDb: 0.45,
+        lowBandThresholdOffsetDb: 0.35,
+        lowBandRatioBias: -0.04,
+        midHighThresholdOffsetDb: 0.75,
+        outputCeilingDb: -1.3,
+        outputSoftClipMix: 7.38,
+        clarityPresenceTiltDb: -0.35
+      }
+    ],
+    [
+      "vocal_focus",
+      {
+        lowBandTrimDb: -1.25,
+        lowBandMakeupDb: -0.05,
+        lowBandThresholdOffsetDb: -2.1,
+        lowBandRatioBias: 0.16,
+        midHighThresholdOffsetDb: -0.45,
+        outputCeilingDb: -1.34,
+        outputSoftClipMix: 6.44,
+        clarityPresenceTiltDb: 1.15
+      }
+    ],
+    [
+      "treble_safe",
+      {
+        lowBandTrimDb: 0.1,
+        lowBandMakeupDb: 0.15,
+        lowBandThresholdOffsetDb: -0.3,
+        lowBandRatioBias: 0.12,
+        midHighThresholdOffsetDb: 1.2,
+        outputCeilingDb: -1.42,
+        outputSoftClipMix: 9.92,
+        clarityPresenceTiltDb: -0.7
+      }
+    ],
+    [
+      "punch_preserve",
+      {
+        lowBandTrimDb: 0.2,
+        lowBandMakeupDb: 0.55,
+        lowBandThresholdOffsetDb: 0.9,
+        lowBandRatioBias: -0.22,
+        midHighThresholdOffsetDb: -0.3,
+        outputCeilingDb: -1.29,
+        outputSoftClipMix: 6.91,
+        clarityPresenceTiltDb: 0.3
+      }
+    ]
+  ] as const)(
+    "applies the %s protector profile exactly through the shared runtime mapper",
+    (mode, expected) => {
+      const runtime = applyQualityProtector(
+        buildDspRuntimeParameters(1000, applyQualityPreset("maximum_clarity", mode))
+      );
+
+      expect(runtime.protectorEnabled).toBe(true);
+      expect(runtime.outputLimiterEnabled).toBe(true);
+      expect(runtime.lowBandTrimDb).toBe(expected.lowBandTrimDb);
+      expect(runtime.lowBandMakeupDb).toBe(expected.lowBandMakeupDb);
+      expect(runtime.lowBandThresholdOffsetDb).toBe(expected.lowBandThresholdOffsetDb);
+      expect(runtime.lowBandRatioBias).toBe(expected.lowBandRatioBias);
+      expect(runtime.midHighThresholdOffsetDb).toBe(expected.midHighThresholdOffsetDb);
+      expect(runtime.outputCeilingDb).toBe(expected.outputCeilingDb);
+      expect(runtime.outputSoftClipMix).toBe(expected.outputSoftClipMix);
+      expect(runtime.clarityPresenceTiltDb).toBe(expected.clarityPresenceTiltDb);
+    }
+  );
 
   it("keeps threshold boundaries exact for bypassed warnings and custom-drive interpolation clamps", () => {
     expect(

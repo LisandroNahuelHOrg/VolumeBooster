@@ -252,10 +252,22 @@
     "message": "Auto-boost en todos los sitios y pestañas"
   },
   "grantGlobalAutoPermission": {
-    "message": "Conceder permiso para todos los sitios"
+    "message": "Restaurar acceso a todos los sitios"
   },
   "enableBoosterInThisSite": {
     "message": "Boostear solo la pestaña actual"
+  },
+  "laneActionActivate": {
+    "message": "Activar"
+  },
+  "laneActionDeactivate": {
+    "message": "Desactivar"
+  },
+  "laneMode1Label": {
+    "message": "Modo 1: Boost Current Tab"
+  },
+  "laneMode2Label": {
+    "message": "Modo 2: Auto-Boost All Sites and Tabs"
   },
   "languageEnglish": {
     "message": "Inglés"
@@ -327,10 +339,10 @@
     "message": "Auto-boost en todos los sitios y pestañas está listo"
   },
   "laneGlobalPermissionTitle": {
-    "message": "Auto-boost en todos los sitios y pestañas necesita permiso"
+    "message": "Auto-boost en todos los sitios y pestañas necesita restaurar el acceso global"
   },
   "laneGlobalPermissionDetail": {
-    "message": "Concedé el permiso para todos los sitios para que este modo pueda iniciar boost automáticamente en sitios y pestañas compatibles. Hasta entonces, solo podrás boostear manualmente la pestaña actual."
+    "message": "Chrome está limitando ahora mismo el acceso global de esta extensión. Restaurá ese acceso para que este modo vuelva a iniciar boost automáticamente en sitios y pestañas compatibles. Hasta entonces, solo podrás boostear manualmente la pestaña actual."
   },
   "laneIdleDetail": {
     "message": "Boostear solo la pestaña actual limita el boost a esta pestaña. Auto-boost en todos los sitios y pestañas boostea esta pestaña y también se inicia automáticamente en otros sitios y pestañas compatibles."
@@ -339,7 +351,7 @@
     "message": "Elegí cómo querés que funcione el boost"
   },
   "laneManualDetail": {
-    "message": "El audio se está boosteando solo en esta pestaña. Otras pestañas y sitios seguirán sin cambios hasta que actives el boost manualmente en cada uno."
+    "message": "Esta pestaña ya se está boosteando, y la extensión mantendrá el boost limitado a la pestaña actual en lugar de auto-iniciarlo en otros sitios y pestañas compatibles salvo que los actives manualmente."
   },
   "laneManualTitle": {
     "message": "Está activo: Boostear solo la pestaña actual"
@@ -425,6 +437,18 @@
   "otherSessionsTitle": {
     "message": "Sesiones activas"
   },
+  "sessionCarouselNext": {
+    "message": "Mostrar más sesiones activas"
+  },
+  "sessionCarouselPrevious": {
+    "message": "Mostrar sesiones activas anteriores"
+  },
+  "sessionPlaceholderDetail": {
+    "message": "Activa boost en otra pestaña y aparecerá aquí."
+  },
+  "sessionPlaceholderTitle": {
+    "message": "Esperando una sesión"
+  },
   "popupDocumentTitle": {
     "message": "Prism Volume Booster"
   },
@@ -437,17 +461,56 @@
   "presetBalanced": {
     "message": "Balanceado"
   },
+  "presetBalancedSubtitle": {
+    "message": "Mantiene el tono general neutro y controlado para musica, video y streams en el uso diario."
+  },
   "presetBassBoost": {
     "message": "Bass Boost"
+  },
+  "presetBassBoostSubtitle": {
+    "message": "Añade mas peso y golpe en el low-end mientras mantiene estable el resto del espectro."
   },
   "presetCustom": {
     "message": "Personalizado"
   },
+  "presetCustomSubtitle": {
+    "message": "Ajusta manualmente el motor DSP premium global aplicado a cada sesion activa."
+  },
   "presetMaximumClarity": {
     "message": "Máxima claridad"
   },
+  "presetMaximumClaritySubtitle": {
+    "message": "Prioriza articulacion y separacion para que voces, guitarras y detalles sigan mas limpios con boost alto."
+  },
   "presetMaximumLoudness": {
     "message": "Máximo volumen"
+  },
+  "presetMaximumLoudnessSubtitle": {
+    "message": "Empuja mas densidad y volumen percibido para reproduccion agresiva sin soltar el control de picos."
+  },
+  "presetPunchDrive": {
+    "message": "Impacto"
+  },
+  "presetPunchDriveSubtitle": {
+    "message": "Aumenta pegada y energia frontal para que bombos, golpes y trailers se sientan mas rapidos e intensos."
+  },
+  "presetSmoothBright": {
+    "message": "Brillo suave"
+  },
+  "presetSmoothBrightSubtitle": {
+    "message": "Conserva detalle en los agudos mientras suaviza aspereza en masters brillantes, platos y sibilancia."
+  },
+  "presetVocalPresence": {
+    "message": "Presencia vocal"
+  },
+  "presetVocalPresenceSubtitle": {
+    "message": "Hace que voces, dialogos y locucion salgan mas al frente para que sean mas faciles de seguir."
+  },
+  "presetWarmCinematic": {
+    "message": "Cálido cinematográfico"
+  },
+  "presetWarmCinematicSubtitle": {
+    "message": "Suma cuerpo, profundidad y suavidad para peliculas, ambient y sesiones largas de escucha."
   },
   "presetsLabel": {
     "message": "Presets rápidos en porcentaje (%)"
@@ -479,11 +542,23 @@
   "qualityProtectorBalancedSubtitle": {
     "message": "Protección neutral para uso diario con un tono equilibrado."
   },
+  "qualityProtectorWarmth": {
+    "message": "Calidez"
+  },
+  "qualityProtectorWarmthSubtitle": {
+    "message": "Conserva cuerpo y suavidad mientras aplica una protección más amable sobre los agudos duros."
+  },
   "qualityProtectorBassAware": {
     "message": "Bass-Aware"
   },
   "qualityProtectorBassAwareSubtitle": {
     "message": "Preserva más bajos y descarga la protección sobre medios y agudos."
+  },
+  "qualityProtectorVocalFocus": {
+    "message": "Vocal Focus"
+  },
+  "qualityProtectorVocalFocusSubtitle": {
+    "message": "Hace que voces y diálogos salgan al frente mientras controla rumble y low-end embarrado."
   },
   "qualityProtectorBypassedState": {
     "message": "Sin protección"
@@ -494,8 +569,20 @@
   "qualityProtectorClaritySubtitle": {
     "message": "Ajusta el low-end y favorece la claridad de voces e instrumentos."
   },
+  "qualityProtectorTrebleSafe": {
+    "message": "Treble Safe"
+  },
+  "qualityProtectorTrebleSafeSubtitle": {
+    "message": "Suaviza agudos filosos y sibilancia para que el audio brillante siga claro sin ponerse áspero."
+  },
+  "qualityProtectorPunchPreserve": {
+    "message": "Punch Preserve"
+  },
+  "qualityProtectorPunchPreserveSubtitle": {
+    "message": "Protege picos sin matar el golpe de bombos, cajas y transientes."
+  },
   "qualityProtectorMaximumProtection": {
-    "message": "Protección máxima"
+    "message": "Protección máx."
   },
   "qualityProtectorMaximumProtectionSubtitle": {
     "message": "El modo más controlado para boosts agresivos."

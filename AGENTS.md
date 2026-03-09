@@ -23,6 +23,29 @@ Rules every agent must follow:
 
 Reference: `docs/agent-guardrails/all-sites-main-world-contract.md`
 
+## Global Host Access Contract
+
+The `All Sites / All Tabs` lane now relies on install-time `host_permissions`
+for `"<all_urls>"` in `public/manifest.json`. This is intentional: Chrome
+should request global site access once during installation so users do not hit
+an avoidable permission wall the first time they enable global auto-boost.
+
+Rules every agent must follow:
+
+1. Keep `"<all_urls>"` in `host_permissions`, not `optional_host_permissions`,
+   unless the user explicitly asks to redesign the permission model.
+2. Do not add an `onInstalled` permission-request flow. Chrome's install
+   prompt for required host access is the intended first-run experience.
+3. Keep `REQUEST_GLOBAL_PERMISSION` and `chrome.permissions.request(...)` as a
+   recovery path only, for cases where Chrome or the user later restricts host
+   access after installation.
+4. Preserve the worker bootstrap downgrade that turns persisted global mode
+   back to `off` when effective all-sites access is missing.
+5. Before shipping any change that touches the permission model for global
+   auto-boost, run:
+   `npm test -- src/worker/auto-booster-client.test.ts src/worker/orchestrator.behavior.test.ts src/automation/main.test.ts src/shared/manifest-permissions.test.ts`
+   `npm run build`
+
 ## Available skills for this context
 
 - WorktreeDerAbajo: Abrir o crear el worktree fijo del monitor derecho inferior.
