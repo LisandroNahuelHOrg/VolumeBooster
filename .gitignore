@@ -6,3 +6,5 @@ coverage/
 dist-test/
 output/
 reports/
+.env*
+!.env.example

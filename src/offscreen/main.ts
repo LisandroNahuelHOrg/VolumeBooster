@@ -3,8 +3,12 @@
  * sesiones capturadas al session manager.
  */
 import { isOffscreenCommand } from "../shared/messages";
+import { fail, message } from "../shared/messages";
+import { captureExceptionSafe, initSentryForContext } from "../shared/observability/sentry";
 import { setDocumentLocaleAttributes, t } from "../shared/runtime-i18n";
 import { OffscreenSessionManager } from "./session-manager";
+
+initSentryForContext("offscreen");
 
 const manager = new OffscreenSessionManager();
 setDocumentLocaleAttributes(document);
@@ -17,25 +21,40 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   switch (message.type) {
     case "OFFSCREEN_START_SESSION":
-      void manager.startSession(message.payload).then(sendResponse);
-      return true;
+      return respondToCommand(manager.startSession(message.payload), "OFFSCREEN_START_SESSION", sendResponse);
     case "OFFSCREEN_SET_GAIN":
-      void manager.setGain(message.payload.tabId, message.payload.gainPercent).then(sendResponse);
-      return true;
+      return respondToCommand(
+        manager.setGain(message.payload.tabId, message.payload.gainPercent),
+        "OFFSCREEN_SET_GAIN",
+        sendResponse
+      );
     case "OFFSCREEN_SET_ADVANCED_AUDIO_SETTINGS":
-      void manager.setAdvancedAudioSettings(message.payload).then(sendResponse);
-      return true;
+      return respondToCommand(
+        manager.setAdvancedAudioSettings(message.payload),
+        "OFFSCREEN_SET_ADVANCED_AUDIO_SETTINGS",
+        sendResponse
+      );
     case "OFFSCREEN_STOP_SESSION":
-      void manager.stopSession(message.payload.tabId).then(sendResponse);
-      return true;
+      return respondToCommand(manager.stopSession(message.payload.tabId), "OFFSCREEN_STOP_SESSION", sendResponse);
     case "OFFSCREEN_STOP_ALL":
-      void manager.stopAll().then(sendResponse);
-      return true;
+      return respondToCommand(manager.stopAll(), "OFFSCREEN_STOP_ALL", sendResponse);
     case "OFFSCREEN_UPDATE_METADATA":
-      void manager.updateMetadata(message.payload).then(sendResponse);
-      return true;
+      return respondToCommand(manager.updateMetadata(message.payload), "OFFSCREEN_UPDATE_METADATA", sendResponse);
     case "OFFSCREEN_GET_SNAPSHOT":
       sendResponse({ ok: true, data: { sessions: manager.getSnapshot() } });
       return true;
   }
 });
+
+function respondToCommand(
+  task: Promise<unknown>,
+  commandType: string,
+  sendResponse: (value: unknown) => void
+): true {
+  void task.then(sendResponse).catch((error) => {
+    captureExceptionSafe(error, "offscreen", { commandType });
+    sendResponse(fail(message("errorExtensionActionFailed")));
+  });
+
+  return true;
+}

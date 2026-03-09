@@ -8,6 +8,8 @@ import type { I18nKey, I18nSubstitutionsFor } from "../generated/i18n-types";
 
 /** Lifecycle state of a session stream from the user-facing perspective. */
 export type SessionStreamState = "inactive" | "pending" | "active" | "error";
+/** Runtime surface where an error-monitoring event originated. */
+export type RuntimeContext = "popup" | "offscreen" | "automation" | "background";
 /** Coarse warning severity used across live audio telemetry UI. */
 export type LevelWarning = "none" | "high" | "danger";
 /** Global audio quality-protector modes exposed to users. */

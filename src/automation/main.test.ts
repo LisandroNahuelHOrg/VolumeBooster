@@ -7,6 +7,7 @@ describe("automation main entrypoint", () => {
   });
 
   it("renders the automation bridge and exposes helpers on window", async () => {
+    const initSentryForContext = vi.fn();
     const sendMessageSafe = vi.fn(async (command: { type: string }) => {
       if (command.type === "REQUEST_GLOBAL_PERMISSION") {
         return { ok: true, data: { autoBoosterMode: "global" } };
@@ -32,6 +33,10 @@ describe("automation main entrypoint", () => {
       sendMessageSafe
     }));
 
+    vi.doMock("../shared/observability/sentry", () => ({
+      initSentryForContext
+    }));
+
     vi.stubGlobal(
       "chrome",
       {
@@ -50,6 +55,7 @@ describe("automation main entrypoint", () => {
 
     await import("./main");
 
+    expect(initSentryForContext).toHaveBeenCalledWith("automation");
     expect(document.title).toBe("Prism Automation");
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dir).toBe("ltr");
@@ -110,6 +116,10 @@ describe("automation main entrypoint", () => {
 
     vi.doMock("../shared/messages", () => ({
       sendMessageSafe
+    }));
+
+    vi.doMock("../shared/observability/sentry", () => ({
+      initSentryForContext: vi.fn()
     }));
 
     vi.stubGlobal(

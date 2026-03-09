@@ -4,6 +4,18 @@ describe("background main entrypoint", () => {
   });
 
   it("boots the orchestrator and wires chrome listeners", async () => {
+    const captureExceptionSafe = vi.fn();
+    const initSentryForContext = vi.fn();
+    const isSentrySmokeMirrorEnabled = vi.fn(() => true);
+    const readSentrySmokeMirrorEntries = vi.fn(() => [
+      {
+        body: "smoke-envelope",
+        context: "background",
+        statusCode: 200,
+        timestamp: 1,
+        url: "https://ingest.us.sentry.io/api/envelope/"
+      }
+    ]);
     const bootstrap = vi.fn().mockResolvedValue(undefined);
     const handlePopupCommand = vi.fn().mockResolvedValue({ ok: true });
     const handleBackgroundEvent = vi.fn().mockResolvedValue(undefined);
@@ -31,10 +43,19 @@ describe("background main entrypoint", () => {
       }
     }));
 
+    vi.doMock("../shared/observability/sentry", () => ({
+      captureExceptionSafe,
+      initSentryForContext,
+      isSentrySmokeMirrorEnabled,
+      readSentrySmokeMirrorEntries
+    }));
+
     vi.doMock("../shared/messages", () => ({
+      fail: vi.fn((errorMessage: unknown) => ({ ok: false, errorMessage })),
       isPopupCommand: vi.fn((message: { type?: string }) => message.type === "GET_STATE"),
       isOffscreenEvent: vi.fn((message: { type?: string }) => message.type === "SESSION_LEVEL_UPDATE"),
-      isContentEvent: vi.fn((message: { type?: string }) => message.type === "AUTO_SESSION_STATUS_UPDATE")
+      isContentEvent: vi.fn((message: { type?: string }) => message.type === "AUTO_SESSION_STATUS_UPDATE"),
+      message: vi.fn((key: string) => ({ key }))
     }));
 
     vi.stubGlobal(
@@ -58,6 +79,7 @@ describe("background main entrypoint", () => {
 
     await import("./main");
 
+    expect(initSentryForContext).toHaveBeenCalledWith("background");
     expect(bootstrap).toHaveBeenCalledTimes(1);
     expect(onStartupAddListener).toHaveBeenCalledTimes(1);
     expect(onInstalledAddListener).toHaveBeenCalledTimes(1);
@@ -74,9 +96,44 @@ describe("background main entrypoint", () => {
     ) => boolean;
 
     const sendResponse = vi.fn();
+    expect(
+      runtimeMessageListener(
+        {
+          type: "__SENTRY_SMOKE_TRIGGER_BACKGROUND_ERROR__",
+          payload: { marker: "SMOKE_MARKER" }
+        },
+        {},
+        sendResponse
+      )
+    ).toBe(false);
+    expect(captureExceptionSafe).toHaveBeenCalledWith(expect.any(Error), "background", {
+      mechanism: "manual-smoke",
+      operation: "background-smoke-trigger"
+    });
+    expect((captureExceptionSafe.mock.calls[0][0] as Error).message).toBe("SMOKE_MARKER");
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+
+    sendResponse.mockClear();
+    expect(runtimeMessageListener({ type: "__SENTRY_SMOKE_READ_TRANSPORT__" }, {}, sendResponse)).toBe(false);
+    expect(readSentrySmokeMirrorEntries).toHaveBeenCalledTimes(1);
+    expect(sendResponse).toHaveBeenCalledWith({
+      ok: true,
+      data: [
+        {
+          body: "smoke-envelope",
+          context: "background",
+          statusCode: 200,
+          timestamp: 1,
+          url: "https://ingest.us.sentry.io/api/envelope/"
+        }
+      ]
+    });
+
+    sendResponse.mockClear();
     expect(runtimeMessageListener({ type: "GET_STATE" }, {}, sendResponse)).toBe(true);
     await Promise.resolve();
     expect(handlePopupCommand).toHaveBeenCalledWith({ type: "GET_STATE" });
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true });
 
     expect(runtimeMessageListener({ type: "SESSION_LEVEL_UPDATE" }, {}, sendResponse)).toBe(false);
     await Promise.resolve();
@@ -107,15 +164,24 @@ describe("background main entrypoint", () => {
     startupListener();
     bootstrap.mockRejectedValueOnce(new Error("install failed"));
     installedListener();
+    handlePopupCommand.mockRejectedValueOnce(new Error("popup failed"));
+    const rejectedSendResponse = vi.fn();
+    expect(runtimeMessageListener({ type: "GET_STATE" }, {}, rejectedSendResponse)).toBe(true);
     updatedListener(9, { status: "complete" }, { id: 9 } as chrome.tabs.Tab);
     activatedListener({ tabId: 9 });
     removedListener(9);
     captureListener({ tabId: 9, status: "active" } as chrome.tabCapture.CaptureInfo);
+    await Promise.resolve();
     await Promise.resolve();
 
     expect(handleTabUpdated).toHaveBeenCalledWith(9, { status: "complete" }, { id: 9 });
     expect(handleTabActivated).toHaveBeenCalledWith({ tabId: 9 });
     expect(handleTabRemoved).toHaveBeenCalledWith(9);
     expect(handleCaptureStatusChanged).toHaveBeenCalledWith({ tabId: 9, status: "active" });
+    expect(rejectedSendResponse).toHaveBeenCalledWith({
+      ok: false,
+      errorMessage: { key: "errorExtensionActionFailed" }
+    });
+    expect(captureExceptionSafe).toHaveBeenCalledTimes(4);
   });
 });
