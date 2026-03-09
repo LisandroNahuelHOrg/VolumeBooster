@@ -431,7 +431,7 @@ describe("WorkerOrchestrator", () => {
     await orchestratorInternals.syncActionBadges();
 
     expect(actionSetBadgeText).toHaveBeenCalledWith({ tabId: 7, text: "🔊" });
-    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 7, color: "#d72828" });
+    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 7, color: "#112638" });
 
     actionSetBadgeText.mockClear();
     actionSetBadgeBackgroundColor.mockClear();

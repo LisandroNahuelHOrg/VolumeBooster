@@ -3,9 +3,7 @@
  * descubrir media elements, adjuntar sesiones automáticas y publicar estado y
  * telemetría al worker.
  */
-import {
-  METER_SAMPLE_MS
-} from "../shared/constants";
+import { METER_SAMPLE_MS } from "../shared/constants";
 import { getDomainFromUrl, getDuckDuckGoFaviconUrl } from "../shared/domain";
 import { message } from "../shared/messages";
 import type {
