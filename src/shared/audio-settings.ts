@@ -75,9 +75,13 @@ const CLIP_THRESHOLD = 1.0005;
 /** Stable user-visible ordering for sound-mode presets. */
 export const QUALITY_PRESET_ORDER: QualityPreset[] = [
   "balanced",
+  "vocal_presence",
   "maximum_clarity",
+  "smooth_bright",
+  "warm_cinematic",
   "maximum_loudness",
   "bass_boost",
+  "punch_drive",
   "custom"
 ];
 
@@ -85,8 +89,12 @@ export const QUALITY_PRESET_ORDER: QualityPreset[] = [
 export const QUALITY_PROTECTOR_MODE_ORDER: AudioQualityProtectorMode[] = [
   "off",
   "balanced",
+  "warmth",
   "bass_aware",
+  "vocal_focus",
   "clarity",
+  "treble_safe",
+  "punch_preserve",
   "maximum_protection"
 ];
 
@@ -102,6 +110,16 @@ export const DSP_PROFILE_TABLE: Record<Exclude<QualityPreset, "custom">, DspProf
     toneLowBandGainDb: 0,
     toneMidBandGainDb: 0
   },
+  vocal_presence: {
+    inputDriveMaxDb: 12.5,
+    ceilingDb: -1.1,
+    lookaheadMs: 5.4,
+    releaseMs: 185,
+    multibandDepth: 39,
+    softClipMix: 10,
+    toneLowBandGainDb: -0.7,
+    toneMidBandGainDb: 1.4
+  },
   maximum_clarity: {
     inputDriveMaxDb: 11,
     ceilingDb: -1.2,
@@ -111,6 +129,26 @@ export const DSP_PROFILE_TABLE: Record<Exclude<QualityPreset, "custom">, DspProf
     softClipMix: 8,
     toneLowBandGainDb: 0,
     toneMidBandGainDb: 0
+  },
+  smooth_bright: {
+    inputDriveMaxDb: 11.8,
+    ceilingDb: -1.25,
+    lookaheadMs: 6.8,
+    releaseMs: 210,
+    multibandDepth: 33,
+    softClipMix: 7,
+    toneLowBandGainDb: -0.2,
+    toneMidBandGainDb: 0.95
+  },
+  warm_cinematic: {
+    inputDriveMaxDb: 13.2,
+    ceilingDb: -1.15,
+    lookaheadMs: 6.6,
+    releaseMs: 245,
+    multibandDepth: 42,
+    softClipMix: 11,
+    toneLowBandGainDb: 1.4,
+    toneMidBandGainDb: -0.25
   },
   maximum_loudness: {
     inputDriveMaxDb: 17,
@@ -131,6 +169,16 @@ export const DSP_PROFILE_TABLE: Record<Exclude<QualityPreset, "custom">, DspProf
     softClipMix: 18,
     toneLowBandGainDb: 3.2,
     toneMidBandGainDb: -0.45
+  },
+  punch_drive: {
+    inputDriveMaxDb: 15.8,
+    ceilingDb: -0.95,
+    lookaheadMs: 3.6,
+    releaseMs: 145,
+    multibandDepth: 49,
+    softClipMix: 16,
+    toneLowBandGainDb: 1.1,
+    toneMidBandGainDb: 0.55
   }
 };
 
@@ -162,6 +210,19 @@ export const QUALITY_PROTECTOR_TABLE: Record<AudioQualityProtectorMode, QualityP
     softClipAdd: 0.8,
     clarityPresenceTiltDb: 0.1
   },
+  warmth: {
+    protectorEnabled: true,
+    outputLimiterEnabled: true,
+    lowBandTrimDb: -0.15,
+    lowBandMakeupDb: 0.45,
+    lowBandThresholdOffsetDb: 0.35,
+    lowBandRatioBias: -0.04,
+    midHighThresholdOffsetDb: 0.75,
+    ceilingOffsetDb: -0.1,
+    softClipMultiplier: 0.86,
+    softClipAdd: 0.5,
+    clarityPresenceTiltDb: -0.35
+  },
   bass_aware: {
     protectorEnabled: true,
     outputLimiterEnabled: true,
@@ -175,6 +236,19 @@ export const QUALITY_PROTECTOR_TABLE: Record<AudioQualityProtectorMode, QualityP
     softClipAdd: 1.2,
     clarityPresenceTiltDb: 0.18
   },
+  vocal_focus: {
+    protectorEnabled: true,
+    outputLimiterEnabled: true,
+    lowBandTrimDb: -1.25,
+    lowBandMakeupDb: -0.05,
+    lowBandThresholdOffsetDb: -2.1,
+    lowBandRatioBias: 0.16,
+    midHighThresholdOffsetDb: -0.45,
+    ceilingOffsetDb: -0.14,
+    softClipMultiplier: 0.78,
+    softClipAdd: 0.2,
+    clarityPresenceTiltDb: 1.15
+  },
   clarity: {
     protectorEnabled: true,
     outputLimiterEnabled: true,
@@ -187,6 +261,32 @@ export const QUALITY_PROTECTOR_TABLE: Record<AudioQualityProtectorMode, QualityP
     softClipMultiplier: 0.72,
     softClipAdd: 0,
     clarityPresenceTiltDb: 1.5
+  },
+  treble_safe: {
+    protectorEnabled: true,
+    outputLimiterEnabled: true,
+    lowBandTrimDb: 0.1,
+    lowBandMakeupDb: 0.15,
+    lowBandThresholdOffsetDb: -0.3,
+    lowBandRatioBias: 0.12,
+    midHighThresholdOffsetDb: 1.2,
+    ceilingOffsetDb: -0.22,
+    softClipMultiplier: 1.04,
+    softClipAdd: 1.6,
+    clarityPresenceTiltDb: -0.7
+  },
+  punch_preserve: {
+    protectorEnabled: true,
+    outputLimiterEnabled: true,
+    lowBandTrimDb: 0.2,
+    lowBandMakeupDb: 0.55,
+    lowBandThresholdOffsetDb: 0.9,
+    lowBandRatioBias: -0.22,
+    midHighThresholdOffsetDb: -0.3,
+    ceilingOffsetDb: -0.09,
+    softClipMultiplier: 0.82,
+    softClipAdd: 0.35,
+    clarityPresenceTiltDb: 0.3
   },
   maximum_protection: {
     protectorEnabled: true,

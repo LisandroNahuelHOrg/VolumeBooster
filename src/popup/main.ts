@@ -5,6 +5,8 @@
 import "./popup.css";
 
 import {
+  QUALITY_PRESET_ORDER,
+  QUALITY_PROTECTOR_MODE_ORDER,
   applyQualityPreset,
   deriveClippingSafetyMarginDb,
   deriveProtectionLoadPercent,
@@ -44,6 +46,21 @@ import type {
   WorkerState
 } from "../shared/types";
 import { buildPopupViewModel } from "./model";
+import {
+  getQualityPresetCopy,
+  getQualityPresetSubtitleCopy
+} from "./quality-preset-copy";
+import {
+  getQualityProtectorButtonCopy,
+  getQualityProtectorModeCopy,
+  getQualityProtectorSubtitleCopy
+} from "./quality-protector-copy";
+import { getRecoverableGlobalAutoTabId } from "./global-auto-permission";
+import {
+  buildSessionCarouselModel,
+  shiftSessionCarouselOffset
+} from "./session-carousel";
+import { getLaneButtonCopy, type LaneButtonCopyKind } from "./lane-button-copy";
 
 const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -51,19 +68,10 @@ const PRESET_VALUES = [
   500, 600, 700, 800, 1000,
   2000, 3000, 4000, 5000, 10000
 ];
-const QUALITY_PROTECTOR_VALUES: AudioQualityProtectorMode[] = [
-  "off",
-  "balanced",
-  "bass_aware",
-  "clarity",
-  "maximum_protection"
-];
-const ADVANCED_PRESET_VALUES: Array<Exclude<QualityPreset, "custom">> = [
-  "balanced",
-  "maximum_clarity",
-  "maximum_loudness",
-  "bass_boost"
-];
+const QUALITY_PROTECTOR_VALUES: AudioQualityProtectorMode[] = [...QUALITY_PROTECTOR_MODE_ORDER];
+const ADVANCED_PRESET_VALUES: Array<Exclude<QualityPreset, "custom">> = QUALITY_PRESET_ORDER.filter(
+  (preset): preset is Exclude<QualityPreset, "custom"> => preset !== "custom"
+);
 const GAIN_COMMIT_DEBOUNCE_MS = 60;
 const GAIN_PRESET_ANIMATION_MS = 280;
 const GAIN_TRACK_JUMP_THRESHOLD_PX = 26;
@@ -88,6 +96,33 @@ interface LaneStatusDescriptor {
 interface GainVisualSyncOptions {
   animateVisuals?: boolean;
 }
+
+const LANE_BUTTON_ICON_MARKUP: Record<LaneButtonCopyKind, string> = {
+  "current-tab": `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M15 20H9M4 13.8002V8.2002C4 7.08009 4 6.51962 4.21799 6.0918C4.40973 5.71547 4.71547 5.40973 5.0918 5.21799C5.51962 5 6.08009 5 7.2002 5H16.8002C17.9203 5 18.4796 5 18.9074 5.21799C19.2837 5.40973 19.5905 5.71547 19.7822 6.0918C20 6.5192 20 7.07899 20 8.19691V13.8031C20 14.921 20 15.48 19.7822 15.9074C19.5905 16.2837 19.2837 16.5905 18.9074 16.7822C18.48 17 17.921 17 16.8031 17H7.19691C6.07899 17 5.5192 17 5.0918 16.7822C4.71547 16.5905 4.40973 16.2837 4.21799 15.9074C4 15.4796 4 14.9203 4 13.8002ZM14.5 11L10 8V14L14.5 11Z"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  `,
+  "all-sites": `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M3 12H8M3 12C3 16.9706 7.02944 21 12 21M3 12C3 7.02944 7.02944 3 12 3M8 12H16M8 12C8 16.9706 9.79086 21 12 21M8 12C8 7.02944 9.79086 3 12 3M16 12H21M16 12C16 7.02944 14.2091 3 12 3M16 12C16 16.9706 14.2091 21 12 21M21 12C21 7.02944 16.9706 3 12 3M21 12C21 16.9706 16.9706 21 12 21"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  `
+};
 
 const ADVANCED_CONTROL_CONFIG: Record<
   AdvancedControlKey,
@@ -187,6 +222,7 @@ let lastLaneStatusDisplayKey = "";
 let laneLayoutTransitionTimer: number | null = null;
 let tooltipRefreshFrame: number | null = null;
 let activeHelpTooltipAnchor: HTMLElement | null = null;
+let sessionCarouselOffset = 0;
 
 void bootstrap();
 
@@ -394,7 +430,9 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
   const laneStatus = getLaneStatus(viewModel);
   const siteAutoEnabled = isSiteAutoEnabled(viewModel);
   const globalAutoEnabled = isGlobalAutoEnabled(viewModel);
-  const controlsLocked = !currentSession;
+  const siteLaneButtonCopy = getLaneButtonCopy("current-tab", siteAutoEnabled, currentCatalog);
+  const globalLaneButtonCopy = getLaneButtonCopy("all-sites", globalAutoEnabled, currentCatalog);
+  const controlsLocked = !currentTab;
   const protectionBypassed = currentSession?.protectionBypassed ?? advancedAudioSettings.qualityProtectorMode === "off";
   const qualityProtectorSubtitle = qualityProtectorSubtitleCopy(advancedAudioSettings.qualityProtectorMode);
   const protectionAction = formatProtectionAction(
@@ -406,6 +444,8 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
   const protectionLoad = formatProtectionLoad(currentSession);
   const clippingSafety = formatClippingSafety(currentSession?.outputPeak ?? 0);
   const clippingSafetyAlert = getClippingSafetyAlert(currentSession?.outputPeak ?? 0, currentSession?.clipEvents ?? 0);
+  const sessionCarousel = buildSessionCarouselModel(viewModel.activeSessions, sessionCarouselOffset);
+  sessionCarouselOffset = sessionCarousel.offset;
 
   return `
     <div class="app-shell">
@@ -441,50 +481,68 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
             `
         }
 
-        <div class="slider-card">
-          <div class="booster-lane-grid">
-            <section class="booster-lane-status" data-role="lane-status" data-tone="${laneStatus.tone}">
-              <div class="booster-lane-status__meta">
-                <span class="slider-label">${escapeHtml(translate(currentCatalog, "laneStatusTitle"))}</span>
-                <span class="booster-lane-status__badge" data-role="lane-status-badge">${escapeHtml(laneStatus.badge)}</span>
+        <div class="booster-controls-stage" data-state="${controlsLocked ? "locked" : "live"}">
+          <div class="slider-card">
+            <div class="booster-lane-grid">
+              <section class="booster-lane-status" data-role="lane-status" data-tone="${laneStatus.tone}">
+                <div class="booster-lane-status__meta">
+                  <span class="slider-label">${escapeHtml(translate(currentCatalog, "laneStatusTitle"))}</span>
+                  <span class="booster-lane-status__badge" data-role="lane-status-badge">${escapeHtml(laneStatus.badge)}</span>
+                </div>
+                <strong data-role="lane-status-heading">${escapeHtml(laneStatus.title)}</strong>
+                <p data-role="lane-status-detail">${escapeHtml(laneStatus.detail)}</p>
+              </section>
+
+              <div class="booster-lane-actions">
+                <button
+                  class="ghost-button ghost-button--lane ${siteAutoEnabled ? "is-active" : ""}"
+                  data-lane-kind="current-tab"
+                  data-role="toggle-site-auto"
+                  data-action="${siteAutoEnabled ? "disable-site-auto" : "enable-site-auto"}"
+                  ${currentTab?.supported ? "" : "disabled"}
+                  type="button"
+                >
+                  <span class="ghost-button--lane__play-indicator" aria-hidden="true">
+                    <span class="ghost-button--lane__play-icon"></span>
+                  </span>
+                  <span class="ghost-button--lane__body">
+                    ${renderLaneButtonIcon("current-tab")}
+                    <span class="ghost-button--lane__copy">
+                      <span class="ghost-button--lane__action" data-role="toggle-site-auto-action">
+                        ${escapeHtml(siteLaneButtonCopy.action)}
+                      </span>
+                      <span class="ghost-button--lane__mode" data-role="toggle-site-auto-mode">
+                        ${escapeHtml(siteLaneButtonCopy.mode)}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+                <button
+                  class="ghost-button ghost-button--lane ghost-button--lane-global ${globalAutoEnabled ? "is-active" : ""}"
+                  data-lane-kind="all-sites"
+                  data-role="toggle-global-auto"
+                  data-action="${globalBoosterButtonAction(viewModel)}"
+                  ${currentTab ? "" : "disabled"}
+                  type="button"
+                >
+                  <span class="ghost-button--lane__play-indicator" aria-hidden="true">
+                    <span class="ghost-button--lane__play-icon"></span>
+                  </span>
+                  <span class="ghost-button--lane__body">
+                    ${renderLaneButtonIcon("all-sites")}
+                    <span class="ghost-button--lane__copy">
+                      <span class="ghost-button--lane__action" data-role="toggle-global-auto-action">
+                        ${escapeHtml(globalLaneButtonCopy.action)}
+                      </span>
+                      <span class="ghost-button--lane__mode" data-role="toggle-global-auto-mode">
+                        ${escapeHtml(globalLaneButtonCopy.mode)}
+                      </span>
+                    </span>
+                  </span>
+                </button>
               </div>
-              <strong data-role="lane-status-heading">${escapeHtml(laneStatus.title)}</strong>
-              <p data-role="lane-status-detail">${escapeHtml(laneStatus.detail)}</p>
-            </section>
-
-            <div class="booster-lane-actions">
-              <button
-                class="ghost-button ghost-button--lane ${siteAutoEnabled ? "is-active" : ""}"
-                data-role="toggle-site-auto"
-                data-action="${siteAutoEnabled ? "disable-site-auto" : "enable-site-auto"}"
-                ${currentTab?.supported ? "" : "disabled"}
-                type="button"
-              >
-                <span class="ghost-button--lane__play-indicator" aria-hidden="true">
-                  <span class="ghost-button--lane__play-icon"></span>
-                </span>
-                <span class="ghost-button--lane__label" data-role="toggle-site-auto-label">
-                  ${escapeHtml(siteBoosterButtonCopy(viewModel))}
-                </span>
-              </button>
-              <button
-                class="ghost-button ghost-button--lane ghost-button--lane-global ${globalAutoEnabled ? "is-active" : ""}"
-                data-role="toggle-global-auto"
-                data-action="${globalBoosterButtonAction(viewModel)}"
-                ${currentTab ? "" : "disabled"}
-                type="button"
-              >
-                <span class="ghost-button--lane__play-indicator" aria-hidden="true">
-                  <span class="ghost-button--lane__play-icon"></span>
-                </span>
-                <span class="ghost-button--lane__label" data-role="toggle-global-auto-label">
-                  ${escapeHtml(globalBoosterButtonCopy(viewModel))}
-                </span>
-              </button>
             </div>
-          </div>
 
-          <div class="booster-controls-stage" data-state="${controlsLocked ? "locked" : "live"}">
             <div class="slider-card__body">
               <div
                 class="gain-control"
@@ -553,137 +611,136 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
                   ${escapeHtml(warningCopy(currentWarning))}
                 </span>
               </div>
-              <div class="signal-controls-grid">
-                <section class="quality-protector">
-                  <div class="quality-protector__top">
-                    <div class="quality-protector__header">
-                      <div class="quality-protector__copy">
-                        <span class="slider-label">${escapeHtml(translate(currentCatalog, "qualityProtectorTitle"))}</span>
-                        <strong data-role="quality-protector-mode-value">${escapeHtml(
-                          qualityProtectorModeCopy(advancedAudioSettings.qualityProtectorMode)
-                        )}</strong>
-                        <p data-role="quality-protector-subtitle">${escapeHtml(qualityProtectorSubtitle)}</p>
-                      </div>
-                      <span
-                        class="quality-protector__state"
-                        data-role="quality-protector-state"
-                        data-bypass="${protectionBypassed}"
+            </div>
+          </div>
+
+          <div class="signal-controls-grid signal-controls-grid--standalone">
+            <section class="quality-protector">
+              <div class="quality-protector__top">
+                <div class="quality-protector__header">
+                  <div class="quality-protector__copy">
+                    <span class="slider-label">${escapeHtml(translate(currentCatalog, "qualityProtectorTitle"))}</span>
+                    <strong data-role="quality-protector-mode-value">${escapeHtml(
+                      qualityProtectorModeCopy(advancedAudioSettings.qualityProtectorMode)
+                    )}</strong>
+                    <p data-role="quality-protector-subtitle">${escapeHtml(qualityProtectorSubtitle)}</p>
+                  </div>
+                  <span
+                    class="quality-protector__state"
+                    data-role="quality-protector-state"
+                    data-bypass="${protectionBypassed}"
+                  >
+                    ${escapeHtml(qualityProtectorStateCopy(protectionBypassed))}
+                  </span>
+                </div>
+              </div>
+              <div class="quality-protector__body">
+                <div class="quality-protector__modes">
+                  ${QUALITY_PROTECTOR_VALUES.map(
+                    (mode) => `
+                      <button
+                        class="ghost-button ghost-button--protector ${advancedAudioSettings.qualityProtectorMode === mode ? "is-active" : ""}"
+                        data-quality-protector="${mode}"
+                        type="button"
+                        ${controlsLocked ? "disabled" : ""}
                       >
-                        ${escapeHtml(qualityProtectorStateCopy(protectionBypassed))}
-                      </span>
-                    </div>
+                        ${escapeHtml(qualityProtectorButtonCopy(mode))}
+                      </button>
+                    `
+                  ).join("")}
+                </div>
+                <div class="telemetry-strip telemetry-strip--protector">
+                  <div class="telemetry-pill" data-role="protection-load-pill">
+                    ${renderTelemetryPillLabel(
+                      "protectionLoadLabel",
+                      "protectionLoadHelpLabel",
+                      "protectionLoadHelpText",
+                      "protection-load-tooltip"
+                    )}
+                    <strong data-role="protection-load-value">${escapeHtml(protectionLoad)}</strong>
                   </div>
-                  <div class="quality-protector__body">
-                    <div class="quality-protector__modes">
-                      ${QUALITY_PROTECTOR_VALUES.map(
-                        (mode) => `
-                          <button
-                            class="ghost-button ghost-button--protector ${advancedAudioSettings.qualityProtectorMode === mode ? "is-active" : ""}"
-                            data-quality-protector="${mode}"
-                            type="button"
-                            ${controlsLocked ? "disabled" : ""}
-                          >
-                            ${escapeHtml(qualityProtectorButtonCopy(mode))}
-                          </button>
-                        `
-                      ).join("")}
-                    </div>
-                    <div class="telemetry-strip telemetry-strip--protector">
-                      <div class="telemetry-pill" data-role="protection-load-pill">
-                        ${renderTelemetryPillLabel(
-                          "protectionLoadLabel",
-                          "protectionLoadHelpLabel",
-                          "protectionLoadHelpText",
-                          "protection-load-tooltip"
-                        )}
-                        <strong data-role="protection-load-value">${escapeHtml(protectionLoad)}</strong>
-                      </div>
-                      <div class="telemetry-pill" data-role="protection-action-pill" data-bypass="${protectionBypassed}">
-                        ${renderTelemetryPillLabel(
-                          "protectionActionLabel",
-                          "protectionActionHelpLabel",
-                          "protectionActionHelpText",
-                          "protection-action-tooltip"
-                        )}
-                        <strong data-role="protection-action-value">${escapeHtml(protectionAction)}</strong>
-                      </div>
-                      <div class="telemetry-pill" data-role="clipping-safety-pill" data-alert="${clippingSafetyAlert}">
-                        ${renderTelemetryPillLabel(
-                          "clippingSafetyLabel",
-                          "clippingSafetyHelpLabel",
-                          "clippingSafetyHelpText",
-                          "clipping-safety-tooltip"
-                        )}
-                        <strong data-role="clipping-safety-value">${escapeHtml(clippingSafety)}</strong>
-                      </div>
-                      <div class="telemetry-pill" data-role="clip-events-pill" data-alert="${Number(clipEvents) > 0 ? "danger" : "none"}">
-                        ${renderTelemetryPillLabel(
-                          "clipEventsLabel",
-                          "clipEventsHelpLabel",
-                          "clipEventsHelpText",
-                          "clip-events-tooltip"
-                        )}
-                        <strong data-role="clip-events-value">${escapeHtml(clipEvents)}</strong>
-                      </div>
-                      <div class="telemetry-pill" data-role="clip-peak-pill" data-alert="${(currentSession?.clipPeak ?? 0) > 1 ? "danger" : "none"}">
-                        ${renderTelemetryPillLabel(
-                          "clipPeakLabel",
-                          "clipPeakHelpLabel",
-                          "clipPeakHelpText",
-                          "clip-peak-tooltip"
-                        )}
-                        <strong data-role="clip-peak-value">${escapeHtml(clipPeak)}</strong>
-                      </div>
-                    </div>
+                  <div class="telemetry-pill" data-role="protection-action-pill" data-bypass="${protectionBypassed}">
+                    ${renderTelemetryPillLabel(
+                      "protectionActionLabel",
+                      "protectionActionHelpLabel",
+                      "protectionActionHelpText",
+                      "protection-action-tooltip"
+                    )}
+                    <strong data-role="protection-action-value">${escapeHtml(protectionAction)}</strong>
                   </div>
-                </section>
+                  <div class="telemetry-pill" data-role="clipping-safety-pill" data-alert="${clippingSafetyAlert}">
+                    ${renderTelemetryPillLabel(
+                      "clippingSafetyLabel",
+                      "clippingSafetyHelpLabel",
+                      "clippingSafetyHelpText",
+                      "clipping-safety-tooltip"
+                    )}
+                    <strong data-role="clipping-safety-value">${escapeHtml(clippingSafety)}</strong>
+                  </div>
+                  <div class="telemetry-pill" data-role="clip-events-pill" data-alert="${Number(clipEvents) > 0 ? "danger" : "none"}">
+                    ${renderTelemetryPillLabel(
+                      "clipEventsLabel",
+                      "clipEventsHelpLabel",
+                      "clipEventsHelpText",
+                      "clip-events-tooltip"
+                    )}
+                    <strong data-role="clip-events-value">${escapeHtml(clipEvents)}</strong>
+                  </div>
+                  <div class="telemetry-pill" data-role="clip-peak-pill" data-alert="${(currentSession?.clipPeak ?? 0) > 1 ? "danger" : "none"}">
+                    ${renderTelemetryPillLabel(
+                      "clipPeakLabel",
+                      "clipPeakHelpLabel",
+                      "clipPeakHelpText",
+                      "clip-peak-tooltip"
+                    )}
+                    <strong data-role="clip-peak-value">${escapeHtml(clipPeak)}</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-                <section class="advanced-settings advanced-settings--expanded" data-role="advanced-settings">
-                  <div class="advanced-settings__summary advanced-settings__summary--static">
-                    <div class="advanced-settings__headline">
-                      <span class="advanced-settings__eyebrow">${escapeHtml(translate(currentCatalog, "advancedTitle"))}</span>
-                      <strong data-role="advanced-preset-value">${escapeHtml(qualityPresetCopy(advancedAudioSettings.qualityPreset))}</strong>
-                      <p>${escapeHtml(translate(currentCatalog, "advancedSubtitle"))}</p>
-                    </div>
-                  </div>
-
-                  <div class="advanced-settings__body">
-                    <div class="advanced-presets">
-                      <span
-                        class="ghost-button ghost-button--soft advanced-custom-badge ${advancedAudioSettings.qualityPreset === "custom" ? "is-active" : ""}"
-                        data-role="advanced-custom-badge"
-                      >
-                        ${escapeHtml(qualityPresetCopy("custom"))}
-                      </span>
-                      ${ADVANCED_PRESET_VALUES.map(
-                        (preset) => `
-                          <button
-                            class="ghost-button ghost-button--soft ${advancedAudioSettings.qualityPreset === preset ? "is-active" : ""}"
-                            data-advanced-preset="${preset}"
-                            type="button"
-                            ${controlsLocked ? "disabled" : ""}
-                          >
-                            ${escapeHtml(qualityPresetCopy(preset))}
-                          </button>
-                        `
-                      ).join("")}
-                    </div>
-
-                    <div class="advanced-control-grid">
-                      ${renderAdvancedControl("ceilingDb", advancedAudioSettings.ceilingDb, controlsLocked)}
-                      ${renderAdvancedControl("lookaheadMs", advancedAudioSettings.lookaheadMs, controlsLocked)}
-                      ${renderAdvancedControl("releaseMs", advancedAudioSettings.releaseMs, controlsLocked)}
-                      ${renderAdvancedControl("multibandDepth", advancedAudioSettings.multibandDepth, controlsLocked)}
-                      ${renderAdvancedControl("softClipMix", advancedAudioSettings.softClipMix, controlsLocked)}
-                    </div>
-                  </div>
-                </section>
+            <section class="advanced-settings advanced-settings--expanded" data-role="advanced-settings">
+              <div class="advanced-settings__summary advanced-settings__summary--static">
+                <div class="advanced-settings__headline">
+                  <span class="advanced-settings__eyebrow">${escapeHtml(translate(currentCatalog, "advancedTitle"))}</span>
+                  <strong data-role="advanced-preset-value">${escapeHtml(qualityPresetCopy(advancedAudioSettings.qualityPreset))}</strong>
+                  <p data-role="advanced-preset-subtitle">${escapeHtml(qualityPresetSubtitleCopy(advancedAudioSettings.qualityPreset))}</p>
+                </div>
               </div>
 
-            </div>
+              <div class="advanced-settings__body">
+                <div class="advanced-presets">
+                  <span
+                    class="ghost-button ghost-button--soft advanced-custom-badge ${advancedAudioSettings.qualityPreset === "custom" ? "is-active" : ""}"
+                    data-role="advanced-custom-badge"
+                  >
+                    ${escapeHtml(qualityPresetCopy("custom"))}
+                  </span>
+                  ${ADVANCED_PRESET_VALUES.map(
+                    (preset) => `
+                      <button
+                        class="ghost-button ghost-button--soft ${advancedAudioSettings.qualityPreset === preset ? "is-active" : ""}"
+                        data-advanced-preset="${preset}"
+                        type="button"
+                        ${controlsLocked ? "disabled" : ""}
+                      >
+                        ${escapeHtml(qualityPresetCopy(preset))}
+                      </button>
+                    `
+                  ).join("")}
+                </div>
 
-            ${controlsLocked ? '<div class="booster-controls-stage__overlay" aria-hidden="true"></div>' : ""}
+                <div class="advanced-control-grid">
+                  ${renderAdvancedControl("ceilingDb", advancedAudioSettings.ceilingDb, controlsLocked)}
+                  ${renderAdvancedControl("lookaheadMs", advancedAudioSettings.lookaheadMs, controlsLocked)}
+                  ${renderAdvancedControl("releaseMs", advancedAudioSettings.releaseMs, controlsLocked)}
+                  ${renderAdvancedControl("multibandDepth", advancedAudioSettings.multibandDepth, controlsLocked)}
+                  ${renderAdvancedControl("softClipMix", advancedAudioSettings.softClipMix, controlsLocked)}
+                </div>
+              </div>
+            </section>
           </div>
+          ${controlsLocked ? '<div class="booster-controls-stage__overlay" aria-hidden="true"></div>' : ""}
         </div>
       </section>
 
@@ -705,17 +762,45 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
           </button>
         </div>
 
-        ${
-          viewModel.activeSessions.length
-            ? `
-              <div class="session-list" data-role="other-sessions">
-                ${viewModel.activeSessions.map((session) => renderSessionCard(session, viewModel.currentTab?.tabId)).join("")}
-              </div>
-            `
-            : `<p class="muted-copy" data-role="other-sessions-empty">${escapeHtml(
-                translate(currentCatalog, "noOtherSessions")
-              )}</p>`
-        }
+        <div class="session-carousel" data-role="other-sessions" data-offset="${sessionCarousel.offset}">
+          <button
+            class="session-carousel__nav session-carousel__nav--previous ${
+              sessionCarousel.canScrollPrevious ? "" : "is-hidden"
+            }"
+            data-session-carousel-nav="previous"
+            type="button"
+            aria-label="${escapeHtml(translate(currentCatalog, "sessionCarouselPrevious"))}"
+            ${sessionCarousel.canScrollPrevious ? "" : "disabled"}
+          >
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div class="session-carousel__viewport">
+            <div
+              class="session-carousel__track"
+              data-role="session-carousel-track"
+              style="--session-carousel-offset:${sessionCarousel.offset};"
+            >
+              ${sessionCarousel.items
+                .map((item) =>
+                  item.kind === "session"
+                    ? renderSessionCard(item.session, viewModel.currentTab?.tabId)
+                    : renderSessionPlaceholderCard(item.placeholderIndex)
+                )
+                .join("")}
+            </div>
+          </div>
+          <button
+            class="session-carousel__nav session-carousel__nav--next ${
+              sessionCarousel.canScrollNext ? "" : "is-hidden"
+            }"
+            data-session-carousel-nav="next"
+            type="button"
+            aria-label="${escapeHtml(translate(currentCatalog, "sessionCarouselNext"))}"
+            ${sessionCarousel.canScrollNext ? "" : "disabled"}
+          >
+            <span aria-hidden="true">›</span>
+          </button>
+        </div>
       </section>
     </div>
   `;
@@ -751,9 +836,6 @@ function renderSessionCard(session: CaptureSessionState, currentTabId?: number):
             <div class="session-card__domain">${escapeHtml(session.domain || session.url || t("webLabel"))}</div>
           </div>
         </div>
-        <span class="status-pill" data-role="session-status" data-state="${visualStatus}">
-          ${escapeHtml(statusCopy(visualStatus))}
-        </span>
       </div>
 
       <div class="session-card__metrics">
@@ -801,6 +883,24 @@ function renderSessionCard(session: CaptureSessionState, currentTabId?: number):
         <button class="ghost-button ghost-button--danger" data-stop-tab="${session.tabId}" type="button">
           ${escapeHtml(translate(currentCatalog, "stopSession"))}
         </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderSessionPlaceholderCard(placeholderIndex: number): string {
+  if (!currentCatalog) {
+    return "";
+  }
+
+  return `
+    <article class="session-card session-card--placeholder" data-session-placeholder="${placeholderIndex}" aria-hidden="true">
+      <div class="session-card__placeholder-orb"></div>
+      <div class="session-card__placeholder-copy">
+        <span class="session-card__placeholder-label">${escapeHtml(
+          translate(currentCatalog, "sessionPlaceholderTitle")
+        )}</span>
+        <p>${escapeHtml(translate(currentCatalog, "sessionPlaceholderDetail"))}</p>
       </div>
     </article>
   `;
@@ -989,6 +1089,19 @@ function handleRootClick(event: Event): void {
   const target = event.target;
 
   if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const sessionCarouselNav = target.closest<HTMLButtonElement>("[data-session-carousel-nav]");
+
+  if (sessionCarouselNav?.dataset.sessionCarouselNav) {
+    sessionCarouselOffset = shiftSessionCarouselOffset(
+      currentState?.sessions.length ?? 0,
+      sessionCarouselOffset,
+      sessionCarouselNav.dataset.sessionCarouselNav === "next" ? "next" : "previous"
+    );
+    renderedSignature = "";
+    render();
     return;
   }
 
@@ -1361,8 +1474,11 @@ async function disableCurrentTabBooster(tabId: number): Promise<void> {
   await handleWorkerResponse(response);
 }
 
-async function enableGlobalAutoBooster(tabId: number): Promise<void> {
-  if (!confirmGlobalAutoBooster()) {
+async function enableGlobalAutoBooster(
+  tabId: number,
+  options: { skipConfirmation?: boolean } = {}
+): Promise<void> {
+  if (!options.skipConfirmation && !confirmGlobalAutoBooster()) {
     return;
   }
 
@@ -1378,6 +1494,18 @@ async function requestGlobalAutoPermission(): Promise<void> {
   clearTransientError();
   const response = await sendMessageSafe<WorkerState>({ type: "REQUEST_GLOBAL_PERMISSION" });
   await handleWorkerResponse(response);
+
+  if (!response.ok || !response.data) {
+    return;
+  }
+
+  const recoverableTabId = getRecoverableGlobalAutoTabId(response.data);
+
+  if (recoverableTabId === null) {
+    return;
+  }
+
+  await enableGlobalAutoBooster(recoverableTabId, { skipConfirmation: true });
 }
 
 async function disableGlobalAutoBooster(): Promise<void> {
@@ -1589,12 +1717,21 @@ function syncDynamicUi(
     siteAutoButton.dataset.action = siteAutoEnabled ? "disable-site-auto" : "enable-site-auto";
     siteAutoButton.disabled = !Boolean(currentTab?.supported);
     siteAutoButton.classList.toggle("is-active", siteAutoEnabled);
-    const siteAutoButtonLabel =
-      siteAutoButton.querySelector<HTMLElement>("[data-role='toggle-site-auto-label']") || siteAutoButton;
-    const previousSiteLabel = siteAutoButtonLabel.textContent ?? "";
-    siteAutoButtonLabel.textContent = siteBoosterButtonCopy(viewModel);
+    const siteAutoButtonCopy = getLaneButtonCopy("current-tab", siteAutoEnabled, currentCatalog);
+    const siteAutoAction =
+      siteAutoButton.querySelector<HTMLElement>("[data-role='toggle-site-auto-action']");
+    const siteAutoMode =
+      siteAutoButton.querySelector<HTMLElement>("[data-role='toggle-site-auto-mode']");
+    const previousSiteLabel = `${siteAutoAction?.textContent ?? ""}|${siteAutoMode?.textContent ?? ""}`;
+    if (siteAutoAction) {
+      siteAutoAction.textContent = siteAutoButtonCopy.action;
+    }
+    if (siteAutoMode) {
+      siteAutoMode.textContent = siteAutoButtonCopy.mode;
+    }
+    const nextSiteLabel = `${siteAutoButtonCopy.action}|${siteAutoButtonCopy.mode}`;
 
-    if (previousSiteAutoEnabled !== siteAutoEnabled || previousSiteLabel !== siteAutoButtonLabel.textContent) {
+    if (previousSiteAutoEnabled !== siteAutoEnabled || previousSiteLabel !== nextSiteLabel) {
       laneContentAnimations.push(siteAutoButton);
     }
   }
@@ -1607,12 +1744,21 @@ function syncDynamicUi(
     globalAutoButton.dataset.action = globalBoosterButtonAction(viewModel);
     globalAutoButton.disabled = !Boolean(currentTab);
     globalAutoButton.classList.toggle("is-active", globalAutoEnabled);
-    const globalAutoButtonLabel =
-      globalAutoButton.querySelector<HTMLElement>("[data-role='toggle-global-auto-label']") || globalAutoButton;
-    const previousGlobalLabel = globalAutoButtonLabel.textContent ?? "";
-    globalAutoButtonLabel.textContent = globalBoosterButtonCopy(viewModel);
+    const globalAutoButtonCopy = getLaneButtonCopy("all-sites", globalAutoEnabled, currentCatalog);
+    const globalAutoAction =
+      globalAutoButton.querySelector<HTMLElement>("[data-role='toggle-global-auto-action']");
+    const globalAutoMode =
+      globalAutoButton.querySelector<HTMLElement>("[data-role='toggle-global-auto-mode']");
+    const previousGlobalLabel = `${globalAutoAction?.textContent ?? ""}|${globalAutoMode?.textContent ?? ""}`;
+    if (globalAutoAction) {
+      globalAutoAction.textContent = globalAutoButtonCopy.action;
+    }
+    if (globalAutoMode) {
+      globalAutoMode.textContent = globalAutoButtonCopy.mode;
+    }
+    const nextGlobalLabel = `${globalAutoButtonCopy.action}|${globalAutoButtonCopy.mode}`;
 
-    if (previousGlobalAutoEnabled !== globalAutoEnabled || previousGlobalLabel !== globalAutoButtonLabel.textContent) {
+    if (previousGlobalAutoEnabled !== globalAutoEnabled || previousGlobalLabel !== nextGlobalLabel) {
       laneContentAnimations.push(globalAutoButton);
     }
   }
@@ -1690,6 +1836,12 @@ function syncDynamicUi(
 
   if (advancedPresetValue) {
     advancedPresetValue.textContent = qualityPresetCopy(advancedAudioSettings.qualityPreset);
+  }
+
+  const advancedPresetSubtitle = rootElement.querySelector<HTMLElement>("[data-role='advanced-preset-subtitle']");
+
+  if (advancedPresetSubtitle) {
+    advancedPresetSubtitle.textContent = qualityPresetSubtitleCopy(advancedAudioSettings.qualityPreset);
   }
 
   const advancedCustomBadge = rootElement.querySelector<HTMLElement>("[data-role='advanced-custom-badge']");
@@ -2222,65 +2374,23 @@ function statusCopy(state: string): string {
 }
 
 function qualityPresetCopy(preset: QualityPreset): string {
-  if (!currentCatalog) {
-    return preset;
-  }
+  return getQualityPresetCopy(preset, currentCatalog);
+}
 
-  switch (preset) {
-    case "balanced":
-      return translate(currentCatalog, "presetBalanced");
-    case "bass_boost":
-      return translate(currentCatalog, "presetBassBoost");
-    case "maximum_clarity":
-      return translate(currentCatalog, "presetMaximumClarity");
-    case "maximum_loudness":
-      return translate(currentCatalog, "presetMaximumLoudness");
-    default:
-      return translate(currentCatalog, "presetCustom");
-  }
+function qualityPresetSubtitleCopy(preset: QualityPreset): string {
+  return getQualityPresetSubtitleCopy(preset, currentCatalog);
 }
 
 function qualityProtectorModeCopy(mode: AudioQualityProtectorMode): string {
-  if (!currentCatalog) {
-    return mode;
-  }
-
-  switch (mode) {
-    case "off":
-      return translate(currentCatalog, "qualityProtectorOff");
-    case "balanced":
-      return translate(currentCatalog, "qualityProtectorBalanced");
-    case "bass_aware":
-      return translate(currentCatalog, "qualityProtectorBassAware");
-    case "clarity":
-      return translate(currentCatalog, "qualityProtectorClarity");
-    default:
-      return translate(currentCatalog, "qualityProtectorMaximumProtection");
-  }
+  return getQualityProtectorModeCopy(mode, currentCatalog);
 }
 
 function qualityProtectorButtonCopy(mode: AudioQualityProtectorMode): string {
-  const copy = qualityProtectorModeCopy(mode);
-  return mode === "off" ? copy.toUpperCase() : copy;
+  return getQualityProtectorButtonCopy(mode, currentCatalog);
 }
 
 function qualityProtectorSubtitleCopy(mode: AudioQualityProtectorMode): string {
-  if (!currentCatalog) {
-    return mode;
-  }
-
-  switch (mode) {
-    case "off":
-      return translate(currentCatalog, "qualityProtectorOffSubtitle");
-    case "balanced":
-      return translate(currentCatalog, "qualityProtectorBalancedSubtitle");
-    case "bass_aware":
-      return translate(currentCatalog, "qualityProtectorBassAwareSubtitle");
-    case "clarity":
-      return translate(currentCatalog, "qualityProtectorClaritySubtitle");
-    default:
-      return translate(currentCatalog, "qualityProtectorMaximumProtectionSubtitle");
-  }
+  return getQualityProtectorSubtitleCopy(mode, currentCatalog);
 }
 
 function qualityProtectorStateCopy(protectionBypassed: boolean): string {
@@ -2440,40 +2550,22 @@ function isGlobalAutoEnabled(viewModel: ReturnType<typeof buildPopupViewModel>):
   return viewModel.autoBoosterMode === "global";
 }
 
-function siteBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>): string {
-  if (!currentCatalog) {
-    return isSiteAutoEnabled(viewModel) ? t("disableBoosterInThisSite") : t("enableBoosterInThisSite");
-  }
-
-  return isSiteAutoEnabled(viewModel)
-    ? translate(currentCatalog, "disableBoosterInThisSite")
-    : translate(currentCatalog, "enableBoosterInThisSite");
-}
-
-function globalBoosterButtonCopy(viewModel: ReturnType<typeof buildPopupViewModel>): string {
-  if (!currentCatalog) {
-    if (isGlobalAutoEnabled(viewModel)) {
-      return t("disableBoosterInAllSites");
-    }
-
-    return viewModel.hasGlobalPermission ? t("enableBoosterInAllSites") : t("grantGlobalAutoPermission");
-  }
-
-  if (isGlobalAutoEnabled(viewModel)) {
-    return translate(currentCatalog, "disableBoosterInAllSites");
-  }
-
-  return viewModel.hasGlobalPermission
-    ? translate(currentCatalog, "enableBoosterInAllSites")
-    : translate(currentCatalog, "grantGlobalAutoPermission");
-}
-
 function globalBoosterButtonAction(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (isGlobalAutoEnabled(viewModel)) {
     return "disable-global-auto";
   }
 
   return viewModel.hasGlobalPermission ? "enable-global-auto" : "request-global-auto-permission";
+}
+
+function renderLaneButtonIcon(kind: LaneButtonCopyKind): string {
+  return `
+    <span class="ghost-button--lane__icon-badge" aria-hidden="true">
+      <span class="ghost-button--lane__icon">
+        ${LANE_BUTTON_ICON_MARKUP[kind]}
+      </span>
+    </span>
+  `;
 }
 
 function sessionSummaryCopy(count: number): string {

@@ -322,12 +322,28 @@
     "description": "Label for turning on automatic boosting across all compatible sites and tabs."
   },
   "grantGlobalAutoPermission": {
-    "message": "Grant all-sites permission",
-    "description": "Label for requesting the optional all-sites permission required before global automatic mode can be enabled."
+    "message": "Restore all-sites access",
+    "description": "Label for restoring the all-sites host access required when Chrome has limited the automatic global mode."
   },
   "enableBoosterInThisSite": {
     "message": "Boost Only The Current Tab",
     "description": "Label for turning on automatic boosting only in the current tab session."
+  },
+  "laneActionActivate": {
+    "message": "Activate",
+    "description": "Primary action label shown on the boost-mode CTA buttons when the mode is currently off."
+  },
+  "laneActionDeactivate": {
+    "message": "Deactivate",
+    "description": "Primary action label shown on the boost-mode CTA buttons when the mode is currently on."
+  },
+  "laneMode1Label": {
+    "message": "Mode 1: Boost Current Tab",
+    "description": "Short mode label shown on the current-tab booster CTA button."
+  },
+  "laneMode2Label": {
+    "message": "Mode 2: Auto-Boost All Sites and Tabs",
+    "description": "Short mode label shown on the global auto-boost CTA button."
   },
   "languageEnglish": {
     "message": "English",
@@ -422,12 +438,12 @@
     "description": "Title shown when global auto mode is enabled but the current page is not yet attached."
   },
   "laneGlobalPermissionTitle": {
-    "message": "Auto-Boost All Sites and Tabs needs permission",
-    "description": "Title shown when the user has not granted all-sites permission yet."
+    "message": "Auto-Boost All Sites and Tabs needs all-sites access restored",
+    "description": "Title shown when Chrome is not currently granting the all-sites host access required by global automatic mode."
   },
   "laneGlobalPermissionDetail": {
-    "message": "Grant all-sites permission so this mode can auto-start boosting across compatible sites and tabs. Until then, only the current tab can be boosted manually.",
-    "description": "Detail shown when the user has not granted all-sites permission yet."
+    "message": "Chrome is currently limiting all-sites access for this extension. Restore that access so this mode can auto-start boosting across compatible sites and tabs again. Until then, only the current tab can be boosted manually.",
+    "description": "Detail shown when Chrome is currently withholding the all-sites host access required by global automatic mode."
   },
   "laneIdleDetail": {
     "message": "Boost Only The Current Tab keeps boost limited to this tab. Auto-Boost All Sites and Tabs boosts this tab and also auto-starts on other compatible sites and tabs.",
@@ -438,7 +454,7 @@
     "description": "Title shown when no booster lane is active in the current tab."
   },
   "laneManualDetail": {
-    "message": "Audio is being boosted only in this tab. Other tabs and sites will stay unchanged until you turn boost on there manually.",
+    "message": "This tab is already being boosted, and the extension will keep boost limited to the current tab instead of auto-starting on other compatible sites and tabs unless you enable them manually.",
     "description": "Detail shown when the robust manual lane is active."
   },
   "laneManualTitle": {
@@ -553,6 +569,22 @@
     "message": "Active booster sessions",
     "description": "Heading text for otherSessionsTitle."
   },
+  "sessionCarouselNext": {
+    "message": "Show more booster sessions",
+    "description": "Accessible label for the next arrow in the active sessions carousel."
+  },
+  "sessionCarouselPrevious": {
+    "message": "Show previous booster sessions",
+    "description": "Accessible label for the previous arrow in the active sessions carousel."
+  },
+  "sessionPlaceholderDetail": {
+    "message": "Boost another tab and it will appear here.",
+    "description": "Placeholder helper copy for an empty active-session carousel slot."
+  },
+  "sessionPlaceholderTitle": {
+    "message": "Waiting for session",
+    "description": "Placeholder title for an empty active-session carousel slot."
+  },
   "popupDocumentTitle": {
     "message": "Prism Volume Booster",
     "description": "Document title for the popup page."
@@ -569,21 +601,73 @@
     "message": "Balanced",
     "description": "Preset label used by the popup for presetBalanced."
   },
+  "presetBalancedSubtitle": {
+    "message": "Keeps the overall tone neutral and controlled for everyday listening across music, video, and live streams.",
+    "description": "Preset subtitle used by the popup for presetBalancedSubtitle."
+  },
   "presetBassBoost": {
     "message": "Bass Boost",
     "description": "Preset label used by the popup for presetBassBoost."
+  },
+  "presetBassBoostSubtitle": {
+    "message": "Adds fuller low-end weight and slam while keeping the rest of the spectrum stable.",
+    "description": "Preset subtitle used by the popup for presetBassBoostSubtitle."
   },
   "presetCustom": {
     "message": "Custom",
     "description": "Preset label used by the popup for presetCustom."
   },
+  "presetCustomSubtitle": {
+    "message": "Fine-tune the global premium DSP engine applied to every live booster session.",
+    "description": "Preset subtitle used by the popup for presetCustomSubtitle."
+  },
   "presetMaximumClarity": {
     "message": "Maximum Clarity",
     "description": "Preset label used by the popup for presetMaximumClarity."
   },
+  "presetMaximumClaritySubtitle": {
+    "message": "Prioritizes articulation and separation so vocals, guitars, and detail stay cleaner under boost.",
+    "description": "Preset subtitle used by the popup for presetMaximumClaritySubtitle."
+  },
   "presetMaximumLoudness": {
     "message": "Maximum Loudness",
     "description": "Preset label used by the popup for presetMaximumLoudness."
+  },
+  "presetMaximumLoudnessSubtitle": {
+    "message": "Pushes more density and loudness for aggressive playback while still keeping peaks under control.",
+    "description": "Preset subtitle used by the popup for presetMaximumLoudnessSubtitle."
+  },
+  "presetPunchDrive": {
+    "message": "Punch Drive",
+    "description": "Preset label used by the popup for presetPunchDrive."
+  },
+  "presetPunchDriveSubtitle": {
+    "message": "Increases punch and forward energy so drums, hits, and trailers feel faster and more impactful.",
+    "description": "Preset subtitle used by the popup for presetPunchDriveSubtitle."
+  },
+  "presetSmoothBright": {
+    "message": "Smooth Bright",
+    "description": "Preset label used by the popup for presetSmoothBright."
+  },
+  "presetSmoothBrightSubtitle": {
+    "message": "Keeps top-end detail alive while softening harshness in bright masters, cymbals, and sibilant audio.",
+    "description": "Preset subtitle used by the popup for presetSmoothBrightSubtitle."
+  },
+  "presetVocalPresence": {
+    "message": "Vocal Presence",
+    "description": "Preset label used by the popup for presetVocalPresence."
+  },
+  "presetVocalPresenceSubtitle": {
+    "message": "Brings speech and lead vocals forward so dialogue, podcasts, and streams stay easier to follow.",
+    "description": "Preset subtitle used by the popup for presetVocalPresenceSubtitle."
+  },
+  "presetWarmCinematic": {
+    "message": "Warm Cinematic",
+    "description": "Preset label used by the popup for presetWarmCinematic."
+  },
+  "presetWarmCinematicSubtitle": {
+    "message": "Adds body, depth, and smoothness for films, ambient music, and long listening sessions.",
+    "description": "Preset subtitle used by the popup for presetWarmCinematicSubtitle."
   },
   "presetsLabel": {
     "message": "Quick Presets in Percentage (%)",
@@ -625,6 +709,14 @@
     "message": "Neutral everyday protection with a balanced tone.",
     "description": "Audio Quality Protector copy for qualityProtectorBalancedSubtitle."
   },
+  "qualityProtectorWarmth": {
+    "message": "Warmth",
+    "description": "Audio Quality Protector copy for qualityProtectorWarmth."
+  },
+  "qualityProtectorWarmthSubtitle": {
+    "message": "Keeps body and smoothness in the sound while applying gentler protection to harsh highs.",
+    "description": "Audio Quality Protector copy for qualityProtectorWarmthSubtitle."
+  },
   "qualityProtectorBassAware": {
     "message": "Bass-Aware",
     "description": "Audio Quality Protector copy for qualityProtectorBassAware."
@@ -632,6 +724,14 @@
   "qualityProtectorBassAwareSubtitle": {
     "message": "Preserves more bass while shifting protection work away from the low-end.",
     "description": "Audio Quality Protector copy for qualityProtectorBassAwareSubtitle."
+  },
+  "qualityProtectorVocalFocus": {
+    "message": "Vocal Focus",
+    "description": "Audio Quality Protector copy for qualityProtectorVocalFocus."
+  },
+  "qualityProtectorVocalFocusSubtitle": {
+    "message": "Pushes speech and lead vocals forward while controlling rumble and muddy low-end.",
+    "description": "Audio Quality Protector copy for qualityProtectorVocalFocusSubtitle."
   },
   "qualityProtectorBypassedState": {
     "message": "Unprotected",
@@ -645,8 +745,24 @@
     "message": "Tightens the low-end and favors vocal and instrument clarity.",
     "description": "Audio Quality Protector copy for qualityProtectorClaritySubtitle."
   },
+  "qualityProtectorTrebleSafe": {
+    "message": "Treble Safe",
+    "description": "Audio Quality Protector copy for qualityProtectorTrebleSafe."
+  },
+  "qualityProtectorTrebleSafeSubtitle": {
+    "message": "Softens edgy highs and sibilance so bright audio stays clear without turning sharp.",
+    "description": "Audio Quality Protector copy for qualityProtectorTrebleSafeSubtitle."
+  },
+  "qualityProtectorPunchPreserve": {
+    "message": "Punch Preserve",
+    "description": "Audio Quality Protector copy for qualityProtectorPunchPreserve."
+  },
+  "qualityProtectorPunchPreserveSubtitle": {
+    "message": "Protects peaks while keeping drums, hits, and transients feeling fast and impactful.",
+    "description": "Audio Quality Protector copy for qualityProtectorPunchPreserveSubtitle."
+  },
   "qualityProtectorMaximumProtection": {
-    "message": "Maximum Protection",
+    "message": "Max Protection",
     "description": "Audio Quality Protector copy for qualityProtectorMaximumProtection."
   },
   "qualityProtectorMaximumProtectionSubtitle": {

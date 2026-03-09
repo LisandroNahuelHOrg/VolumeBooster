@@ -38,14 +38,14 @@ root.innerHTML = `
   <main style="font-family: 'Segoe UI', sans-serif; padding: 20px; color: #f4f6f8; background: #0f1720; min-height: 100vh;">
     <h1 style="margin: 0 0 12px; font-size: 20px;">Prism Automation Bridge</h1>
     <p style="margin: 0 0 16px; line-height: 1.5; color: #c6d3dd;">
-      Internal page used by the Playwright harness to request permissions and send extension commands.
+      Internal page used by the Playwright harness to restore all-sites access when Chrome has limited it and to send extension commands.
     </p>
     <button
       type="button"
       data-action="request-global-permission"
       style="padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); background: #1d6bff; color: white; font-weight: 700; cursor: pointer;"
     >
-      Grant all-sites permission
+      Restore all-sites access
     </button>
     <pre data-role="output" style="margin-top: 16px; white-space: pre-wrap; background: rgba(255,255,255,0.06); padding: 12px; border-radius: 12px;"></pre>
   </main>
