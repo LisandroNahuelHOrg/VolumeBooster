@@ -60,7 +60,12 @@ vi.mock("../offscreen/faust-assets", () => ({
 }));
 
 import { selectFaustAsset } from "../offscreen/faust-assets";
-import { MediaElementSession, MediaElementSessionError } from "./media-element-session";
+import {
+  MediaElementSession,
+  MediaElementSessionError,
+  hasPotentialMediaForAutomaticAttach,
+  shouldAttemptAutomaticMediaAttach
+} from "./media-element-session";
 
 type MockFaustNode = {
   paramValues: Map<string, number>;
@@ -95,6 +100,7 @@ class FakeAudioContext {
   static nextState: AudioContextState = "running";
   static keepStateOnResume = false;
   static sourceError: Error | null = null;
+  static resumeError: unknown | null = null;
 
   state: AudioContextState;
   readonly destination = {};
@@ -122,6 +128,10 @@ class FakeAudioContext {
     .mockReturnValueOnce(this.wetGainNode as unknown as GainNode)
     .mockReturnValueOnce(this.bypassGainNode as unknown as GainNode);
   readonly resume = vi.fn(async () => {
+    if (FakeAudioContext.resumeError) {
+      throw FakeAudioContext.resumeError;
+    }
+
     if (!FakeAudioContext.keepStateOnResume) {
       this.state = "running";
     }
@@ -140,6 +150,7 @@ class FakeAudioContext {
     FakeAudioContext.nextState = "running";
     FakeAudioContext.keepStateOnResume = false;
     FakeAudioContext.sourceError = null;
+    FakeAudioContext.resumeError = null;
   }
 }
 
@@ -210,6 +221,75 @@ describe("MediaElementSession", () => {
     expect(FakeAudioContext.instances).toHaveLength(0);
   });
 
+  it("allows creation without a recent gesture when the media autoplay policy explicitly allows it", async () => {
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn((target?: string | BaseAudioContext | HTMLMediaElement) => {
+        if (target === "audiocontext") {
+          return "allowed";
+        }
+
+        return "allowed-muted";
+      }),
+      userActivation: {
+        hasBeenActive: false,
+        isActive: false
+      }
+    } as unknown as Navigator);
+
+    const session = await MediaElementSession.create(
+      makeMediaElement(),
+      200,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
+    );
+
+    expect(session.getDebugState()).toEqual({
+      audioContextState: "running",
+      autoplayPolicy: "allowed-muted"
+    });
+    expect(FakeAudioContext.instances).toHaveLength(1);
+  });
+
+  it("blocks creation without a recent gesture when the media autoplay policy is unavailable", async () => {
+    vi.stubGlobal("navigator", {
+      userActivation: {
+        hasBeenActive: false,
+        isActive: false
+      }
+    } as unknown as Navigator);
+
+    await expect(
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+    ).rejects.toMatchObject({
+      reason: "autoplay_blocked",
+      debugState: {
+        audioContextState: "none",
+        autoplayPolicy: undefined
+      }
+    });
+  });
+
+  it("reports autoplay_blocked when AudioContext construction itself fails", async () => {
+    vi.stubGlobal(
+      "AudioContext",
+      class ThrowingAudioContext {
+        constructor() {
+          throw new Error("construction denied");
+        }
+      } as unknown as typeof AudioContext
+    );
+
+    await expect(
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+    ).rejects.toMatchObject({
+      reason: "autoplay_blocked",
+      technicalMessage: "AudioContext was not allowed to start. construction denied",
+      debugState: {
+        audioContextState: "none",
+        autoplayPolicy: "allowed"
+      }
+    });
+  });
+
   it("reports autoplay_blocked when resume leaves the context suspended", async () => {
     FakeAudioContext.nextState = "suspended";
     FakeAudioContext.keepStateOnResume = true;
@@ -219,6 +299,53 @@ describe("MediaElementSession", () => {
     ).rejects.toMatchObject({
       reason: "autoplay_blocked",
       technicalMessage: expect.stringContaining("suspended")
+    });
+
+    expect(FakeAudioContext.instances[0]?.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports autoplay_blocked when the audio context autoplay policy is disallowed before resume", async () => {
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn((target?: string | BaseAudioContext | HTMLMediaElement) => {
+        if (typeof target === "string") {
+          return target === "audiocontext" ? "allowed" : "allowed";
+        }
+
+        return "disallowed";
+      }),
+      userActivation: {
+        hasBeenActive: true,
+        isActive: true
+      }
+    } as unknown as Navigator);
+
+    await expect(
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+    ).rejects.toMatchObject({
+      reason: "autoplay_blocked",
+      technicalMessage: "AudioContext autoplay policy is disallowed (disallowed).",
+      debugState: {
+        audioContextState: "closed",
+        autoplayPolicy: "disallowed"
+      }
+    });
+
+    expect(FakeAudioContext.instances[0]?.close).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports autoplay_blocked when AudioContext.resume throws", async () => {
+    FakeAudioContext.nextState = "suspended";
+    FakeAudioContext.resumeError = new Error("resume denied");
+
+    await expect(
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+    ).rejects.toMatchObject({
+      reason: "autoplay_blocked",
+      technicalMessage: "AudioContext.resume() failed: resume denied",
+      debugState: {
+        audioContextState: "closed",
+        autoplayPolicy: "allowed"
+      }
     });
 
     expect(FakeAudioContext.instances[0]?.close).toHaveBeenCalledTimes(1);
@@ -485,6 +612,118 @@ describe("MediaElementSession", () => {
     expect(error.name).toBe("MediaElementSessionError");
     expect(error.reason).toBe("attach_failed");
     expect(error.debugState?.autoplayPolicy).toBe("allowed");
+  });
+
+  it("fails loudly when the worklet runtime url is unavailable", async () => {
+    vi.stubGlobal(
+      "chrome",
+      {
+        runtime: {
+          getURL: vi.fn(() => {
+            throw new Error("extension context invalidated");
+          })
+        }
+      } as unknown as typeof chrome
+    );
+
+    await expect(
+      MediaElementSession.create(makeMediaElement(), 200, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS })
+    ).rejects.toMatchObject({
+      reason: "attach_failed",
+      technicalMessage: "Extension context invalidated."
+    });
+  });
+
+  it("evaluates automatic attach eligibility across playback, gesture, and policy states", () => {
+    const metadataReadyState = typeof HTMLMediaElement !== "undefined" ? HTMLMediaElement.HAVE_METADATA : 1;
+
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn(() => "allowed"),
+      userActivation: {
+        hasBeenActive: true,
+        isActive: true
+      }
+    } as unknown as Navigator);
+
+    expect(
+      hasPotentialMediaForAutomaticAttach(
+        makeMediaElement({
+          readyState: metadataReadyState
+        })
+      )
+    ).toBe(true);
+    expect(
+      hasPotentialMediaForAutomaticAttach(
+        makeMediaElement({
+          paused: true
+        })
+      )
+    ).toBe(false);
+    expect(
+      hasPotentialMediaForAutomaticAttach(
+        makeMediaElement({
+          ended: true
+        })
+      )
+    ).toBe(false);
+    expect(
+      hasPotentialMediaForAutomaticAttach(
+        makeMediaElement({
+          currentSrc: "",
+          srcObject: null
+        })
+      )
+    ).toBe(false);
+    expect(
+      hasPotentialMediaForAutomaticAttach(
+        makeMediaElement({
+          readyState: Math.max(0, metadataReadyState - 1)
+        })
+      )
+    ).toBe(false);
+
+    expect(shouldAttemptAutomaticMediaAttach(makeMediaElement())).toBe(true);
+
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn(() => "allowed"),
+      userActivation: {
+        hasBeenActive: false,
+        isActive: false
+      }
+    } as unknown as Navigator);
+    expect(shouldAttemptAutomaticMediaAttach(makeMediaElement())).toBe(true);
+
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn(() => "disallowed"),
+      userActivation: {
+        hasBeenActive: false,
+        isActive: false
+      }
+    } as unknown as Navigator);
+    expect(shouldAttemptAutomaticMediaAttach(makeMediaElement())).toBe(false);
+
+    vi.stubGlobal("navigator", {
+      userActivation: {
+        hasBeenActive: false,
+        isActive: false
+      }
+    } as unknown as Navigator);
+    expect(shouldAttemptAutomaticMediaAttach(makeMediaElement())).toBe(false);
+
+    vi.stubGlobal("navigator", {
+      getAutoplayPolicy: vi.fn(() => "allowed"),
+      userActivation: {
+        hasBeenActive: true,
+        isActive: true
+      }
+    } as unknown as Navigator);
+    expect(
+      shouldAttemptAutomaticMediaAttach(
+        makeMediaElement({
+          paused: true
+        })
+      )
+    ).toBe(false);
   });
 
   it("returns an undefined autoplay hint when the policy api throws for both context and string lookups", async () => {

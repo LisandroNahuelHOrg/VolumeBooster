@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Exercises boost percentage conversion, clamping, and warning
+ * derivation helpers.
+ * @module shared/gain.test
+ */
+
 import { clampGainPercent, deriveWarning, gainPercentToValue, gainValueToPercent } from "./gain";
 
 describe("gain helpers", () => {

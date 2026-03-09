@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Validates typed runtime message helpers and family guards used
+ * across extension contexts.
+ * @module shared/messages.test
+ */
+
 import {
   fail,
   isContentCommand,

@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Verifies locale resolution, pluralization, translation, and
+ * document language helpers.
+ * @module shared/runtime-i18n.test
+ */
+
 import {
   getBrowserLocale,
   getUiLanguage,

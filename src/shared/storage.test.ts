@@ -1,7 +1,18 @@
+/**
+ * @fileoverview Covers persisted settings sanitization and storage-backed
+ * repository behavior.
+ * @module shared/storage.test
+ */
+
 import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "./audio-settings";
 import { DEFAULT_GAIN_PERCENT, SETTINGS_STORAGE_KEY } from "./constants";
 import { SettingsRepository, type StorageAreaLike } from "./storage";
 
+/**
+ * Creates an in-memory `chrome.storage.local` substitute for repository tests.
+ * @param seed - Optional starting key-value pairs to preload in the fake store.
+ * @returns A storage-like object plus direct access to the backing record.
+ */
 function createStorageArea(seed?: Record<string, unknown>): StorageAreaLike & { store: Record<string, unknown> } {
   const store = { ...seed };
 
