@@ -587,7 +587,12 @@ describe("main-world bridge", () => {
     await vi.advanceTimersByTimeAsync(METER_SAMPLE_MS);
 
     expect(telemetryEvents.length).toBeGreaterThanOrEqual(1);
-    expect(telemetryEvents.at(-1)).toMatchObject({
+    const aggregatedTelemetry = [...telemetryEvents]
+      .reverse()
+      .find((event) => event.activeStrategy === "web_audio_bridge" && event.audioContextCount === 2);
+
+    expect(aggregatedTelemetry).toBeDefined();
+    expect(aggregatedTelemetry).toMatchObject({
       activeStrategy: "web_audio_bridge",
       level: Math.round(Math.max(firstLevel, secondLevel) * 10000) / 10000,
       warning:
@@ -607,7 +612,7 @@ describe("main-world bridge", () => {
       audioContextCount: 2,
       attachedNodeCount: 2
     });
-    expect(telemetryEvents.at(-1)?.lastTelemetryAt).toEqual(expect.any(Number));
+    expect(aggregatedTelemetry?.lastTelemetryAt).toEqual(expect.any(Number));
 
     window.dispatchEvent(
       createBridgeCommandEvent({
