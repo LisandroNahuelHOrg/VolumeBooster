@@ -45,9 +45,9 @@ import { aggregateAutoFrameStates } from "./auto-tab-aggregate";
 import { AutoFrameRegistry } from "./auto-frame-registry";
 
 const ACTION_BADGE_TEXT = "🔊";
-const ACTION_BADGE_TEXT_COLOR = "#0b0b0b";
-const ACTION_BADGE_IDLE_COLOR = "#101214";
-const ACTION_BADGE_PULSE_COLOR = "#d72828";
+const ACTION_BADGE_TEXT_COLOR = "#ffcf63";
+const ACTION_BADGE_IDLE_COLOR = "#000000";
+const ACTION_BADGE_PULSE_COLOR = "#112638";
 const ACTION_BADGE_AUDIBLE_THRESHOLD = 0.025;
 const ACTION_BADGE_AUDIBLE_HOLD_MS = 1500;
 const ACTION_BADGE_PULSE_MS = 1000;
@@ -1288,7 +1288,11 @@ export class WorkerOrchestrator {
         continue;
       }
 
-      await this.activateAutoBoosterForTab(tab, "global");
+      try {
+        await this.activateAutoBoosterForTab(tab, "global");
+      } catch {
+        // Keep the global lane alive even if one injectable tab fails to attach.
+      }
     }
   }
 
@@ -1319,7 +1323,11 @@ export class WorkerOrchestrator {
         continue;
       }
 
-      await this.activateAutoBoosterForTab(tab, scope, undefined, nextSettings);
+      try {
+        await this.activateAutoBoosterForTab(tab, scope, undefined, nextSettings);
+      } catch {
+        // Per-tab attach failures must not abort the remaining auto-booster sync work.
+      }
     }
   }
 

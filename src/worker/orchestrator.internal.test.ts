@@ -827,6 +827,52 @@ describe("WorkerOrchestrator internals", () => {
     expect(activateSpy).not.toHaveBeenCalled();
   });
 
+  it("keeps global and configured auto sync alive when one tab attach fails", async () => {
+    const { internals, autoBoosterClient } = createHarness();
+    const activateSpy = vi
+      .fn<
+        (tab: chrome.tabs.Tab, scope: "site" | "global", gainOverride?: number, settingsOverride?: AdvancedAudioSettings) => Promise<void>
+      >()
+      .mockRejectedValueOnce(new Error("attach failed"))
+      .mockResolvedValue(undefined);
+
+    internals.activateAutoBoosterForTab = activateSpy;
+    internals.autoBoosterMode = "global";
+
+    autoBoosterClient.queryInjectableTabs.mockResolvedValue([
+      { id: 31, title: "YouTube", url: "https://youtube.com/watch?v=1" } as chrome.tabs.Tab,
+      { id: 32, title: "Rumble", url: "https://rumble.com/demo" } as chrome.tabs.Tab
+    ]);
+
+    await expect(internals.syncGlobalAutoBoosterAcrossTabs()).resolves.toBeUndefined();
+    expect(activateSpy).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 31 }), "global");
+    expect(activateSpy).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 32 }), "global");
+
+    activateSpy.mockClear();
+    activateSpy.mockRejectedValueOnce(new Error("site attach failed")).mockResolvedValue(undefined);
+    internals.autoBoosterMode = "off";
+    internals.siteEnabledAutoTabs.add(41);
+    internals.siteEnabledAutoTabs.add(42);
+    tabsGet.mockResolvedValueOnce({ id: 41, title: "Kick", url: "https://kick.com/demo" } as chrome.tabs.Tab);
+    tabsGet.mockResolvedValueOnce({ id: 42, title: "Twitch", url: "https://twitch.tv/demo" } as chrome.tabs.Tab);
+
+    await expect(internals.syncConfiguredAutoTabs(DEFAULT_ADVANCED_AUDIO_SETTINGS)).resolves.toBeUndefined();
+    expect(activateSpy).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: 41 }),
+      "site",
+      undefined,
+      DEFAULT_ADVANCED_AUDIO_SETTINGS
+    );
+    expect(activateSpy).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ id: 42 }),
+      "site",
+      undefined,
+      DEFAULT_ADVANCED_AUDIO_SETTINGS
+    );
+  });
+
   it("covers validation, scope helpers, and badge helper branches", async () => {
     vi.useFakeTimers();
     const { internals, orchestrator } = createHarness();
@@ -1332,14 +1378,14 @@ describe("WorkerOrchestrator internals", () => {
     await internals.syncActionBadges();
 
     expect(actionSetBadgeText).toHaveBeenCalledWith({ tabId: 31, text: "🔊" });
-    expect(actionSetBadgeTextColor).toHaveBeenCalledWith({ tabId: 31, color: "#0b0b0b" });
-    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#101214" });
+    expect(actionSetBadgeTextColor).toHaveBeenCalledWith({ tabId: 31, color: "#ffcf63" });
+    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#000000" });
     expect(internals.badgedTabs.has(31)).toBe(true);
 
     actionSetBadgeBackgroundColor.mockClear();
     internals.badgePulseHighlighted = true;
     await internals.syncActionBadges();
-    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#d72828" });
+    expect(actionSetBadgeBackgroundColor).toHaveBeenCalledWith({ tabId: 31, color: "#112638" });
 
     internals.audibleTabs.set(31, now);
     expect(internals.isTabAudible(31)).toBe(false);

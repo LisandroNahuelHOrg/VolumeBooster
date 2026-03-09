@@ -62,6 +62,7 @@ import {
   shiftSessionCarouselOffset
 } from "./session-carousel";
 import { getLaneButtonCopy, type LaneButtonCopyKind } from "./lane-button-copy";
+import { deriveLiveActivityPercent } from "./live-activity";
 
 const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -75,8 +76,8 @@ const ADVANCED_PRESET_VALUES: Array<Exclude<QualityPreset, "custom">> = QUALITY_
 );
 const GAIN_COMMIT_DEBOUNCE_MS = 60;
 const GAIN_PRESET_ANIMATION_MS = 280;
-const GAIN_TRACK_JUMP_THRESHOLD_PX = 26;
 const GAIN_TRACK_JUMP_WINDOW_MS = 250;
+const GAIN_TRACK_DRAG_THRESHOLD_PX = 6;
 const ADVANCED_COMMIT_DEBOUNCE_MS = 80;
 const LANE_LAYOUT_TRANSITION_MS = 240;
 const STATE_POLL_MS = 180;
@@ -202,6 +203,9 @@ let visualGainPercent = DEFAULT_GAIN_PERCENT;
 let transientError: LocalizedMessage | null = null;
 let renderedSignature = "";
 let pendingGainTrackJumpAnimationAt = 0;
+let pendingGainTrackJumpPointerId: number | null = null;
+let pendingGainTrackJumpStartX: number | null = null;
+let pendingGainTrackJumpMoved = false;
 let gainCommitTimer: number | null = null;
 let gainCommitInFlight = false;
 let gainSliderAnimationFrame: number | null = null;
@@ -428,7 +432,7 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
   const currentTab = viewModel.currentTab;
   const advancedAudioSettings = getVisibleAdvancedAudioSettings(viewModel);
   const currentWarning = currentSession?.warning ?? deriveWarning(draftGainPercent, 0);
-  const levelPercent = Math.max(8, Math.round((currentSession?.level ?? 0) * 100));
+  const levelPercent = deriveLiveActivityPercent(currentSession?.level);
   const laneStatus = getLaneStatus(viewModel);
   const siteAutoEnabled = isSiteAutoEnabled(viewModel);
   const globalAutoEnabled = isGlobalAutoEnabled(viewModel);
@@ -915,6 +919,7 @@ function bindRootEvents(): void {
 
   rootElement.addEventListener("click", handleRootClick);
   rootElement.addEventListener("pointerdown", handleRootPointerDown);
+  rootElement.addEventListener("pointermove", handleRootPointerMove);
   rootElement.addEventListener("input", handleRootInput);
   rootElement.addEventListener("change", handleRootChange);
   rootElement.addEventListener("error", handleRootError, true);
@@ -1221,11 +1226,28 @@ function handleRootPointerDown(event: PointerEvent): void {
   const target = event.target;
 
   if (!(target instanceof HTMLInputElement) || target.dataset.role !== "gain-slider") {
-    pendingGainTrackJumpAnimationAt = 0;
+    clearPendingGainTrackJump();
     return;
   }
 
-  pendingGainTrackJumpAnimationAt = shouldAnimateGainTrackJump(target, event) ? performance.now() : 0;
+  pendingGainTrackJumpAnimationAt = performance.now();
+  pendingGainTrackJumpPointerId = event.pointerId;
+  pendingGainTrackJumpStartX = event.clientX;
+  pendingGainTrackJumpMoved = false;
+}
+
+function handleRootPointerMove(event: PointerEvent): void {
+  if (
+    pendingGainTrackJumpPointerId !== event.pointerId ||
+    pendingGainTrackJumpStartX === null ||
+    pendingGainTrackJumpMoved
+  ) {
+    return;
+  }
+
+  if (Math.abs(event.clientX - pendingGainTrackJumpStartX) > GAIN_TRACK_DRAG_THRESHOLD_PX) {
+    pendingGainTrackJumpMoved = true;
+  }
 }
 
 function handleRootInput(event: Event): void {
@@ -1249,9 +1271,10 @@ function handleRootInput(event: Event): void {
   isAdjustingGain = true;
   const animateTrackJump =
     pendingGainTrackJumpAnimationAt > 0 &&
+    !pendingGainTrackJumpMoved &&
     performance.now() - pendingGainTrackJumpAnimationAt <= GAIN_TRACK_JUMP_WINDOW_MS;
   setDraftGain(Number(target.value), { animateVisuals: animateTrackJump });
-  pendingGainTrackJumpAnimationAt = 0;
+  clearPendingGainTrackJump();
   scheduleGainCommit(false);
 }
 
@@ -1271,7 +1294,7 @@ function handleRootChange(event: Event): void {
   }
 
   isAdjustingGain = false;
-  pendingGainTrackJumpAnimationAt = 0;
+  clearPendingGainTrackJump();
   void flushGainCommit();
 }
 
@@ -1640,7 +1663,7 @@ function syncDynamicUi(
   const advancedAudioSettings = getVisibleAdvancedAudioSettings(viewModel);
   const currentWarning = currentSession?.warning ?? deriveWarning(draftGainPercent, 0);
   const currentStatus = getVisualStatus(currentSession, currentTab?.supported ?? false);
-  const levelPercent = Math.max(8, Math.round((currentSession?.level ?? 0) * 100));
+  const levelPercent = deriveLiveActivityPercent(currentSession?.level);
   const protectionBypassed = currentSession?.protectionBypassed ?? advancedAudioSettings.qualityProtectorMode === "off";
   const protectionAction = formatProtectionAction(
     currentSession?.protectorActionDb ?? 0,
@@ -2109,17 +2132,11 @@ function easeInOutCubic(progress: number): number {
   return 1 - Math.pow(-2 * progress + 2, 3) / 2;
 }
 
-function shouldAnimateGainTrackJump(slider: HTMLInputElement, event: PointerEvent): boolean {
-  const rect = slider.getBoundingClientRect();
-
-  if (rect.width <= 0) {
-    return false;
-  }
-
-  const pointerOffsetX = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
-  const currentThumbOffset = (getSliderProgressPercent(draftGainPercent) / 100) * rect.width;
-
-  return Math.abs(pointerOffsetX - currentThumbOffset) > GAIN_TRACK_JUMP_THRESHOLD_PX;
+function clearPendingGainTrackJump(): void {
+  pendingGainTrackJumpAnimationAt = 0;
+  pendingGainTrackJumpPointerId = null;
+  pendingGainTrackJumpStartX = null;
+  pendingGainTrackJumpMoved = false;
 }
 
 function animateBoosterLaneTransition(
@@ -2353,7 +2370,7 @@ function setText(selector: string, value: string): void {
 }
 
 function formatLevelPercent(level: number): string {
-  return `${Math.round(level * 100)}%`;
+  return `${deriveLiveActivityPercent(level)}%`;
 }
 
 function statusCopy(state: string): string {
