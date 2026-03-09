@@ -1,0 +1,30 @@
+🔄 Sincronizando main local con origin/main (NO destructivo)...
+📦 Dependencias incompletas para 'WorktreeDerArriba/fixed-open' (node_modules=False, run-p=False). Reinstalando...
+📦 Preparando dependencias del worktree...
+ℹ️  Reuso de dependencias omitido: lockfile de main y worktree no coincide.
+📦 Instalando dependencias con npm (fallback)...
+
+added 232 packages in 4s
+📦 Dependencias incompletas para 'WorktreeDerArriba/fixed-open/deps' (node_modules=True, run-p=False). Reinstalando...
+📦 Preparando dependencias del worktree...
+ℹ️  Reuso de dependencias omitido: lockfile de main y worktree no coincide.
+📦 Instalando dependencias con npm (fallback)...
+
+added 232 packages in 5s
+⚠️  Omitiendo fallback de eslint-plugin-speedsuite/dist en 'WorktreeDerArriba/fixed-open' porque no aplica en este proyecto.
+ℹ️ No hay cambios pendientes para session-start autosave en 'D:\Local Worktrees\WorktreeDerArriba'.
+🔄 'WorktreeDerArriba' está behind de origin/main sin commits propios. Realineando para iniciar sesión actualizado...
+
+═══════════════════════════════════════════
+✅ MONITOR LISTO: WorktreeDerArriba
+   Path:   D:\Local Worktrees\WorktreeDerArriba
+   Branch: monitor-der-arriba
+   Scope:  monitor-der-arriba
+   Estado vs origin/main: ahead=0, behind=0
+   Main local sync: ⚠️ no sincronizado (bloqueado por estado local)
+   Session sync monitor: ✅ realineado a origin/main
+   Worktree: reutilizado
+   Autosave: ℹ️ sin cambios pendientes
+   Para trabajar: cd D:\Local Worktrees\WorktreeDerArriba
+═══════════════════════════════════════════
+

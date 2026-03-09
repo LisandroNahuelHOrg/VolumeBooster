@@ -20,6 +20,13 @@
       "scope": "main-rescue",
       "agent": "main-rescue",
       "path": "D:/OfiDrive/0. Programacion/Chromium - Volume Booster"
+    },
+    {
+      "branch": "monitor-der-arriba",
+      "path": "D:\\Local Worktrees\\WorktreeDerArriba",
+      "agent": "fixed-monitor",
+      "scope": "monitor-der-arriba",
+      "created": "2026-03-09 02:38:22"
     }
   ]
 }
