@@ -390,6 +390,8 @@ describe("AutoBoosterController", () => {
     const controller = new AutoBoosterController();
 
     await controller.configure(makePayload());
+    await Promise.resolve();
+    await Promise.resolve();
 
     fakeSession.setGainPercent.mockClear();
     fakeSession.setAdvancedAudioSettings.mockClear();
@@ -417,6 +419,31 @@ describe("AutoBoosterController", () => {
         }
       ).refreshQueued
     ).toBe(true);
+  });
+
+  it("returns from configure before the first refresh finishes so worker messaging does not stall", async () => {
+    const controller = new AutoBoosterController();
+    const refreshSpy = vi.fn(
+      () =>
+        new Promise<void>(() => {
+          // Intentionally unresolved: configure must not await the first refresh.
+        })
+    );
+
+    (
+      controller as unknown as {
+        runRefreshMediaTracking(): Promise<void>;
+      }
+    ).runRefreshMediaTracking = refreshSpy;
+
+    await expect(controller.configure(makePayload())).resolves.toBeUndefined();
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(runtimeSendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "AUTO_SESSION_STATUS_UPDATE"
+      })
+    );
   });
 
   it("publishes attached status and level telemetry when media is hooked successfully", async () => {
