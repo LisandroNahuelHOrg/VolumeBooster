@@ -163,28 +163,9 @@ html[data-safe-status="ok"][data-safe-outline="true"] .safe-frame::after {
 }
 
 .screenshot-frame {
-  position: relative;
   overflow: hidden;
   border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-    var(--panel-strong);
-  isolation: isolate;
-}
-
-.screenshot-frame[data-shot-ratio="auto"] {
-  height: auto;
-}
-
-.screenshot-frame::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(6, 14, 28, 0.34);
-  z-index: 2;
+  background: var(--panel-strong);
 }
 
 .screenshot-frame img {
@@ -192,13 +173,6 @@ html[data-safe-status="ok"][data-safe-outline="true"] .safe-frame::after {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  position: relative;
-  z-index: 0;
-}
-
-.screenshot-frame[data-shot-fit="contain"] img {
-  object-fit: contain;
-  object-position: center top;
 }
 
 .callout {
@@ -244,62 +218,4 @@ html[data-safe-status="ok"][data-safe-outline="true"] .safe-frame::after {
   color: #ebf3ff;
   font-size: 15px;
   font-weight: 700;
-}
-
-.promo-card {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  border-radius: 24px;
-  padding: 10px;
-}
-
-.promo-tile-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 198px;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.promo-copy {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 6px;
-  padding-right: 2px;
-}
-
-.promo-title {
-  margin: 0;
-  max-width: 184px;
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  font-size: 40px;
-  line-height: 0.9;
-  letter-spacing: -0.05em;
-}
-
-.promo-support {
-  margin: 0;
-  max-width: 182px;
-  color: var(--muted);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.14;
-}
-
-.promo-shot {
-  width: 198px;
-  max-width: 198px;
-  justify-self: end;
-  align-self: center;
-  border-radius: 18px;
-}
-
-.promo-tight {
-  --safe-pad: 8px;
-  --safe-radius: 22px;
 }

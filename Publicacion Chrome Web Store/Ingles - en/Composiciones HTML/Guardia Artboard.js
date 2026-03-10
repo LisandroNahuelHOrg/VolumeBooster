@@ -16,42 +16,6 @@
     return document.querySelector("[data-safe-frame]") || document.querySelector(".safe-frame");
   }
 
-  function syncShotFrames() {
-    const frames = [...document.querySelectorAll("[data-shot-ratio='auto']")];
-    const issues = [];
-
-    for (const frame of frames) {
-      const img = frame.querySelector("img");
-
-      if (!img) {
-        issues.push({
-          label: frame.getAttribute("data-safe-label") || frame.className || frame.tagName,
-          error: "Missing <img> inside data-shot-ratio='auto' frame."
-        });
-        continue;
-      }
-
-      if (!img.complete || !img.naturalWidth || !img.naturalHeight) {
-        issues.push({
-          label: frame.getAttribute("data-safe-label") || frame.className || frame.tagName,
-          error: "Screenshot image is not ready for ratio lock."
-        });
-        continue;
-      }
-
-      frame.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
-      frame.style.height = "auto";
-      frame.dataset.resolvedShotRatio = `${img.naturalWidth}/${img.naturalHeight}`;
-
-      if ((frame.dataset.shotFit || "").toLowerCase() === "contain") {
-        img.style.objectFit = "contain";
-        img.style.objectPosition = "center top";
-      }
-    }
-
-    return issues;
-  }
-
   function validate() {
     const safeFrame = getSafeFrame();
 
@@ -66,7 +30,6 @@
     const frameRect = safeFrame.getBoundingClientRect();
     const items = [...document.querySelectorAll("[data-safe-item]")];
     const issues = [];
-    const preflightIssues = syncShotFrames();
 
     for (const item of items) {
       const rect = item.getBoundingClientRect();
@@ -87,10 +50,9 @@
     }
 
     const result = {
-      ok: issues.length === 0 && preflightIssues.length === 0,
+      ok: issues.length === 0,
       frame: serializeRect(frameRect),
       itemCount: items.length,
-      preflightIssues,
       issues
     };
 
