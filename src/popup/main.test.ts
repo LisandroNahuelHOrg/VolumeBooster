@@ -48,7 +48,6 @@ function makeSession(overrides: Partial<CaptureSessionState> = {}): CaptureSessi
     ...overrides
   };
 }
-
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;
@@ -197,7 +196,6 @@ describe("popup main theme integration", () => {
 
     return meterFill;
   }
-
   it("boots with the persisted light theme already applied", async () => {
     persistedTheme = "light";
 
@@ -352,7 +350,6 @@ describe("popup main theme integration", () => {
     expect(getThemeButton().dataset.popupThemeTarget).toBe("dark");
     expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")?.textContent).not.toBe(initialThemeName);
   });
-
   it("clamps session meter width for invalid and out-of-range telemetry updates", async () => {
     sendMessageSafeMock.mockImplementation(async (command: { type: string }) => {
       if (command.type === "GET_STATE") {

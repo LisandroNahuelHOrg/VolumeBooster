@@ -2068,7 +2068,6 @@ body[data-boosting="true"]::after {
   transform: translateX(-50%) translateY(0) scale(1);
   filter: blur(18px);
 }
-
 :root[data-popup-theme="light"] .ghost-button {
   border-color: rgba(190, 161, 119, 0.18);
 }
