@@ -80,6 +80,14 @@ describe("runtime-api", () => {
     expect(getI18nMessageSafe("automationRestoreAllSitesAccess")).toBe("Restore all-sites access");
   });
 
+  it("falls back cleanly when chrome.i18n or getMessage are missing", () => {
+    vi.stubGlobal("chrome", { i18n: {} } as unknown as typeof chrome);
+    expect(getI18nMessageSafe("automationRestoreAllSitesAccess")).toBe("Restore all-sites access");
+
+    vi.stubGlobal("chrome", {} as typeof chrome);
+    expect(getI18nMessageSafe("automationRestoreAllSitesAccess")).toBe("Restore all-sites access");
+  });
+
   it("reads extension URLs safely and returns null on stale contexts", () => {
     const getURL = vi
       .fn()
