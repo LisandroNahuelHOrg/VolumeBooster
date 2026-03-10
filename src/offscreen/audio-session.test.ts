@@ -1,7 +1,10 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   applyQualityProtector,
   buildDspRuntimeParameters,
-  DEFAULT_ADVANCED_AUDIO_SETTINGS
+  DEFAULT_ADVANCED_AUDIO_SETTINGS,
+  type DspRuntimeParameters
 } from "../shared/audio-settings";
 
 const hoisted = vi.hoisted(() => ({
@@ -100,6 +103,42 @@ type MockFaustNode = {
   setParamValue: ReturnType<typeof vi.fn>;
   options: unknown;
 };
+
+type AudioSessionTestFallbackGraph = {
+  preGain: GainNode;
+  lowShelf: BiquadFilterNode;
+  midPeak: BiquadFilterNode;
+  compressor: DynamicsCompressorNode;
+  shaper: WaveShaperNode;
+  wetGain: GainNode;
+  dryGain: GainNode;
+};
+
+type AudioSessionTestables = {
+  createAnalyser(audioContext: AudioContext): AnalyserNode;
+  getSampleSize(meta: { compile_options?: string | null | undefined }): number;
+  readPeak(analyser: AnalyserNode): number;
+  roundTo(value: number, decimals: number): number;
+  createNativeFallbackGraph(
+    audioContext: AudioContext,
+    inputAnalyserNode: AnalyserNode,
+    outputAnalyserNode: AnalyserNode
+  ): AudioSessionTestFallbackGraph;
+  disconnectNativeFallbackGraph(fallbackGraph: AudioSessionTestFallbackGraph | null): void;
+  applyNativeFallbackRuntimeParameters(
+    fallbackGraph: AudioSessionTestFallbackGraph,
+    runtime: DspRuntimeParameters
+  ): void;
+  createSoftClipCurve(intensity: number): Float32Array;
+  dbToGain(decibels: number): number;
+  clampNumber(value: number, min: number, max: number): number;
+};
+
+function getAudioSessionTestables(): AudioSessionTestables {
+  const testables = (AudioSession as typeof AudioSession & { __testables?: AudioSessionTestables }).__testables;
+  expect(testables).toBeDefined();
+  return testables!;
+}
 
 class FakeNode {
   readonly connect = vi.fn();
@@ -571,8 +610,8 @@ describe("AudioSession", () => {
     );
   });
 
-  it("exposes deterministic helper math, analyser calibration, and native fallback graph wiring", async () => {
-    const { __testables } = await import("./audio-session");
+  it("exposes deterministic helper math, analyser calibration, and native fallback graph wiring", () => {
+    const __testables = getAudioSessionTestables();
     const context = new FakeAudioContext();
     const analyser = __testables.createAnalyser(context as unknown as AudioContext) as unknown as FakeAnalyserNode;
     const fallbackGraph = __testables.createNativeFallbackGraph(
@@ -623,8 +662,8 @@ describe("AudioSession", () => {
     expect(() => __testables.disconnectNativeFallbackGraph(null)).not.toThrow();
   });
 
-  it("applies the exact native fallback DSP parameters and clamped output shaping", async () => {
-    const { __testables } = await import("./audio-session");
+  it("applies the exact native fallback DSP parameters and clamped output shaping", () => {
+    const __testables = getAudioSessionTestables();
     const context = new FakeAudioContext();
     const fallbackGraph = __testables.createNativeFallbackGraph(
       context as unknown as AudioContext,
@@ -694,6 +733,13 @@ describe("AudioSession", () => {
     expect(fallbackGraph.dryGain.gain.value).toBe(0);
   });
 
+  it("keeps helper hooks test-only instead of exporting them in production", () => {
+    const source = readFileSync(fileURLToPath(new URL("./audio-session.ts", import.meta.url)), "utf8");
+
+    expect(source).toContain('import.meta.env.MODE === "test"');
+    expect(source).not.toContain("export const __testables");
+  });
+
   it("keeps exact initial state, applies parameters to the active engine, and only reports fatal errors once", async () => {
     const onTelemetry = vi.fn();
     const onFatalError = vi.fn();
@@ -707,7 +753,7 @@ describe("AudioSession", () => {
         controlPaths: Record<string, string>;
       };
       faustNode: MockFaustNode | null;
-      fallbackGraph: ReturnType<(typeof session extends never ? never : typeof import("./audio-session")["__testables"]["createNativeFallbackGraph"])> | null;
+      fallbackGraph: AudioSessionTestFallbackGraph | null;
       inputAnalyserNode: FakeAnalyserNode | null;
       outputAnalyserNode: FakeAnalyserNode | null;
       latestMetrics: ReturnType<typeof applyQualityProtector>;
@@ -721,7 +767,7 @@ describe("AudioSession", () => {
     expect(internal.faustRecoveryInFlight).toBe(false);
     expect(internal.engineStrategy).toBe("faust");
 
-    const { __testables } = await import("./audio-session");
+    const __testables = getAudioSessionTestables();
     const context = new FakeAudioContext();
     const fallbackGraph = __testables.createNativeFallbackGraph(
       context as unknown as AudioContext,
@@ -879,7 +925,7 @@ describe("AudioSession", () => {
   });
 
   it("guards fallback activation and recovery timers, and caches worklet modules per context", async () => {
-    const { __testables } = await import("./audio-session");
+    const __testables = getAudioSessionTestables();
     const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn() });
     const internal = session as unknown as {
       engineStrategy: string;
@@ -888,7 +934,7 @@ describe("AudioSession", () => {
       inputAnalyserNode: FakeAnalyserNode | null;
       outputAnalyserNode: FakeAnalyserNode | null;
       faustNode: MockFaustNode | null;
-      fallbackGraph: ReturnType<(typeof import("./audio-session")["__testables"]["createNativeFallbackGraph"])> | null;
+      fallbackGraph: AudioSessionTestFallbackGraph | null;
       faustRecoveryIntervalId: number | null;
       faustRecoveryInFlight: boolean;
       activateNativeFallbackFromFaust(): void;

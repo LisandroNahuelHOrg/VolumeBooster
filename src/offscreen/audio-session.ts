@@ -602,7 +602,7 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export const __testables = {
+const audioSessionTestables = {
   createAnalyser,
   getSampleSize,
   readPeak,
@@ -614,3 +614,10 @@ export const __testables = {
   dbToGain,
   clampNumber
 };
+
+if (import.meta.env.MODE === "test") {
+  Object.defineProperty(AudioSession, "__testables", {
+    value: audioSessionTestables,
+    configurable: true
+  });
+}

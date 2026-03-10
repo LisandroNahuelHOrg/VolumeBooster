@@ -1032,23 +1032,6 @@ body[data-boosting="true"]::after {
     filter 260ms ease;
 }
 
-.ghost-button--protector.is-active {
-  z-index: 1;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 248, 240, 0.22),
-    0 12px 20px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(255, 235, 214, 0.12),
-    0 0 18px var(--protector-active-glow, rgba(255, 151, 82, 0.3)),
-    0 0 34px var(--protector-active-glow, rgba(255, 151, 82, 0.22));
-  filter: saturate(1.12) brightness(1.05);
-}
-
-.ghost-button--protector.is-active::before {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0) scale(1);
-  filter: blur(18px);
-}
-
 .ghost-button--protector[data-quality-protector="off"] {
   grid-column: 1 / -1;
   width: 100%;
@@ -1169,6 +1152,23 @@ body[data-boosting="true"]::after {
 }
 
 .presets .ghost-button.is-active::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  filter: blur(18px);
+}
+
+.presets .ghost-button--protector.is-active {
+  z-index: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 240, 0.22),
+    0 12px 20px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 235, 214, 0.12),
+    0 0 18px var(--protector-active-glow, rgba(255, 151, 82, 0.3)),
+    0 0 34px var(--protector-active-glow, rgba(255, 151, 82, 0.22));
+  filter: saturate(1.12) brightness(1.05);
+}
+
+.presets .ghost-button--protector.is-active::before {
   opacity: 1;
   transform: translateX(-50%) translateY(0) scale(1);
   filter: blur(18px);

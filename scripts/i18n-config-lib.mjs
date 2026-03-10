@@ -55,7 +55,7 @@ export function loadI18nConfig(repoRoot) {
 }
 
 function normalizeStringArray(value, fallback) {
-  return Array.isArray(value) && value.every((entry) => typeof entry === "string" && entry.length > 0)
+  return Array.isArray(value) && value.length > 0 && value.every((entry) => typeof entry === "string" && entry.length > 0)
     ? [...value]
     : [...fallback];
 }

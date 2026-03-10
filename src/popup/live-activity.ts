@@ -14,3 +14,13 @@ export function deriveLiveActivityPercent(level: number | null | undefined): num
 
   return Math.round(clampNumber(level, 0, 1) * 100);
 }
+
+export function deriveSessionMeterWidthPercent(level: number | null | undefined): number {
+  const clampedPercent = deriveLiveActivityPercent(level);
+
+  if (clampedPercent === 0) {
+    return 0;
+  }
+
+  return Math.max(8, clampedPercent);
+}

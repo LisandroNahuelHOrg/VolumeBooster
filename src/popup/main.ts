@@ -63,7 +63,7 @@ import {
   shiftSessionCarouselOffset
 } from "./session-carousel";
 import { getLaneButtonCopy, type LaneButtonCopyKind } from "./lane-button-copy";
-import { deriveLiveActivityPercent } from "./live-activity";
+import { deriveLiveActivityPercent, deriveSessionMeterWidthPercent } from "./live-activity";
 
 const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -818,7 +818,7 @@ function renderSessionCard(session: CaptureSessionState, currentTabId?: number):
   }
 
   const levelPercent = formatLevelPercent(session.level);
-  const meterWidth = Math.max(8, Math.round(session.level * 100));
+  const meterWidth = deriveSessionMeterWidthPercent(session.level);
   const isCurrentTabSession = currentTabId === session.tabId;
   const visualStatus = getVisualStatus(session, true);
   const protectionAction = formatProtectionAction(session.protectorActionDb, session.protectionBypassed);
@@ -1956,7 +1956,7 @@ function syncDynamicUi(
     }
 
     if (sessionMeterFill) {
-      sessionMeterFill.style.width = `${Math.max(8, Math.round(session.level * 100))}%`;
+      sessionMeterFill.style.width = `${deriveSessionMeterWidthPercent(session.level)}%`;
     }
 
     if (sessionFooterText) {

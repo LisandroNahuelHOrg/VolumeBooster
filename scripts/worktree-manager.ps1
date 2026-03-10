@@ -595,14 +595,122 @@ function Exit-FixedShipAllSession {
 # ═══════════════════════════════════════════════════════════════
 # SCOPE LOCK HELPERS
 # ═══════════════════════════════════════════════════════════════
+function Ensure-ScopeLockDirectory {
+    $scopeLockDir = Split-Path -Parent $ScopeLockFile
+    if (-not [string]::IsNullOrWhiteSpace($scopeLockDir) -and -not (Test-Path $scopeLockDir)) {
+        New-Item -ItemType Directory -Path $scopeLockDir -Force | Out-Null
+    }
+}
+
+function Test-LocalBranchExists {
+    param([string]$BranchName)
+
+    if ([string]::IsNullOrWhiteSpace($BranchName)) {
+        return $false
+    }
+
+    git -C $MainRepo show-ref --verify --quiet "refs/heads/$BranchName" 2>$null
+    return $LASTEXITCODE -eq 0
+}
+
+function Test-RemoteBranchExists {
+    param([string]$BranchName)
+
+    if ([string]::IsNullOrWhiteSpace($BranchName)) {
+        return $false
+    }
+
+    $remoteHead = (git -C $MainRepo ls-remote --heads origin $BranchName 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        return $true
+    }
+
+    return -not [string]::IsNullOrWhiteSpace($remoteHead)
+}
+
+function Resolve-LockPathCandidate {
+    param([string]$PathValue)
+
+    if (-not $PathValue) { return "" }
+
+    $candidate = "$PathValue".Trim()
+    try {
+        $candidate = [System.IO.Path]::GetFullPath($candidate)
+    }
+    catch {}
+
+    return $candidate
+}
+
+function Normalize-ScopeLockData {
+    param($Data)
+
+    $locks = @()
+    if ($Data -and $Data.PSObject.Properties["locks"]) {
+        $locks = @($Data.locks | Where-Object { $null -ne $_ })
+    }
+
+    return [pscustomobject]@{
+        locks = $locks
+    }
+}
+
+function Test-StaleScopeLock {
+    param($LockEntry)
+
+    if ($null -eq $LockEntry) {
+        return $true
+    }
+
+    $lockPath = Resolve-LockPathCandidate "$($LockEntry.path)"
+    if ([string]::IsNullOrWhiteSpace($lockPath) -or -not (Test-Path $lockPath)) {
+        return $true
+    }
+
+    $agent = "$($LockEntry.agent)"
+    $scope = "$($LockEntry.scope)"
+    if ($agent -eq "main-rescue" -or $scope -eq "main-rescue") {
+        $branch = "$($LockEntry.branch)".Trim()
+        if ([string]::IsNullOrWhiteSpace($branch)) {
+            return $true
+        }
+
+        if (-not (Test-LocalBranchExists -BranchName $branch) -and -not (Test-RemoteBranchExists -BranchName $branch)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Read-ScopeLock {
+    Ensure-ScopeLockDirectory
     if (-not (Test-Path $ScopeLockFile)) {
         @{ locks = @() } | ConvertTo-Json -Depth 5 | Set-Content $ScopeLockFile -Encoding utf8
     }
     $maxAttempts = 3
     for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
         try {
-            return Get-Content $ScopeLockFile -Raw -Encoding utf8 | ConvertFrom-Json
+            $lockData = Normalize-ScopeLockData (Get-Content $ScopeLockFile -Raw -Encoding utf8 | ConvertFrom-Json)
+            $activeLocks = @()
+            $removedCount = 0
+
+            foreach ($lock in $lockData.locks) {
+                if (Test-StaleScopeLock -LockEntry $lock) {
+                    $removedCount += 1
+                    continue
+                }
+
+                $activeLocks += $lock
+            }
+
+            if ($removedCount -gt 0) {
+                $lockData = [pscustomobject]@{ locks = $activeLocks }
+                Save-ScopeLock $lockData
+                Write-Host "🧹 Scope lock limpio: $removedCount entrada(s) obsoleta(s) descartada(s)."
+            }
+
+            return $lockData
         }
         catch {
             if ($attempt -eq $maxAttempts) {
@@ -615,8 +723,9 @@ function Read-ScopeLock {
 
 function Save-ScopeLock {
     param($Data)
+    Ensure-ScopeLockDirectory
     $tmpPath = "$ScopeLockFile.tmp"
-    $Data | ConvertTo-Json -Depth 5 | Set-Content $tmpPath -Encoding utf8
+    (Normalize-ScopeLockData $Data) | ConvertTo-Json -Depth 5 | Set-Content $tmpPath -Encoding utf8
     Move-Item -Path $tmpPath -Destination $ScopeLockFile -Force
 }
 

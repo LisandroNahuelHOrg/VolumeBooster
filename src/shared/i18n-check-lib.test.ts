@@ -80,6 +80,24 @@ describe("i18n check lib", () => {
     expect(localeDirs).toEqual(["en", "es"]);
   });
 
+  it("falls back to default localeDirectories when the config provides an empty array", async () => {
+    const repoRoot = await createTempRepo({
+      en: {
+        boostLabel: withDescription("Boost", "Compact label shown next to the main gain meter in the popup.")
+      },
+      es: {
+        boostLabel: { message: "Impulso" }
+      },
+      allowlist: []
+    });
+    await writeFile(join(repoRoot, "i18n_config.json"), JSON.stringify({ localeDirectories: [] }, null, 2));
+
+    const { issues, localeDirs } = runI18nCheck(repoRoot);
+
+    expect(issues).toEqual([]);
+    expect(localeDirs).toEqual(["en", "es"]);
+  });
+
   it("validates every configured locale root, not only the first one", async () => {
     const repoRoot = await mkdtemp(join(tmpdir(), "prism-i18n-check-multi-root-"));
     const rootA = join(repoRoot, "custom-locales-a");
