@@ -53,7 +53,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
 
     await expect(invalidRepository.getSettings()).resolves.toEqual({
@@ -62,7 +63,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
   });
 
@@ -83,7 +85,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "global",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
   });
 
@@ -105,7 +108,8 @@ describe("SettingsRepository", () => {
             }
           },
           autoBoosterMode: "global",
-          globalAutoGainPercent: Number.NaN
+          globalAutoGainPercent: Number.NaN,
+          popupTheme: "light"
         }
       })
     );
@@ -123,7 +127,8 @@ describe("SettingsRepository", () => {
         }
       },
       autoBoosterMode: "global",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "light"
     });
   });
 
@@ -136,7 +141,8 @@ describe("SettingsRepository", () => {
             global: null
           },
           autoBoosterMode: "site",
-          globalAutoGainPercent: -20
+          globalAutoGainPercent: -20,
+          popupTheme: "sepia"
         }
       })
     );
@@ -147,7 +153,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
   });
 
@@ -180,7 +187,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
     await expect(repository.getDomainGain("kick.com")).resolves.toBeUndefined();
   });
@@ -210,7 +218,8 @@ describe("SettingsRepository", () => {
           global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
         },
         autoBoosterMode: "off",
-        globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+        globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+        popupTheme: "dark"
       }
     });
     const repository = new SettingsRepository(storageArea);
@@ -229,6 +238,9 @@ describe("SettingsRepository", () => {
 
     await expect(repository.setGlobalAutoGainPercent(3000)).resolves.toBe(3000);
     await expect(repository.getGlobalAutoGainPercent()).resolves.toBe(3000);
+
+    await expect(repository.setPopupTheme("light")).resolves.toBe("light");
+    await expect(repository.getPopupTheme()).resolves.toBe("light");
 
     await expect(
       repository.setAdvancedAudioSettings({
@@ -253,6 +265,7 @@ describe("SettingsRepository", () => {
 
     await expect(repository.setAutoBoosterMode("site" as never)).resolves.toBe("off");
     await expect(repository.setGlobalAutoGainPercent(Number.POSITIVE_INFINITY)).resolves.toBe(DEFAULT_GAIN_PERCENT);
+    await expect(repository.setPopupTheme("sepia" as never)).resolves.toBe("dark");
     await expect(
       repository.setAdvancedAudioSettings({
         ceilingDb: 5,
@@ -278,7 +291,8 @@ describe("SettingsRepository", () => {
             global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
           },
           autoBoosterMode: "off",
-          globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+          globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+          popupTheme: "dark"
         }
       })
     );
@@ -291,7 +305,8 @@ describe("SettingsRepository", () => {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: "dark"
     });
   });
 });
