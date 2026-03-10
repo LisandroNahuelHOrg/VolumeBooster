@@ -1,0 +1,25 @@
+🔄 Sincronizando main local con origin/main (NO destructivo)...
+📦 Dependencias incompletas para 'WorktreeIzqArriba/fixed-open' (node_modules=False, run-p=False). Reinstalando...
+📦 Preparando dependencias del worktree...
+⚡ Reutilizando node_modules desde main (lockfile idéntico)...
+✅ node_modules copiado desde main (robocopy exit=1).
+📦 Dependencias incompletas para 'WorktreeIzqArriba/fixed-open/deps' (node_modules=True, run-p=False). Reinstalando...
+📦 Preparando dependencias del worktree...
+⚡ Reutilizando node_modules desde main (lockfile idéntico)...
+✅ node_modules copiado desde main (robocopy exit=1).
+⚠️  Omitiendo fallback de eslint-plugin-speedsuite/dist en 'WorktreeIzqArriba/fixed-open' porque no aplica en este proyecto.
+ℹ️ No hay cambios pendientes para session-start autosave en 'D:\Local Worktrees\WorktreeIzqArriba'.
+
+═══════════════════════════════════════════
+✅ MONITOR LISTO: WorktreeIzqArriba
+   Path:   D:\Local Worktrees\WorktreeIzqArriba
+   Branch: monitor-izq-arriba
+   Scope:  monitor-izq-arriba
+   Estado vs origin/main: ahead=0, behind=0
+   Main local sync: ⚠️ no sincronizado (bloqueado por estado local)
+   Session sync monitor: ✅ ya estaba alineado
+   Worktree: reutilizado
+   Autosave: ℹ️ sin cambios pendientes
+   Para trabajar: cd D:\Local Worktrees\WorktreeIzqArriba
+═══════════════════════════════════════════
+
