@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .codex/
+.agent/
 .stryker-tmp/
 coverage/
 dist-test/
