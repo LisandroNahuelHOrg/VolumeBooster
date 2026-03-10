@@ -593,6 +593,78 @@
     "message": "Prism Volume Booster",
     "description": "Heading shown in the extension UI: \"Prism Volume Booster\"."
   },
+  "popupSettingsAppearanceDetail": {
+    "message": "Use the toolbar theme toggle to restyle this popup instantly and keep the choice for the next time you open it.",
+    "description": "Supporting copy shown inside the popup settings appearance card."
+  },
+  "popupSettingsAppearanceTitle": {
+    "message": "Appearance",
+    "description": "Compact section label shown above the appearance summary inside the popup settings screen."
+  },
+  "popupSettingsBackLabel": {
+    "message": "Back to booster",
+    "description": "Button label shown in the popup settings screen to return to the main popup dashboard."
+  },
+  "popupSettingsCurrentThemeLabel": {
+    "message": "Current theme",
+    "description": "Fact label shown in the popup settings appearance card before the selected popup theme."
+  },
+  "popupSettingsEyebrow": {
+    "message": "Popup settings",
+    "description": "Compact uppercase eyebrow shown above the internal popup settings title."
+  },
+  "popupSettingsRoadmapDetail": {
+    "message": "Premium entry points, popup-only controls, and future session preferences will connect here as the toolbar grows.",
+    "description": "Supporting copy shown in the roadmap placeholder card inside the popup settings screen."
+  },
+  "popupSettingsRoadmapHeading": {
+    "message": "More popup controls are coming next.",
+    "description": "Heading shown in the roadmap placeholder card inside the popup settings screen."
+  },
+  "popupSettingsRoadmapTitle": {
+    "message": "Roadmap",
+    "description": "Compact section label shown above the roadmap placeholder card inside the popup settings screen."
+  },
+  "popupSettingsSubtitle": {
+    "message": "This internal screen will hold popup-only controls without leaving the extension action.",
+    "description": "Supporting copy shown below the internal popup settings title."
+  },
+  "popupSettingsTitle": {
+    "message": "Settings inside the popup",
+    "description": "Main title shown in the internal popup settings screen."
+  },
+  "popupThemeDarkName": {
+    "message": "Dark",
+    "description": "Theme name shown in popup settings and theme summaries for the dark popup theme."
+  },
+  "popupThemeLightName": {
+    "message": "Warm Light",
+    "description": "Theme name shown in popup settings and theme summaries for the warm light popup theme."
+  },
+  "popupToolbarPremiumComingSoon": {
+    "message": "Premium is coming soon.",
+    "description": "Tooltip and accessibility copy announced when the inert Premium toolbar button is focused."
+  },
+  "popupToolbarPremiumLabel": {
+    "message": "Premium",
+    "description": "Accessible label used by the top popup toolbar button reserved for the future premium flow."
+  },
+  "popupToolbarRegionLabel": {
+    "message": "Popup quick actions",
+    "description": "Accessible region label for the sticky top toolbar inside the popup."
+  },
+  "popupToolbarSettingsLabel": {
+    "message": "Open popup settings",
+    "description": "Accessible label used by the settings button in the sticky popup toolbar."
+  },
+  "popupToolbarThemeDarkLabel": {
+    "message": "Switch to dark theme",
+    "description": "Accessible label used by the toolbar theme button when the warm light popup theme is active."
+  },
+  "popupToolbarThemeLightLabel": {
+    "message": "Switch to warm light theme",
+    "description": "Accessible label used by the toolbar theme button when the dark popup theme is active."
+  },
   "presetBalanced": {
     "message": "Balanced",
     "description": "Preset button label shown in the Sound Mode selector: \"Balanced\"."

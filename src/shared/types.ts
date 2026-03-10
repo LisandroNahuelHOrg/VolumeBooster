@@ -38,6 +38,8 @@ export type QualityPreset =
 export type AudioEngineStatus = "loading" | "ready" | "error";
 /** Persisted automatic booster mode. */
 export type AutoBoosterMode = "off" | "global";
+/** Persisted popup-only color theme. */
+export type PopupTheme = "dark" | "light";
 /** Current attachment state of the automatic booster lane for a tab. */
 export type AutoAttachState =
   | "idle"
@@ -183,6 +185,7 @@ export interface ExtensionSettings {
   audioSettings: GlobalAudioSettings;
   autoBoosterMode: AutoBoosterMode;
   globalAutoGainPercent: number;
+  popupTheme: PopupTheme;
 }
 
 /** Payload required to bootstrap an offscreen manual capture session. */

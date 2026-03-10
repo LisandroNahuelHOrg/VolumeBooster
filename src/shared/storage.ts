@@ -4,13 +4,13 @@
  * @module shared/storage
  */
 
-import { DEFAULT_GAIN_PERCENT, SETTINGS_STORAGE_KEY } from "./constants";
+import { DEFAULT_GAIN_PERCENT, DEFAULT_POPUP_THEME, SETTINGS_STORAGE_KEY } from "./constants";
 import {
   DEFAULT_ADVANCED_AUDIO_SETTINGS,
   sanitizeAdvancedAudioSettings
 } from "./audio-settings";
 import { clampGainPercent } from "./gain";
-import type { AdvancedAudioSettings, AutoBoosterMode, ExtensionSettings } from "./types";
+import type { AdvancedAudioSettings, AutoBoosterMode, ExtensionSettings, PopupTheme } from "./types";
 
 /** Minimal async shape required from the storage area implementation. */
 export interface StorageAreaLike {
@@ -43,7 +43,8 @@ export class SettingsRepository {
         global: sanitizeAdvancedAudioSettings(settings.audioSettings?.global)
       },
       autoBoosterMode: this.sanitizeAutoBoosterMode(settings.autoBoosterMode),
-      globalAutoGainPercent: this.sanitizeGlobalAutoGainPercent(settings.globalAutoGainPercent)
+      globalAutoGainPercent: this.sanitizeGlobalAutoGainPercent(settings.globalAutoGainPercent),
+      popupTheme: this.sanitizePopupTheme(settings.popupTheme)
     };
   }
 
@@ -118,6 +119,12 @@ export class SettingsRepository {
     return settings.globalAutoGainPercent;
   }
 
+  /** Returns the popup-only theme persisted for the extension action UI. */
+  async getPopupTheme(): Promise<PopupTheme> {
+    const settings = await this.getSettings();
+    return settings.popupTheme;
+  }
+
   /**
    * Persists the selected automatic booster mode.
    *
@@ -145,6 +152,19 @@ export class SettingsRepository {
   }
 
   /**
+   * Persists the selected popup-only theme.
+   *
+   * @param popupTheme - Desired theme to persist.
+   * @returns Sanitized theme stored in settings.
+   */
+  async setPopupTheme(popupTheme: PopupTheme): Promise<PopupTheme> {
+    const settings = await this.getSettings();
+    settings.popupTheme = this.sanitizePopupTheme(popupTheme);
+    await this.storageArea.set({ [SETTINGS_STORAGE_KEY]: settings });
+    return settings.popupTheme;
+  }
+
+  /**
    * Merges and persists global advanced audio settings.
    *
    * @param audioSettings - Partial update for the current advanced settings.
@@ -168,7 +188,8 @@ export class SettingsRepository {
         global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       },
       autoBoosterMode: "off",
-      globalAutoGainPercent: DEFAULT_GAIN_PERCENT
+      globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
+      popupTheme: DEFAULT_POPUP_THEME
     };
   }
 
@@ -204,5 +225,10 @@ export class SettingsRepository {
     }
 
     return clampGainPercent(value);
+  }
+
+  /** Restricts the popup theme to the supported persisted values. */
+  private sanitizePopupTheme(value: unknown): PopupTheme {
+    return value === "light" ? "light" : DEFAULT_POPUP_THEME;
   }
 }

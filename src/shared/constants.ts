@@ -16,6 +16,8 @@ export const MIN_GAIN_PERCENT = 100;
 export const REDUCED_MOTION_MEDIA_QUERY = "(prefers-reduced-motion: reduce)";
 /** Shared easing curve for premium popup layout transitions. */
 export const POPUP_PREMIUM_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+/** Default persisted popup theme used when no explicit choice exists yet. */
+export const DEFAULT_POPUP_THEME = "dark";
 /** Starting transform used for premium lane transition entrance. */
 export const POPUP_LANE_TRANSITION_FROM = "translateY(6px) scale(0.985)";
 /** Ending transform used for premium lane transition entrance. */

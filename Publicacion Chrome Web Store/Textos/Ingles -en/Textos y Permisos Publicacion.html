@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="project_name" content="Volume Booster" />
+    <meta name="brand_name" content="Prism Volume Booster" />
+    <meta name="default_locale" content="en" />
+    <meta name="verified_on" content="2026-03-10" />
+    <meta name="repo_path" content="D:\OfiDrive\0. Programacion\Chromium - Volume Booster" />
+    <title>Textos y Permisos Publicacion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #fbfcff;
+        --panel: #ffffff;
+        --line: rgba(15, 23, 42, 0.08);
+        --text: #101828;
+        --muted: #475467;
+        --shadow: 0 22px 70px rgba(15, 23, 42, 0.1);
+        --radius: 24px;
+        --dashboard-bg: linear-gradient(180deg, rgba(16, 99, 255, 0.07), rgba(16, 99, 255, 0.03));
+        --dashboard-border: rgba(16, 99, 255, 0.24);
+        --dashboard-label: #1063ff;
+        --internal-bg: linear-gradient(180deg, rgba(234, 179, 8, 0.14), rgba(180, 83, 9, 0.05));
+        --internal-border: rgba(202, 138, 4, 0.34);
+        --internal-label: #b45309;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, rgba(16, 99, 255, 0.08), transparent 22%),
+          linear-gradient(180deg, #ffffff, var(--bg));
+      }
+
+      main {
+        width: min(1120px, calc(100vw - 40px));
+        margin: 0 auto;
+        padding: 36px 0 72px;
+      }
+
+      .hero,
+      .legend,
+      .group,
+      .field-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      .hero,
+      .legend,
+      .group {
+        padding: 24px;
+      }
+
+      .hero {
+        margin-bottom: 18px;
+        background: linear-gradient(135deg, rgba(16, 99, 255, 0.05), rgba(10, 165, 116, 0.04)), var(--panel);
+      }
+
+      .legend {
+        margin-bottom: 18px;
+      }
+
+      .eyebrow,
+      .legend-chip,
+      .group-kicker,
+      .field-chip {
+        display: inline-flex;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow {
+        background: rgba(16, 99, 255, 0.08);
+        color: #1063ff;
+      }
+
+      .legend-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 14px;
+      }
+
+      .legend-chip.dashboard {
+        background: rgba(16, 99, 255, 0.1);
+        color: var(--dashboard-label);
+      }
+
+      .legend-chip.internal {
+        background: rgba(234, 179, 8, 0.16);
+        color: var(--internal-label);
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 10px;
+        font-family: "Sora", sans-serif;
+        letter-spacing: -0.04em;
+      }
+
+      h1 {
+        margin-top: 14px;
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      h2 {
+        font-size: 1.18rem;
+      }
+
+      p,
+      .content,
+      .helper {
+        margin: 0;
+        line-height: 1.75;
+      }
+
+      p,
+      .helper {
+        color: var(--muted);
+      }
+
+      .groups {
+        display: grid;
+        gap: 18px;
+      }
+
+      .group-grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .group.dashboard .group-kicker {
+        background: rgba(16, 99, 255, 0.1);
+        color: var(--dashboard-label);
+      }
+
+      .group.internal .group-kicker {
+        background: rgba(234, 179, 8, 0.16);
+        color: var(--internal-label);
+      }
+
+      .field-card {
+        padding: 18px;
+      }
+
+      .field-chip {
+        margin-bottom: 12px;
+      }
+
+      .field-card[data-surface="dashboard"] .field-chip {
+        background: rgba(16, 99, 255, 0.1);
+        color: var(--dashboard-label);
+      }
+
+      .field-card[data-surface="internal"] .field-chip {
+        background: rgba(234, 179, 8, 0.16);
+        color: var(--internal-label);
+      }
+
+      .field-card::before {
+        content: attr(data-section-label);
+        display: block;
+        margin-bottom: 10px;
+        font-family: "Sora", sans-serif;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+
+      .field-card[data-surface="dashboard"] {
+        background: var(--dashboard-bg);
+        border-color: var(--dashboard-border);
+      }
+
+      .field-card[data-surface="dashboard"]::before {
+        color: var(--dashboard-label);
+      }
+
+      .field-card[data-surface="internal"] {
+        background: var(--internal-bg);
+        border-color: var(--internal-border);
+      }
+
+      .field-card[data-surface="internal"]::before {
+        color: var(--internal-label);
+      }
+
+      .helper {
+        margin-bottom: 10px;
+        font-size: 0.94rem;
+      }
+
+      .content {
+        white-space: pre-wrap;
+        color: var(--text);
+      }
+
+      @media (max-width: 720px) {
+        main { width: min(100vw - 24px, 1120px); padding-top: 22px; }
+        .hero, .legend, .group { padding: 18px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <span class="eyebrow">Chrome Web Store · Mesa operativa</span>
+        <h1>Prism Volume Booster</h1>
+        <p>Este documento concentra en un solo lugar los textos que sí vas a copiar en el dashboard de Chrome Web Store y, aparte, las recomendaciones internas del manifest para mantener el package alineado con la promesa pública del producto.</p>
+      </section>
+
+      <section class="legend">
+        <h2>Leyenda de uso</h2>
+        <p>Las tarjetas azules corresponden a textos y declaraciones que usarás durante la publicación en Chrome Web Store. Las tarjetas ámbar son referencias internas para revisar los textos del manifest y del package, no para pegarlas en el dashboard.</p>
+        <div class="legend-row">
+          <span class="legend-chip dashboard">Pegar o enviar en Chrome Web Store</span>
+          <span class="legend-chip internal">Referencia interna del package</span>
+        </div>
+      </section>
+
+      <div class="groups">
+        <section class="group dashboard">
+          <span class="group-kicker">Se publica o se envía</span>
+          <h2>Textos, disclosures y permisos para la tienda</h2>
+          <p>Estas tarjetas son la guía operativa para completar el listing, las declaraciones de datos y las justificaciones de permisos con copy final en voz de publicador.</p>
+          <div class="group-grid">
+            <section class="field-card" data-surface="dashboard" data-section="Publication Title" data-section-label="Titulo de publicacion"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este valor en el campo de título de la ficha.</p><div class="content">Prism Volume Booster</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Alternative Titles" data-section-label="Variantes de titulo"><span class="field-chip">Ideas auxiliares</span><p class="helper">Úsalas para comparar enfoques antes de decidir el título final.</p><div class="content">Prism Volume Booster for Chrome
+Prism Volume Booster with Real-Time DSP
+Prism Volume Booster for Tabs and Sites
+Prism Volume Booster with Smart Auto-Boost</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Short Description" data-section-label="Descripcion corta"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este bloque en la descripción corta del dashboard.</p><div class="content">Boost any Chrome tab with real-time DSP, auto-boost modes and precise manual control.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Long Description" data-section-label="Descripcion larga"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este bloque en la descripción larga y revisa el límite real del dashboard si sigue sin estar documentado.</p><div class="content">Prism Volume Booster helps users raise the volume of any Chrome tab with more control, cleaner peaks and a stronger listening experience than a basic gain slider. The extension combines real-time DSP processing, manual volume shaping and optional auto-boost behavior so users can recover weak audio without constantly readjusting each site.
+
+The product is designed for people who move between video platforms, music services, calls, learning content and low-volume web players. Users can boost the current tab, store site-specific gain preferences, keep advanced audio settings locally and choose between manual control or automatic boosting modes depending on how they browse.
+
+Prism Volume Booster focuses on one job: improving tab audio in Chrome while staying transparent about permissions and data use. Audio processing runs locally, settings stay in browser storage, and any optional observability build is limited to error telemetry rather than remote code execution.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Feature Bullets" data-section-label="Puntos fuertes"><span class="field-chip">Texto final del locale</span><p class="helper">Te sirve como apoyo para ordenar la propuesta de valor y decidir qué destacar primero.</p><div class="content">Real-time DSP volume boosting for Chrome tabs
+Manual gain control plus automatic boosting modes
+Site-aware preferences stored locally in the browser
+Boost continues through an offscreen audio-processing document
+Built for weak videos, streams, lessons, meetings and web players</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Single Purpose" data-section-label="Proposito unico"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo como referencia para policy, disclosures o revisión interna.</p><div class="content">Prism Volume Booster exists to increase and shape Chrome tab audio with local real-time processing, manual controls and optional automatic boost behavior.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Permissions Justifications" data-section-label="Justificacion de permisos"><span class="field-chip">Texto final del locale</span><p class="helper">Resume por qué existen los permisos reales del producto.</p><div class="content">activeTab lets the extension interact with the tab the user explicitly chooses to boost. tabCapture and offscreen are required to capture and process that tab audio in real time, even when the popup is closed. scripting is used to inject only the tab-level logic needed for the selected page experience. storage keeps local preferences such as gain levels, advanced DSP settings and site-specific rules. tabs is used to identify and manage the tab the user is actively boosting.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Host Permissions Justification" data-section-label="Justificacion de permisos de sitios"><span class="field-chip">Texto final del locale</span><p class="helper">Aclara el motivo del acceso a sitios o indica que no aplica.</p><div class="content">The extension declares the host permission &lt;all_urls&gt; because users can boost audio on all sites, save per-site gain preferences and apply automatic boost behavior across arbitrary domains. This all-sites access supports the user-selected tab experience and is not used for background scraping or unrelated data collection.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Remote Code Disclosure" data-section-label="Declaracion sobre codigo remoto"><span class="field-chip">Texto final del locale</span><p class="helper">Debe quedar listo para enviarse tal cual en disclosures o revisiones.</p><div class="content">Prism Volume Booster does not execute remotely hosted code to deliver its core functionality. If an observability build enables Sentry, it is used only to send error telemetry and does not fetch or run executable code inside the extension.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Data Use Disclosure" data-section-label="Declaracion de uso de datos"><span class="field-chip">Texto final del locale</span><p class="helper">Debe poder copiarse tal cual donde Chrome pida la explicación de uso de datos.</p><div class="content">Prism Volume Booster processes tab audio locally to deliver volume boosting and stores user-selected settings such as gain levels, advanced audio configuration and site-specific preferences in browser storage. The extension does not sell user data. If an optional Sentry configuration is enabled in a specific build, it sends limited error telemetry with sensitive fields scrubbed for stability monitoring.</div></section>
+          </div>
+        </section>
+
+        <section class="group internal">
+          <span class="group-kicker">No se pega en el dashboard</span>
+          <h2>Recomendaciones internas del package y del manifest</h2>
+          <p>Estas tarjetas ayudan a alinear los strings internos de la extensión con la promesa pública del listing, aunque no sean campos manuales de la ficha.</p>
+          <div class="group-grid">
+            <section class="field-card" data-surface="internal" data-section="Manifest Name" data-section-label="Nombre del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo para revisar o ajustar `manifest.json` y `_locales`.</p><div class="content">Prism Volume Booster</div></section>
+            <section class="field-card" data-surface="internal" data-section="Manifest Short Name" data-section-label="Nombre corto del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo solo si realmente quieres un nombre corto visible.</p><div class="content">Not used</div></section>
+            <section class="field-card" data-surface="internal" data-section="Manifest Description" data-section-label="Descripcion del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Mantiene alineado el package con la promesa pública del listing.</p><div class="content">Boost any Chrome tab with real-time DSP, auto-boost modes and precise manual control.</div></section>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

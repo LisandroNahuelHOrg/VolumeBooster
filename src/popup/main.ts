@@ -34,7 +34,8 @@ import {
   translate,
   type UiCatalog
 } from "../shared/runtime-i18n";
-import { initSentryForContext } from "../shared/observability/sentry";
+import { captureExceptionSafe, initSentryForContext } from "../shared/observability/sentry";
+import { SettingsRepository } from "../shared/storage";
 import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
 import type {
   AdvancedAudioSettings,
@@ -45,9 +46,19 @@ import type {
   QualityPreset,
   RuntimeResponse,
   SessionStatusPayload,
-  WorkerState
+  WorkerState,
+  PopupTheme
 } from "../shared/types";
 import { buildPopupViewModel } from "./model";
+import { POPUP_TOOLBAR_ICON_MARKUP, getPopupToolbarItems } from "./popup-toolbar";
+import {
+  applyPopupTheme,
+  closePopupSettings,
+  createPopupUiState,
+  enqueuePopupThemePersistence,
+  openPopupSettings,
+  togglePopupThemeLocally
+} from "./popup-ui-state";
 import {
   getQualityPresetCopy,
   getQualityPresetSubtitleCopy
@@ -63,7 +74,7 @@ import {
   shiftSessionCarouselOffset
 } from "./session-carousel";
 import { getLaneButtonCopy, type LaneButtonCopyKind } from "./lane-button-copy";
-import { deriveLiveActivityPercent, deriveSessionMeterWidthPercent } from "./live-activity";
+import { deriveLiveActivityPercent } from "./live-activity";
 
 const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -188,6 +199,7 @@ const ADVANCED_CONTROL_CONFIG: Record<
 initSentryForContext("popup");
 
 const appRoot = document.querySelector<HTMLDivElement>("#app");
+const settingsRepository = new SettingsRepository();
 
 if (!appRoot) {
   throw new Error("Popup root container was not found.");
@@ -231,6 +243,8 @@ let laneLayoutTransitionTimer: number | null = null;
 let tooltipRefreshFrame: number | null = null;
 let activeHelpTooltipAnchor: HTMLElement | null = null;
 let sessionCarouselOffset = 0;
+let popupUiState = createPopupUiState("dark");
+let popupThemePersistQueue: Promise<void> = Promise.resolve();
 
 void bootstrap();
 
@@ -243,6 +257,8 @@ async function bootstrap(): Promise<void> {
   bindRootEvents();
   startStatePolling();
   ensureExtensionUiFontFaces(document);
+  popupUiState = createPopupUiState(await settingsRepository.getPopupTheme());
+  applyPopupTheme(popupUiState.popupTheme);
   setDocumentLocaleAttributes(document);
   document.title = t("popupDocumentTitle");
   currentCatalog = await loadLocaleCatalog();
@@ -380,6 +396,7 @@ function render(): void {
     captureUiState();
     syncBoostingBackground(false);
     rootElement.innerHTML = `<div class="app-shell"><section class="hero"><p class="hero__subtitle">${escapeHtml(t("loadingLabel"))}</p></section></div>`;
+    syncPopupThemeUi();
     restoreAppShellUiState(preservedScrollTop, preservedFocusedAdvancedKey);
     handleRootTooltipViewportChange();
     return;
@@ -399,6 +416,7 @@ function render(): void {
         </section>
       </div>
     `;
+    syncPopupThemeUi();
     restoreAppShellUiState(preservedScrollTop, preservedFocusedAdvancedKey);
     handleRootTooltipViewportChange();
     return;
@@ -415,6 +433,7 @@ function render(): void {
   }
 
   syncDynamicUi(viewModel);
+  syncPopupThemeUi();
 
   if (shouldRestoreUiState) {
     restoreAppShellUiState(preservedScrollTop, preservedFocusedAdvancedKey);
@@ -427,6 +446,19 @@ function render(): void {
  * Genera el markup estático del popup a partir del view model actual.
  */
 function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string {
+  if (!currentCatalog) {
+    return "";
+  }
+
+  return `
+    <div class="app-shell" data-popup-view="${popupUiState.currentView}">
+      ${renderPopupToolbar()}
+      ${popupUiState.currentView === "settings" ? renderSettingsView(popupUiState.popupTheme) : renderMainView(viewModel)}
+    </div>
+  `;
+}
+
+function renderMainView(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   if (!currentCatalog) {
     return "";
   }
@@ -457,14 +489,13 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
   sessionCarouselOffset = sessionCarousel.offset;
 
   return `
-    <div class="app-shell">
-      ${
-        transientError
-          ? `<section class="error-banner" data-role="error-banner">${escapeHtml(formatLocalizedMessage(transientError))}</section>`
-          : ""
-      }
+    ${
+      transientError
+        ? `<section class="error-banner" data-role="error-banner">${escapeHtml(formatLocalizedMessage(transientError))}</section>`
+        : ""
+    }
 
-      <section class="panel panel--stack panel--current-tab">
+    <section class="panel panel--stack panel--current-tab">
         <div class="panel__header panel__header--current">
           <div class="tab-hero">
             <span class="tab-hero__context">${escapeHtml(translate(currentCatalog, "currentTabLabel"))}</span>
@@ -748,9 +779,9 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
           </div>
           ${controlsLocked ? '<div class="booster-controls-stage__overlay" aria-hidden="true"></div>' : ""}
         </div>
-      </section>
+    </section>
 
-      <section class="panel panel--stack">
+    <section class="panel panel--stack">
         <div class="panel__header panel__header--sessions">
           <div class="section-intro">
             <p class="panel__title">${escapeHtml(translate(currentCatalog, "otherSessionsTitle"))}</p>
@@ -807,8 +838,93 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
             <span aria-hidden="true">›</span>
           </button>
         </div>
-      </section>
-    </div>
+    </section>
+  `;
+}
+
+function renderPopupToolbar(): string {
+  if (!currentCatalog) {
+    return "";
+  }
+
+  const items = getPopupToolbarItems(popupUiState.popupTheme, popupUiState.currentView, currentCatalog);
+
+  return `
+    <section class="popup-toolbar" aria-label="${escapeHtml(translate(currentCatalog, "popupToolbarRegionLabel"))}">
+      <div class="popup-toolbar__bar">
+        ${items
+          .map(
+            (item) => `
+              <button
+                class="popup-toolbar__button ${item.isActive ? "is-active" : ""} ${item.isInert ? "is-inert" : ""}"
+                data-action="${item.action}"
+                data-popup-toolbar="${item.action}"
+                aria-label="${escapeHtml(item.label)}"
+                title="${escapeHtml(item.title)}"
+                ${item.isInert ? 'aria-disabled="true"' : ""}
+                ${item.isActive ? 'aria-pressed="true"' : ""}
+                type="button"
+              >
+                <span class="popup-toolbar__icon" aria-hidden="true">
+                  ${POPUP_TOOLBAR_ICON_MARKUP[item.icon]}
+                </span>
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderSettingsView(popupTheme: PopupTheme): string {
+  if (!currentCatalog) {
+    return "";
+  }
+
+  return `
+    <section class="panel panel--stack popup-settings-view">
+      <header class="popup-settings-view__header">
+        <button
+          class="ghost-button ghost-button--soft popup-settings-view__back"
+          data-action="close-popup-settings"
+          type="button"
+        >
+          ${escapeHtml(translate(currentCatalog, "popupSettingsBackLabel"))}
+        </button>
+        <div class="popup-settings-view__copy">
+          <p class="panel__title">${escapeHtml(translate(currentCatalog, "popupSettingsEyebrow"))}</p>
+          <h2 class="popup-settings-view__title">${escapeHtml(translate(currentCatalog, "popupSettingsTitle"))}</h2>
+          <p class="muted-copy">${escapeHtml(translate(currentCatalog, "popupSettingsSubtitle"))}</p>
+        </div>
+      </header>
+
+      <div class="popup-settings-view__grid">
+        <article class="popup-settings-card popup-settings-card--appearance">
+          <div class="popup-settings-card__copy">
+            <p class="panel__title">${escapeHtml(translate(currentCatalog, "popupSettingsAppearanceTitle"))}</p>
+            <strong class="popup-settings-card__title" data-role="popup-theme-name">
+              ${escapeHtml(getPopupThemeDisplayName(popupTheme))}
+            </strong>
+            <p class="muted-copy">${escapeHtml(translate(currentCatalog, "popupSettingsAppearanceDetail"))}</p>
+          </div>
+          <dl class="popup-settings-card__facts">
+            <div>
+              <dt>${escapeHtml(translate(currentCatalog, "popupSettingsCurrentThemeLabel"))}</dt>
+              <dd data-role="popup-theme-name">${escapeHtml(getPopupThemeDisplayName(popupTheme))}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="popup-settings-card">
+          <div class="popup-settings-card__copy">
+            <p class="panel__title">${escapeHtml(translate(currentCatalog, "popupSettingsRoadmapTitle"))}</p>
+            <strong class="popup-settings-card__title">${escapeHtml(translate(currentCatalog, "popupSettingsRoadmapHeading"))}</strong>
+            <p class="muted-copy">${escapeHtml(translate(currentCatalog, "popupSettingsRoadmapDetail"))}</p>
+          </div>
+        </article>
+      </div>
+    </section>
   `;
 }
 
@@ -818,7 +934,7 @@ function renderSessionCard(session: CaptureSessionState, currentTabId?: number):
   }
 
   const levelPercent = formatLevelPercent(session.level);
-  const meterWidth = deriveSessionMeterWidthPercent(session.level);
+  const meterWidth = Math.max(8, Math.round(session.level * 100));
   const isCurrentTabSession = currentTabId === session.tabId;
   const visualStatus = getVisualStatus(session, true);
   const protectionAction = formatProtectionAction(session.protectorActionDb, session.protectionBypassed);
@@ -952,7 +1068,7 @@ function handleRootError(event: Event): void {
 function handleRootTooltipTrigger(event: Event): void {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     return;
   }
 
@@ -992,7 +1108,7 @@ function handleRootTooltipViewportChange(): void {
 function handleRootTooltipLeave(event: Event): void {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     return;
   }
 
@@ -1095,7 +1211,7 @@ function ensureFloatingHelpTooltip(): HTMLElement {
 function handleRootClick(event: Event): void {
   const target = event.target;
 
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     return;
   }
 
@@ -1162,6 +1278,19 @@ function handleRootClick(event: Event): void {
   }
 
   switch (actionButton.dataset.action) {
+    case "premium-mock":
+      return;
+    case "toggle-popup-theme":
+      void handlePopupThemeToggle();
+      return;
+    case "open-popup-settings":
+      popupUiState = openPopupSettings(popupUiState);
+      render();
+      return;
+    case "close-popup-settings":
+      popupUiState = closePopupSettings(popupUiState);
+      render();
+      return;
     case "start-manual": {
       const tabId = currentState?.currentTab?.tabId;
 
@@ -1956,7 +2085,7 @@ function syncDynamicUi(
     }
 
     if (sessionMeterFill) {
-      sessionMeterFill.style.width = `${deriveSessionMeterWidthPercent(session.level)}%`;
+      sessionMeterFill.style.width = `${Math.max(8, Math.round(session.level * 100))}%`;
     }
 
     if (sessionFooterText) {
@@ -1975,6 +2104,7 @@ function syncDynamicUi(
 
 function createRenderSignature(viewModel: ReturnType<typeof buildPopupViewModel>): string {
   return JSON.stringify({
+    popupView: popupUiState.currentView,
     transientError: transientError?.key ?? null,
     currentTab: viewModel.currentTab
       ? {
@@ -2014,6 +2144,103 @@ function clearTransientError(): void {
 
   transientError = null;
   renderedSignature = "";
+}
+
+function setPopupThemeUi(popupTheme: PopupTheme): void {
+  popupUiState = {
+    ...popupUiState,
+    popupTheme
+  };
+  syncPopupThemeUi();
+}
+
+function handlePopupThemeToggle(): void {
+  const nextState = togglePopupThemeLocally(popupUiState);
+  setPopupThemeUi(nextState.popupTheme);
+  popupThemePersistQueue = enqueuePopupThemePersistence(
+    popupThemePersistQueue,
+    {
+      setPopupTheme: persistPopupThemeSafely
+    },
+    nextState.popupTheme
+  );
+}
+
+function syncPopupThemeUi(): void {
+  applyPopupTheme(popupUiState.popupTheme);
+
+  const appShell = rootElement.querySelector<HTMLElement>(".app-shell");
+
+  if (appShell) {
+    appShell.dataset.popupTheme = popupUiState.popupTheme;
+  }
+
+  if (!currentCatalog) {
+    return;
+  }
+
+  syncPopupToolbarThemeButton();
+  syncPopupSettingsThemeSummary();
+}
+
+function syncPopupToolbarThemeButton(): void {
+  if (!currentCatalog) {
+    return;
+  }
+
+  const toolbarButton = rootElement.querySelector<HTMLButtonElement>("[data-popup-toolbar='toggle-popup-theme']");
+
+  if (!toolbarButton) {
+    return;
+  }
+
+  const themeItem = getPopupToolbarItems(
+    popupUiState.popupTheme,
+    popupUiState.currentView,
+    currentCatalog
+  ).find((item) => item.action === "toggle-popup-theme");
+
+  if (!themeItem) {
+    return;
+  }
+
+  toolbarButton.setAttribute("aria-label", themeItem.label);
+  toolbarButton.title = themeItem.title;
+  toolbarButton.dataset.popupTheme = popupUiState.popupTheme;
+  toolbarButton.dataset.popupThemeTarget = popupUiState.popupTheme === "light" ? "dark" : "light";
+  const icon = toolbarButton.querySelector<HTMLElement>(".popup-toolbar__icon");
+
+  if (icon) {
+    icon.innerHTML = POPUP_TOOLBAR_ICON_MARKUP[themeItem.icon];
+  }
+}
+
+function syncPopupSettingsThemeSummary(): void {
+  const themeName = getPopupThemeDisplayName(popupUiState.popupTheme);
+
+  for (const themeNameNode of rootElement.querySelectorAll<HTMLElement>("[data-role='popup-theme-name']")) {
+    themeNameNode.textContent = themeName;
+  }
+}
+
+async function persistPopupThemeSafely(popupTheme: PopupTheme): Promise<PopupTheme> {
+  try {
+    return await settingsRepository.setPopupTheme(popupTheme);
+  } catch (error) {
+    captureExceptionSafe(error, "popup", {
+      feature: "popup-theme-toggle",
+      popupTheme
+    });
+    return popupTheme;
+  }
+}
+
+function getPopupThemeDisplayName(popupTheme: PopupTheme): string {
+  if (!currentCatalog) {
+    return popupTheme;
+  }
+
+  return translate(currentCatalog, popupTheme === "light" ? "popupThemeLightName" : "popupThemeDarkName");
 }
 
 function syncSliderVisuals(slider: HTMLInputElement, animateVisuals = false): void {

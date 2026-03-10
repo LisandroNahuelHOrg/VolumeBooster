@@ -455,6 +455,60 @@
   "popupTitle": {
     "message": "Prism Volume Booster"
   },
+  "popupSettingsAppearanceDetail": {
+    "message": "Usa el toggle de tema de la barra superior para reestilizar este popup al instante y conservar la elección para la próxima vez que lo abras."
+  },
+  "popupSettingsAppearanceTitle": {
+    "message": "Apariencia"
+  },
+  "popupSettingsBackLabel": {
+    "message": "Volver al booster"
+  },
+  "popupSettingsCurrentThemeLabel": {
+    "message": "Tema actual"
+  },
+  "popupSettingsEyebrow": {
+    "message": "Configuración del popup"
+  },
+  "popupSettingsRoadmapDetail": {
+    "message": "Los accesos premium, los controles exclusivos del popup y las futuras preferencias de sesión se conectarán aquí a medida que crezca esta barra."
+  },
+  "popupSettingsRoadmapHeading": {
+    "message": "Pronto llegarán más controles del popup."
+  },
+  "popupSettingsRoadmapTitle": {
+    "message": "Hoja de ruta"
+  },
+  "popupSettingsSubtitle": {
+    "message": "Esta pantalla interna alojará controles exclusivos del popup sin salir de la acción de la extensión."
+  },
+  "popupSettingsTitle": {
+    "message": "Ajustes dentro del popup"
+  },
+  "popupThemeDarkName": {
+    "message": "Oscuro"
+  },
+  "popupThemeLightName": {
+    "message": "Luz cálida"
+  },
+  "popupToolbarPremiumComingSoon": {
+    "message": "Premium llegará pronto."
+  },
+  "popupToolbarPremiumLabel": {
+    "message": "Versión premium"
+  },
+  "popupToolbarRegionLabel": {
+    "message": "Acciones rápidas del popup"
+  },
+  "popupToolbarSettingsLabel": {
+    "message": "Abrir ajustes del popup"
+  },
+  "popupToolbarThemeDarkLabel": {
+    "message": "Cambiar al tema oscuro"
+  },
+  "popupToolbarThemeLightLabel": {
+    "message": "Cambiar al tema de luz cálida"
+  },
   "presetBalanced": {
     "message": "Balanceado"
   },
