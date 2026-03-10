@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../shared/audio-settings";
-import type { PopupTheme, WorkerState } from "../shared/types";
+import type { CaptureSessionState, PopupTheme, WorkerState } from "../shared/types";
 
 function makeState(overrides: Partial<WorkerState> = {}): WorkerState {
   return {
@@ -22,6 +22,29 @@ function makeState(overrides: Partial<WorkerState> = {}): WorkerState {
     hasGlobalPermission: true,
     sessions: [],
     generatedAt: 1,
+    ...overrides
+  };
+}
+
+function makeSession(overrides: Partial<CaptureSessionState> = {}): CaptureSessionState {
+  return {
+    tabId: 91,
+    title: "Focus Stream",
+    url: "https://example.com/watch",
+    domain: "example.com",
+    gainPercent: 175,
+    engineLane: "manual_tab_capture",
+    autoAttachState: "idle",
+    streamState: "active",
+    engineStatus: "ready",
+    level: 0.26,
+    warning: "none",
+    protectorActionDb: 0,
+    clipEvents: 0,
+    clipPeak: 0,
+    protectionBypassed: false,
+    outputPeak: 0.26,
+    updatedAt: 1,
     ...overrides
   };
 }
@@ -163,6 +186,16 @@ describe("popup main theme integration", () => {
     }
 
     return button;
+  }
+
+  function getSessionMeterFill(): HTMLElement {
+    const meterFill = document.querySelector<HTMLElement>("[data-role='session-meter-fill']");
+
+    if (!meterFill) {
+      throw new Error("Expected the popup session meter fill to be rendered.");
+    }
+
+    return meterFill;
   }
 
   it("boots with the persisted light theme already applied", async () => {
@@ -318,5 +351,78 @@ describe("popup main theme integration", () => {
     expect(document.documentElement.dataset.popupTheme).toBe("light");
     expect(getThemeButton().dataset.popupThemeTarget).toBe("dark");
     expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")?.textContent).not.toBe(initialThemeName);
+  });
+
+  it("clamps session meter width for invalid and out-of-range telemetry updates", async () => {
+    sendMessageSafeMock.mockImplementation(async (command: { type: string }) => {
+      if (command.type === "GET_STATE") {
+        return {
+          ok: true,
+          data: makeState({
+            sessions: [makeSession({ level: 1.4 })]
+          })
+        };
+      }
+
+      return {
+        ok: true,
+        data: null
+      };
+    });
+
+    await importPopupMain();
+
+    expect(getSessionMeterFill().style.width).toBe("100%");
+
+    runtimeMessageListener?.({
+      type: "SESSION_LEVEL_UPDATE",
+      payload: {
+        tabId: 91,
+        level: Number.NaN,
+        warning: "none",
+        protectorActionDb: 0,
+        clipEvents: 0,
+        clipPeak: 0,
+        protectionBypassed: false,
+        outputPeak: 0
+      }
+    });
+    await flushMicrotasks();
+
+    expect(getSessionMeterFill().style.width).toBe("0%");
+
+    runtimeMessageListener?.({
+      type: "SESSION_LEVEL_UPDATE",
+      payload: {
+        tabId: 91,
+        level: -0.2,
+        warning: "none",
+        protectorActionDb: 0,
+        clipEvents: 0,
+        clipPeak: 0,
+        protectionBypassed: false,
+        outputPeak: 0
+      }
+    });
+    await flushMicrotasks();
+
+    expect(getSessionMeterFill().style.width).toBe("0%");
+
+    runtimeMessageListener?.({
+      type: "SESSION_LEVEL_UPDATE",
+      payload: {
+        tabId: 91,
+        level: 0.02,
+        warning: "none",
+        protectorActionDb: 0,
+        clipEvents: 0,
+        clipPeak: 0,
+        protectionBypassed: false,
+        outputPeak: 0.02
+      }
+    });
+    await flushMicrotasks();
+
+    expect(getSessionMeterFill().style.width).toBe("8%");
   });
 });
