@@ -6,6 +6,7 @@
 
 import {
   getBrowserLocale,
+  getFallbackMessage,
   getUiLanguage,
   formatLocalizedMessage,
   isRtlLocale,
@@ -18,6 +19,31 @@ import {
 } from "./runtime-i18n";
 
 describe("runtime i18n", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.resetModules();
+    vi.doUnmock("../generated/i18n-fallback");
+    vi.doUnmock("../generated/i18n-types");
+  });
+
+  async function importRuntimeI18nWithMocks(options: {
+    fallbackMessages: Record<string, string>;
+    placeholderOrder?: Record<string, readonly string[]>;
+    keys?: readonly string[];
+  }) {
+    vi.resetModules();
+    vi.doMock("../generated/i18n-fallback", () => ({
+      I18N_FALLBACK_MESSAGES: options.fallbackMessages
+    }));
+    vi.doMock("../generated/i18n-types", () => ({
+      I18N_KEYS: options.keys ?? (Object.keys(options.fallbackMessages) as readonly string[]),
+      I18N_PLACEHOLDER_ORDER: options.placeholderOrder ?? {},
+      I18N_PLURAL_BASES: [] as const
+    }));
+
+    return import("./runtime-i18n");
+  }
+
   it("resolves simple messages and placeholder substitutions through chrome.i18n", () => {
     const getMessage = vi.fn((name: string, substitutions?: string | string[]) => {
       if (name === "rememberSite") {
@@ -197,5 +223,32 @@ describe("runtime i18n", () => {
   it("uses the canonical English fallback when chrome.i18n is unavailable", () => {
     expect(t("automationBridgeTitle", undefined, null)).toBe("Prism Automation Bridge");
     expect(t("rememberSite", { domain: "youtube.com" }, null)).toBe("Remember my settings for youtube.com");
+  });
+
+  it("resolves canonical fallback messages directly and returns null for unknown keys", () => {
+    expect(getFallbackMessage("rememberSite", ["youtube.com"])).toBe("Remember my settings for youtube.com");
+    expect(getFallbackMessage("boostingCount_other", [5])).toBe("5 booster sessions are active right now.");
+    expect(getFallbackMessage("boostingCount_zero")).toBe("No booster sessions are active right now.");
+    expect(getFallbackMessage("not_real_key")).toBeNull();
+  });
+
+  it("resolves direct numeric fallback placeholders even when the generated key has no named placeholder order", async () => {
+    const { getFallbackMessage: getFallbackMessageWithMock } = await importRuntimeI18nWithMocks({
+      fallbackMessages: {
+        sampleCount: "Count $1"
+      }
+    });
+
+    expect(getFallbackMessageWithMock("sampleCount", [7])).toBe("Count 7");
+  });
+
+  it("returns null for empty fallback templates in mocked catalogs", async () => {
+    const { getFallbackMessage: getFallbackMessageWithMock } = await importRuntimeI18nWithMocks({
+      fallbackMessages: {
+        sampleEmpty: ""
+      }
+    });
+
+    expect(getFallbackMessageWithMock("sampleEmpty")).toBeNull();
   });
 });
