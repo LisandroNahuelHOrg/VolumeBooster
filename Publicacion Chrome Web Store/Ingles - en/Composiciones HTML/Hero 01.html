@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=800, initial-scale=1.0" />
+    <title>Prism Volume Booster Hero 01</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./Estilos Base Publicacion.css" />
+    <script src="./Guardia Artboard.js"></script>
+    <style>
+      :root {
+        --bg-1: #06111d;
+        --bg-2: #0d1a31;
+        --bg-3: #182946;
+        --panel-strong: rgba(7, 16, 31, 0.95);
+        --text: #f8f6ef;
+        --muted: #c9d6e8;
+        --accent: #ffd24d;
+        --accent-2: #78dcff;
+        --accent-3: #8bf0c8;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 14% 18%, rgba(120, 220, 255, 0.18), transparent 24%),
+          radial-gradient(circle at 80% 16%, rgba(255, 210, 77, 0.17), transparent 24%),
+          radial-gradient(circle at 76% 84%, rgba(139, 240, 200, 0.13), transparent 22%),
+          linear-gradient(145deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+      }
+
+      .orb.a {
+        background: radial-gradient(circle, rgba(120, 220, 255, 0.28), transparent 72%);
+      }
+
+      .orb.b {
+        background: radial-gradient(circle, rgba(255, 210, 77, 0.2), transparent 72%);
+      }
+
+      .atmosphere {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        opacity: 0.28;
+      }
+
+      .atmosphere::before,
+      .atmosphere::after {
+        content: "";
+        position: absolute;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .atmosphere::before {
+        width: 620px;
+        height: 620px;
+        left: -90px;
+        top: 70px;
+        box-shadow:
+          0 0 0 46px rgba(120, 220, 255, 0.014),
+          0 0 0 90px rgba(255, 210, 77, 0.012);
+      }
+
+      .atmosphere::after {
+        width: 540px;
+        height: 540px;
+        right: -40px;
+        bottom: -40px;
+        box-shadow:
+          0 0 0 40px rgba(139, 240, 200, 0.014),
+          0 0 0 80px rgba(120, 220, 255, 0.012);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr 620px;
+        gap: 28px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .copy-column {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 10px 0 8px;
+      }
+
+      .copy-top {
+        display: grid;
+        gap: 14px;
+      }
+
+      .brand-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .brand-row img {
+        width: 54px;
+        height: 54px;
+        border-radius: 17px;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+      }
+
+      .brand-meta {
+        display: grid;
+        gap: 4px;
+      }
+
+      .brand-kicker {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+
+      .brand-name {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .headline {
+        max-width: 560px;
+        margin: 0;
+        font-size: 68px;
+        line-height: 0.92;
+        letter-spacing: -0.055em;
+      }
+
+      .headline .accent {
+        color: var(--accent);
+      }
+
+      .subtitle {
+        max-width: 560px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.38;
+      }
+
+      .proof-stack {
+        display: grid;
+        gap: 12px;
+        max-width: 560px;
+      }
+
+      .proof-card {
+        padding: 16px 18px;
+        border-radius: 24px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+          rgba(8, 16, 29, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+      }
+
+      .proof-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 18px;
+        line-height: 1.1;
+      }
+
+      .proof-card span {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.42;
+      }
+
+      .visual-column {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .visual-shell {
+        position: relative;
+        width: 100%;
+        height: 684px;
+        padding: 16px;
+        border-radius: 34px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+          rgba(8, 16, 29, 0.56);
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        box-shadow: 0 34px 86px rgba(0, 0, 0, 0.34);
+      }
+
+      .visual-shell::before {
+        content: "";
+        position: absolute;
+        inset: 14px;
+        border-radius: 24px;
+        background:
+          radial-gradient(circle at top left, rgba(120, 220, 255, 0.08), transparent 24%),
+          radial-gradient(circle at bottom right, rgba(255, 210, 77, 0.08), transparent 24%);
+        pointer-events: none;
+      }
+
+      .screenshot-frame {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        border-radius: 24px;
+        overflow: hidden;
+        background: var(--panel-strong);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.08),
+          0 22px 46px rgba(0, 0, 0, 0.26);
+      }
+
+      .screenshot-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+        background: linear-gradient(180deg, rgba(5, 10, 18, 0.98), rgba(5, 10, 18, 0.98));
+        filter: saturate(1.04) brightness(1.02);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="grid-noise"></div>
+      <div class="orb a"></div>
+      <div class="orb b"></div>
+      <div class="atmosphere"></div>
+      <div class="safe-frame" data-safe-frame>
+        <div class="layout">
+          <section class="copy-column">
+            <div class="copy-top" data-safe-item data-safe-label="Hero 01 top copy">
+              <div class="brand-row">
+                <img src="../Capturas Base/Icono 128.png" alt="Prism Volume Booster icon" />
+                <div class="brand-meta">
+                  <div class="brand-kicker">Chrome audio extension</div>
+                  <p class="brand-name">Prism Volume Booster</p>
+                </div>
+              </div>
+
+              <h1 class="headline">Auto-boost and <span class="accent">fast presets</span> together.</h1>
+
+              <p class="subtitle">
+                Jump from recovery mode to instant gain boosts in one polished control panel.
+              </p>
+            </div>
+
+            <div class="proof-stack" data-safe-item data-safe-label="Hero 01 proof stack">
+              <div class="proof-card">
+                <strong>Current tab stays visible</strong>
+                <span>Keep the active tab context readable while switching between booster paths.</span>
+              </div>
+
+              <div class="proof-card">
+                <strong>Preset jumps stay one tap away</strong>
+                <span>Move from subtle lift to aggressive boost without opening extra views.</span>
+              </div>
+
+              <div class="proof-card">
+                <strong>Control stays in view</strong>
+                <span>Slider, presets, and protection cues sit together in one compact flow.</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="visual-column">
+            <div class="visual-shell" data-safe-item data-safe-label="Hero 01 screenshot shell">
+              <div class="screenshot-frame">
+                <img src="../Capturas Base/Panel Principal Hero 01 HD.png" alt="Prism Volume Booster main control panel" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
