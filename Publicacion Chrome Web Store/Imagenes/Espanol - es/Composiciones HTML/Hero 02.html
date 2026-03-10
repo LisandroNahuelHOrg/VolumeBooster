@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1280, height=800, initial-scale=1.0" />
+    <title>Prism Volume Booster Hero 02 ES</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./Estilos Base Publicacion.css" />
+    <script src="./Guardia Artboard.js"></script>
+    <style>
+      :root {
+        --bg-1: #08111e;
+        --bg-2: #10203d;
+        --bg-3: #182a4a;
+        --panel-strong: rgba(7, 16, 31, 0.95);
+        --text: #f8f6ef;
+        --muted: #c9d6e8;
+        --accent: #ffd24d;
+        --accent-2: #76dcff;
+      }
+
+      body {
+        background:
+          radial-gradient(circle at 18% 28%, rgba(255, 210, 77, 0.16), transparent 22%),
+          radial-gradient(circle at 82% 18%, rgba(118, 220, 255, 0.18), transparent 24%),
+          radial-gradient(circle at 80% 84%, rgba(139, 240, 200, 0.12), transparent 22%),
+          linear-gradient(155deg, var(--bg-1) 0%, var(--bg-2) 52%, var(--bg-3) 100%);
+      }
+
+      .orb.a { background: radial-gradient(circle, rgba(255, 210, 77, 0.22), transparent 72%); }
+      .orb.b { background: radial-gradient(circle, rgba(118, 220, 255, 0.2), transparent 72%); }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 640px 1fr;
+        gap: 30px;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+      }
+
+      .visual-column {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .visual-shell {
+        position: relative;
+        width: 100%;
+        padding: 16px;
+        border-radius: 34px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+          rgba(8, 16, 29, 0.58);
+        border: 1px solid rgba(255, 255, 255, 0.13);
+        box-shadow: 0 30px 78px rgba(0, 0, 0, 0.34);
+      }
+
+      .screenshot-frame {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1450 / 1062;
+        border-radius: 24px;
+      }
+
+      .copy-column {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 18px;
+        padding-top: 8px;
+      }
+
+      .brand-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-row img {
+        width: 48px;
+        height: 48px;
+        border-radius: 15px;
+      }
+
+      .brand-kicker {
+        color: rgba(255, 255, 255, 0.72);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .brand-name {
+        margin: 3px 0 0;
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .headline {
+        max-width: 500px;
+        margin: 4px 0 0;
+        font-size: 64px;
+        line-height: 0.94;
+        letter-spacing: -0.05em;
+      }
+
+      .headline .accent {
+        color: var(--accent);
+      }
+
+      .subtitle {
+        max-width: 470px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 21px;
+        line-height: 1.42;
+      }
+
+      .proof-stack {
+        display: grid;
+        gap: 12px;
+        max-width: 500px;
+      }
+
+      .proof-card {
+        padding: 16px 18px;
+        border-radius: 22px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+          rgba(8, 16, 29, 0.74);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .proof-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 17px;
+        line-height: 1.15;
+      }
+
+      .proof-card span {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.42;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="grid-noise"></div>
+      <div class="orb a"></div>
+      <div class="orb b"></div>
+      <div class="safe-frame" data-safe-frame>
+        <div class="layout">
+          <section class="visual-column">
+            <div class="visual-shell" data-safe-item data-safe-label="Hero 02 es screenshot shell">
+              <div class="screenshot-frame" data-shot-ratio="auto" data-shot-fit="contain">
+                <img src="../Capturas Base/Control Presets Espanol.png" alt="Panel de presets de Prism Volume Booster" />
+              </div>
+            </div>
+          </section>
+
+          <section class="copy-column">
+            <div class="brand-row" data-safe-item data-safe-label="Hero 02 es brand row">
+              <img src="../Capturas Base/Icono 128.png" alt="Prism Volume Booster icon" />
+              <div>
+                <div class="brand-kicker">Extension de audio para Chrome</div>
+                <p class="brand-name">Prism Volume Booster</p>
+              </div>
+            </div>
+
+            <h1 class="headline" data-safe-item data-safe-label="Hero 02 es headline">Presets <span class="accent">veloces</span>. Control visible.</h1>
+
+            <p class="subtitle" data-safe-item data-safe-label="Hero 02 es subtitle">Pasa de un lift sutil a un boost agresivo con un flujo claro, legible y siempre a la vista.</p>
+
+            <div class="proof-stack" data-safe-item data-safe-label="Hero 02 es proof stack">
+              <div class="proof-card">
+                <strong>Saltos instantaneos de ganancia</strong>
+                <span>La grilla de presets permite cambiar de nivel rapido sin navegar mas pantallas.</span>
+              </div>
+
+              <div class="proof-card">
+                <strong>Slider central y lectura limpia</strong>
+                <span>El control principal se mantiene visible para afinar el nivel cuando lo necesitas.</span>
+              </div>
+
+              <div class="proof-card">
+                <strong>Estabilidad a la vista</strong>
+                <span>Actividad en vivo y riesgo de distorsion siguen presentes para evitar boosts ciegos.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
