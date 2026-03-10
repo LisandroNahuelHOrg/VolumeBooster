@@ -123,7 +123,6 @@
       }
 
       p,
-      .content,
       .helper {
         margin: 0;
         line-height: 1.75;
@@ -207,7 +206,37 @@
       }
 
       .content {
-        white-space: pre-wrap;
+        color: var(--text);
+      }
+
+      .content p {
+        margin: 0;
+        line-height: 1.8;
+      }
+
+      .content p + p {
+        margin-top: 14px;
+      }
+
+      .content ul {
+        margin: 0;
+        padding-left: 1.2rem;
+        display: grid;
+        gap: 12px;
+      }
+
+      .content li {
+        margin: 0;
+        line-height: 1.75;
+      }
+
+      .content li::marker {
+        color: currentColor;
+      }
+
+      .permission-list li strong,
+      .bullet-list li strong,
+      .title-list li strong {
         color: var(--text);
       }
 
@@ -222,12 +251,12 @@
       <section class="hero">
         <span class="eyebrow">Chrome Web Store · Mesa operativa</span>
         <h1>Prism Volume Booster</h1>
-        <p>Este documento concentra en un solo lugar los textos que sí vas a copiar en el dashboard de Chrome Web Store y, aparte, las recomendaciones internas del manifest para mantener el package alineado con la promesa pública del producto.</p>
+        <p>Este documento concentra el copy público y las referencias internas que necesitas para publicar `Volume Booster` con un estándar premium real. La idea es que puedas escanearlo rápido, copiar lo que va al dashboard sin fricción y revisar aparte los textos internos del package sin mezclar superficies.</p>
       </section>
 
       <section class="legend">
         <h2>Leyenda de uso</h2>
-        <p>Las tarjetas azules corresponden a textos y declaraciones que usarás durante la publicación en Chrome Web Store. Las tarjetas ámbar son referencias internas para revisar los textos del manifest y del package, no para pegarlas en el dashboard.</p>
+        <p>Las tarjetas azules contienen textos y declaraciones listas para usar durante la publicación en Chrome Web Store. Las tarjetas ámbar son referencias internas para revisar el manifest y los strings del package. Todo el chrome visual está en español para que el documento sea operativo y cómodo de usar, aunque el payload final esté en inglés.</p>
         <div class="legend-row">
           <span class="legend-chip dashboard">Pegar o enviar en Chrome Web Store</span>
           <span class="legend-chip internal">Referencia interna del package</span>
@@ -238,40 +267,125 @@
         <section class="group dashboard">
           <span class="group-kicker">Se publica o se envía</span>
           <h2>Textos, disclosures y permisos para la tienda</h2>
-          <p>Estas tarjetas son la guía operativa para completar el listing, las declaraciones de datos y las justificaciones de permisos con copy final en voz de publicador.</p>
+          <p>Estas tarjetas reúnen el copy comercial, las explicaciones operativas y las justificaciones de permisos con voz final de publicador. Todo lo que aparece aquí debe sentirse fuerte, humano, fácil de entender y digno de un producto premium.</p>
           <div class="group-grid">
-            <section class="field-card" data-surface="dashboard" data-section="Publication Title" data-section-label="Titulo de publicacion"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este valor en el campo de título de la ficha.</p><div class="content">Prism Volume Booster</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Alternative Titles" data-section-label="Variantes de titulo"><span class="field-chip">Ideas auxiliares</span><p class="helper">Úsalas para comparar enfoques antes de decidir el título final.</p><div class="content">Prism Volume Booster for Chrome
-Prism Volume Booster with Real-Time DSP
-Prism Volume Booster for Tabs and Sites
-Prism Volume Booster with Smart Auto-Boost</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Short Description" data-section-label="Descripcion corta"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este bloque en la descripción corta del dashboard.</p><div class="content">Boost any Chrome tab with real-time DSP, auto-boost modes and precise manual control.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Long Description" data-section-label="Descripcion larga"><span class="field-chip">Texto final del locale</span><p class="helper">Copia este bloque en la descripción larga y revisa el límite real del dashboard si sigue sin estar documentado.</p><div class="content">Prism Volume Booster helps users raise the volume of any Chrome tab with more control, cleaner peaks and a stronger listening experience than a basic gain slider. The extension combines real-time DSP processing, manual volume shaping and optional auto-boost behavior so users can recover weak audio without constantly readjusting each site.
+            <section class="field-card" data-surface="dashboard" data-section="Publication Title" data-section-label="Titulo de publicacion">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Copia este valor en el campo de título de la ficha.</p>
+              <div class="content">Prism Volume Booster</div>
+            </section>
 
-The product is designed for people who move between video platforms, music services, calls, learning content and low-volume web players. Users can boost the current tab, store site-specific gain preferences, keep advanced audio settings locally and choose between manual control or automatic boosting modes depending on how they browse.
+            <section class="field-card" data-surface="dashboard" data-section="Alternative Titles" data-section-label="Variantes de titulo">
+              <span class="field-chip">Ideas auxiliares</span>
+              <p class="helper">Incluye varias rutas fuertes para comparar promesa, claridad y intención comercial antes de fijar el título definitivo.</p>
+              <div class="content">
+                <ul class="title-list">
+                  <li><strong>Prism Volume Booster for Chrome</strong></li>
+                  <li><strong>Prism Volume Booster with Real-Time Audio Control</strong></li>
+                  <li><strong>Prism Volume Booster for Videos, Streams and Calls</strong></li>
+                  <li><strong>Prism Volume Booster with Smart Auto-Boost Modes</strong></li>
+                </ul>
+              </div>
+            </section>
 
-Prism Volume Booster focuses on one job: improving tab audio in Chrome while staying transparent about permissions and data use. Audio processing runs locally, settings stay in browser storage, and any optional observability build is limited to error telemetry rather than remote code execution.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Feature Bullets" data-section-label="Puntos fuertes"><span class="field-chip">Texto final del locale</span><p class="helper">Te sirve como apoyo para ordenar la propuesta de valor y decidir qué destacar primero.</p><div class="content">Real-time DSP volume boosting for Chrome tabs
-Manual gain control plus automatic boosting modes
-Site-aware preferences stored locally in the browser
-Boost continues through an offscreen audio-processing document
-Built for weak videos, streams, lessons, meetings and web players</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Single Purpose" data-section-label="Proposito unico"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo como referencia para policy, disclosures o revisión interna.</p><div class="content">Prism Volume Booster exists to increase and shape Chrome tab audio with local real-time processing, manual controls and optional automatic boost behavior.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Permissions Justifications" data-section-label="Justificacion de permisos"><span class="field-chip">Texto final del locale</span><p class="helper">Resume por qué existen los permisos reales del producto.</p><div class="content">activeTab lets the extension interact with the tab the user explicitly chooses to boost. tabCapture and offscreen are required to capture and process that tab audio in real time, even when the popup is closed. scripting is used to inject only the tab-level logic needed for the selected page experience. storage keeps local preferences such as gain levels, advanced DSP settings and site-specific rules. tabs is used to identify and manage the tab the user is actively boosting.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Host Permissions Justification" data-section-label="Justificacion de permisos de sitios"><span class="field-chip">Texto final del locale</span><p class="helper">Aclara el motivo del acceso a sitios o indica que no aplica.</p><div class="content">The extension declares the host permission &lt;all_urls&gt; because users can boost audio on all sites, save per-site gain preferences and apply automatic boost behavior across arbitrary domains. This all-sites access supports the user-selected tab experience and is not used for background scraping or unrelated data collection.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Remote Code Disclosure" data-section-label="Declaracion sobre codigo remoto"><span class="field-chip">Texto final del locale</span><p class="helper">Debe quedar listo para enviarse tal cual en disclosures o revisiones.</p><div class="content">Prism Volume Booster does not execute remotely hosted code to deliver its core functionality. If an observability build enables Sentry, it is used only to send error telemetry and does not fetch or run executable code inside the extension.</div></section>
-            <section class="field-card" data-surface="dashboard" data-section="Data Use Disclosure" data-section-label="Declaracion de uso de datos"><span class="field-chip">Texto final del locale</span><p class="helper">Debe poder copiarse tal cual donde Chrome pida la explicación de uso de datos.</p><div class="content">Prism Volume Booster processes tab audio locally to deliver volume boosting and stores user-selected settings such as gain levels, advanced audio configuration and site-specific preferences in browser storage. The extension does not sell user data. If an optional Sentry configuration is enabled in a specific build, it sends limited error telemetry with sensitive fields scrubbed for stability monitoring.</div></section>
+            <section class="field-card" data-surface="dashboard" data-section="Short Description" data-section-label="Descripcion corta">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Copia este bloque en la descripción corta del dashboard.</p>
+              <div class="content">Bring quiet Chrome tabs back to life with real-time audio boosting, smart auto modes and easy precision controls.</div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Long Description" data-section-label="Descripcion larga">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Redactada para ocupar bien el espacio útil del dashboard con beneficios claros, escenarios reales y una promesa premium sin exageraciones falsas.</p>
+              <div class="content">
+                <p>Prism Volume Booster is built for the everyday frustration millions of Chrome users know too well: videos that sound weak, streams that never reach a comfortable level, lessons that get buried under room noise, and calls or web players that force you to keep fighting with volume over and over again. Instead of offering a bare slider and calling it a day, Prism gives users a stronger, cleaner and more deliberate way to raise tab audio with real-time processing that feels premium from the very first click.</p>
+                <p>The extension is designed to stay friendly for non-technical users while still feeling powerful for demanding ones. Users can boost the current tab in seconds, keep site-specific gain preferences, choose automatic behavior for compatible pages, and fine-tune sound settings when they want more control. That means less friction, less guesswork and far less time jumping between weak websites and broken listening experiences just to hear content properly.</p>
+                <p>Prism Volume Booster also stands out by making its value obvious, not hidden. The product is transparent about how it works, why it needs permissions and what stays local on the device. Audio boosting happens in the browser, settings stay in browser storage, and optional observability builds are limited to sanitized technical telemetry instead of remote executable code. The result is a Chrome audio booster that feels serious, polished, trustworthy and built for people who want better sound without sacrificing clarity or control.</p>
+                <p>Whether the user is watching tutorials, following online classes, listening to long-form content, joining calls, streaming music or rescuing a quiet video from a frustrating website, Prism Volume Booster is meant to make the experience feel louder, clearer, calmer and more in control. It does one job, but it does that job with care: helping weak tab audio feel strong again.</p>
+              </div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Feature Bullets" data-section-label="Puntos fuertes">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Bullets escaneables, claros y memorables para reforzar el valor principal sin caer en jerga innecesaria.</p>
+              <div class="content">
+                <ul class="bullet-list">
+                  <li><strong>Boost quiet Chrome tabs fast</strong> with a flow that feels simple from the first interaction.</li>
+                  <li><strong>Use real-time audio processing</strong> instead of relying on a flat, low-effort gain gimmick.</li>
+                  <li><strong>Choose manual or automatic behavior</strong> depending on the page and the kind of control you want.</li>
+                  <li><strong>Remember site-specific preferences locally</strong> so favorite pages can feel right the next time you open them.</li>
+                  <li><strong>Keep boosting alive after the popup closes</strong> through the extension's dedicated offscreen audio path.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Single Purpose" data-section-label="Proposito unico">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Úsalo como referencia para policy, disclosures y revisión interna.</p>
+              <div class="content">Prism Volume Booster exists to make Chrome tab audio louder, clearer and easier to control through local real-time processing, remembered preferences and optional automatic boosting behavior.</div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Permissions Justifications" data-section-label="Justificacion de permisos">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Cada permiso va en su propio renglón para que se pueda leer rápido y sin perder tiempo.</p>
+              <div class="content">
+                <ul class="permission-list">
+                  <li><strong>activeTab</strong>: lets the extension work on the tab the user explicitly chooses to boost, instead of touching unrelated tabs in the background.</li>
+                  <li><strong>offscreen</strong>: keeps the manual audio engine alive in a hidden document so boosting can continue after capture starts and the popup closes.</li>
+                  <li><strong>scripting</strong>: injects the automatic booster runtime on compatible pages when the product needs tab-level logic to hook the active experience.</li>
+                  <li><strong>storage</strong>: saves local settings such as gain levels, sound controls, auto-boost mode and remembered site-specific preferences.</li>
+                  <li><strong>tabCapture</strong>: captures the current tab audio for the manual booster lane so Prism can raise and shape playback in real time.</li>
+                  <li><strong>tabs</strong>: reads the active tab identity and metadata needed to label sessions, target the correct tab and manage booster state cleanly.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Host Permissions Justification" data-section-label="Justificacion de permisos de sitios">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Aunque aquí solo haya un permiso, igualmente debe verse en su propia línea y empezar con el permiso para lectura rápida.</p>
+              <div class="content">
+                <ul class="permission-list">
+                  <li><strong>&lt;all_urls&gt;</strong>: allows Prism Volume Booster to support the optional automatic booster on compatible sites across the web and to apply remembered site-specific behavior wherever the user chooses to use it, rather than limiting the product to a tiny hardcoded site list.</li>
+                </ul>
+              </div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Remote Code Disclosure" data-section-label="Declaracion sobre codigo remoto">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Debe quedar listo para enviarse tal cual en disclosures o revisiones.</p>
+              <div class="content">Prism Volume Booster does not rely on remotely hosted executable code to deliver its core audio boosting experience. If a release enables Sentry diagnostics, that service is used only for sanitized telemetry submission and not to download or execute application logic inside the extension.</div>
+            </section>
+
+            <section class="field-card" data-surface="dashboard" data-section="Data Use Disclosure" data-section-label="Declaracion de uso de datos">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Debe poder copiarse tal cual donde Chrome pida la explicación final de uso de datos.</p>
+              <div class="content">Prism Volume Booster processes tab audio locally to deliver volume boosting and stores user-selected settings such as gain levels, advanced audio controls and site-specific preferences in browser storage. The extension does not sell user data. Some releases may enable sanitized technical diagnostics through Sentry for reliability monitoring, and the product may request site favicons from DuckDuckGo's favicon service when needed to display tab identity cleanly.</div>
+            </section>
           </div>
         </section>
 
         <section class="group internal">
           <span class="group-kicker">No se pega en el dashboard</span>
           <h2>Recomendaciones internas del package y del manifest</h2>
-          <p>Estas tarjetas ayudan a alinear los strings internos de la extensión con la promesa pública del listing, aunque no sean campos manuales de la ficha.</p>
+          <p>Estas tarjetas ayudan a mantener alineados los strings internos del package con la promesa pública del listing, para que todo el producto suene coherente y profesional.</p>
           <div class="group-grid">
-            <section class="field-card" data-surface="internal" data-section="Manifest Name" data-section-label="Nombre del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo para revisar o ajustar `manifest.json` y `_locales`.</p><div class="content">Prism Volume Booster</div></section>
-            <section class="field-card" data-surface="internal" data-section="Manifest Short Name" data-section-label="Nombre corto del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Úsalo solo si realmente quieres un nombre corto visible.</p><div class="content">Not used</div></section>
-            <section class="field-card" data-surface="internal" data-section="Manifest Description" data-section-label="Descripcion del manifest"><span class="field-chip">Texto final del locale</span><p class="helper">Mantiene alineado el package con la promesa pública del listing.</p><div class="content">Boost any Chrome tab with real-time DSP, auto-boost modes and precise manual control.</div></section>
+            <section class="field-card" data-surface="internal" data-section="Manifest Name" data-section-label="Nombre del manifest">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Úsalo para revisar o ajustar `manifest.json` y `_locales`.</p>
+              <div class="content">Prism Volume Booster</div>
+            </section>
+
+            <section class="field-card" data-surface="internal" data-section="Manifest Short Name" data-section-label="Nombre corto del manifest">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Úsalo solo si realmente vas a mantener un nombre corto visible.</p>
+              <div class="content">Not used</div>
+            </section>
+
+            <section class="field-card" data-surface="internal" data-section="Manifest Description" data-section-label="Descripcion del manifest">
+              <span class="field-chip">Texto final del locale</span>
+              <p class="helper">Mantiene alineado el package con la promesa pública del listing.</p>
+              <div class="content">Bring quiet Chrome tabs back to life with real-time audio boosting, smart auto modes and easy precision controls.</div>
+            </section>
           </div>
         </section>
       </div>
