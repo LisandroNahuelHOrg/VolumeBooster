@@ -42,7 +42,7 @@ function Invoke-FixedMonitorRepair {
             if (-not (Test-Path $candidate)) { continue }
             $candidateRoot = (& git -C $candidate rev-parse --show-toplevel 2>$null | Out-String).Trim()
             if (-not $candidateRoot) { throw "❌ '$candidate' existe pero no es un worktree reparable. Resolver manualmente." }
-            if ([System.IO.Path]::GetFullPath($candidateRoot).TrimEnd("\") -ne $repoFull) { throw "❌ '$candidate' pertenece a otro repo. No se adoptará automáticamente." }
+            if ([System.IO.Path]::GetFullPath($candidateRoot).TrimEnd("\") -ne $repoFull) { continue }
             if ((& git -C $candidate branch --show-current | Out-String).Trim() -ne $definition.branch) { throw "❌ '$candidate' usa una rama distinta a '$($definition.branch)'." }
             $state = Test-WorktreeClean -Path $candidate
             if (-not $state.IsClean) { throw "❌ '$candidate' no está listo para migrarse: $($state.Reason)" }
