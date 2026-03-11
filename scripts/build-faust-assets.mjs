@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { publishFaustArtifact } from "./faust-build/lib/publishFaustArtifact.mjs";
+import { prepareStableFaustWorkspace } from "./faust-build/lib/prepareStableFaustWorkspace.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const compilerScript = resolve(repoRoot, "node_modules/@grame/faustwasm/scripts/faust2wasm.js");
@@ -18,18 +19,19 @@ const targets = [
     runtimeOutput: resolve(repoRoot, "public/faust/stereo")
   }
 ];
+const stableFaustWorkspace = await prepareStableFaustWorkspace(resolve(repoRoot, "faust"));
 
 for (const target of targets) {
-  await buildTarget(target);
+  await buildTarget(target, stableFaustWorkspace);
 }
 
-async function buildTarget(target) {
+async function buildTarget(target, stableFaustWorkspace) {
   const stagingRoot = await createStagingDirectory(target.output);
   const stagingOutput = join(stagingRoot, basename(target.output));
 
   try {
     await mkdir(stagingOutput, { recursive: true });
-    await run(process.execPath, [compilerScript, target.input, stagingOutput, "-no-template"]);
+    await run(process.execPath, [compilerScript, target.input, stagingOutput, "-no-template"], stableFaustWorkspace);
     await generateMetadataWrapper(stagingOutput);
 
     await publishOutputs(stagingOutput, target.output, ["dsp-meta.json", "dsp-meta.ts", "dsp-module.wasm"]);
@@ -55,10 +57,10 @@ async function publishOutputs(sourceDirectory, destinationDirectory, fileNames) 
   }
 }
 
-async function run(command, args) {
+async function run(command, args, cwd = repoRoot) {
   await new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, args, {
-      cwd: repoRoot,
+      cwd,
       stdio: "inherit",
       shell: false
     });

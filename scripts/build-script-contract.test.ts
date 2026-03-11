@@ -24,6 +24,6 @@ test("build script refreshes Faust assets before producing final extension bundl
   );
   expect(buildFaustAssetsScript).toContain('input: "faust/prism-premium-mono.dsp"');
   expect(buildFaustAssetsScript).toContain('input: "faust/prism-premium-stereo.dsp"');
-  expect(buildFaustAssetsScript).not.toContain('input: resolve(repoRoot, "faust/prism-premium-mono.dsp")');
-  expect(buildFaustAssetsScript).not.toContain('input: resolve(repoRoot, "faust/prism-premium-stereo.dsp")');
+  expect(buildFaustAssetsScript).toContain("prepareStableFaustWorkspace");
+  expect(buildFaustAssetsScript).toContain('await buildTarget(target, stableFaustWorkspace);');
 });
