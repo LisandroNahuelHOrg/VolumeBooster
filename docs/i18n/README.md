@@ -4,14 +4,14 @@ This repository uses Chrome Extension `_locales` catalogs with `en` as the canon
 
 ## Architecture
 
-- Canonical catalog: [`public/_locales/en/messages.json`](/D:/Local%20Worktrees/WorktreeIzqAbajo/public/_locales/en/messages.json)
+- Canonical catalog: [`public/_locales/en/messages.json`](../../public/_locales/en/messages.json)
 - Secondary locales: `public/_locales/<locale>/messages.json`
 - Generated artifacts:
-  - [`src/generated/i18n-types.ts`](/D:/Local%20Worktrees/WorktreeIzqAbajo/src/generated/i18n-types.ts)
-  - [`src/generated/i18n-fallback.ts`](/D:/Local%20Worktrees/WorktreeIzqAbajo/src/generated/i18n-fallback.ts)
+  - [`src/generated/i18n-types.ts`](../../src/generated/i18n-types.ts)
+  - [`src/generated/i18n-fallback.ts`](../../src/generated/i18n-fallback.ts)
 - Runtime helpers:
-  - [`src/shared/runtime-i18n.ts`](/D:/Local%20Worktrees/WorktreeIzqAbajo/src/shared/runtime-i18n.ts)
-  - [`src/content/runtime-api.ts`](/D:/Local%20Worktrees/WorktreeIzqAbajo/src/content/runtime-api.ts)
+  - [`src/shared/runtime-i18n.ts`](../../src/shared/runtime-i18n.ts)
+  - [`src/content/runtime-api.ts`](../../src/content/runtime-api.ts)
 
 ## Rules
 
@@ -20,7 +20,7 @@ This repository uses Chrome Extension `_locales` catalogs with `en` as the canon
 - Every placeholder definition must match the canonical catalog exactly.
 - Visible copy must never live inline in TypeScript or HTML when it can live in `_locales`.
 - Runtime fallback for visible UI always comes from the generated English catalog, never from ad-hoc hardcoded strings.
-- If a message should intentionally stay identical to English in another locale, add its key to [`scripts/i18n-identical-allowlist.json`](/D:/Local%20Worktrees/WorktreeIzqAbajo/scripts/i18n-identical-allowlist.json).
+- If a message should intentionally stay identical to English in another locale, add its key to [`scripts/i18n-identical-allowlist.json`](../../scripts/i18n-identical-allowlist.json).
 
 ## Naming
 
