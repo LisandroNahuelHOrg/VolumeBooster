@@ -1,0 +1,7 @@
+export const ACTION_BADGE_TEXT = "🔊";
+export const ACTION_BADGE_TEXT_COLOR = "#ffcf63";
+export const ACTION_BADGE_IDLE_COLOR = "#000000";
+export const ACTION_BADGE_PULSE_COLOR = "#12293b";
+export const ACTION_BADGE_AUDIBLE_THRESHOLD = 0.025;
+export const ACTION_BADGE_AUDIBLE_HOLD_MS = 1500;
+export const ACTION_BADGE_PULSE_MS = 1000;
