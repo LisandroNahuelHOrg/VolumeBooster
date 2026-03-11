@@ -1846,41 +1846,77 @@ function Ensure-FixedMonitorLock {
 function Ensure-FixedMonitorWorktree {
     param(
         [Parameter(Mandatory = $true)]
-        $Config
+        $Config,
+        [switch]$FreshFromLocalMain
     )
 
     $created = $false
+    $previousPathExisted = $false
+    $freshRecreated = $false
     Use-AtomicLock {
         if (-not (Test-Path $TreeRoot)) {
             New-Item -ItemType Directory -Path $TreeRoot -Force | Out-Null
         }
 
-        if (Test-Path $Config.path) {
-            if (-not (Test-Path (Join-Path $Config.path ".git"))) {
-                throw "❌ '$($Config.path)' existe pero no es un worktree válido."
+        if ($FreshFromLocalMain) {
+            $previousPathExisted = Test-Path $Config.path
+            if ($previousPathExisted) {
+                $null = Remove-WorktreeDirectoryRobust -WorktreePath $Config.path -BranchName $Config.branch
             }
-        }
-        else {
+
             Push-Location $MainRepo
             try {
-                git fetch $PrimaryRemote $BaseBranch --prune 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) { throw "❌ Error en git fetch $BaseRef --prune" }
+                git worktree prune 2>&1 | Out-Null
 
                 git show-ref --verify --quiet "refs/heads/$($Config.branch)" 2>&1 | Out-Null
                 $branchExists = ($LASTEXITCODE -eq 0)
                 if ($branchExists) {
-                    git worktree add $Config.path $Config.branch 2>&1 | Out-Null
+                    git branch -D $Config.branch 2>&1 | Out-Null
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "❌ No se pudo eliminar la rama fija '$($Config.branch)' para recrear '$($Config.display)' desde '$BaseBranch' local."
+                    }
                 }
-                else {
-                    git worktree add $Config.path -b $Config.branch $BaseRef 2>&1 | Out-Null
-                }
+
+                git worktree add $Config.path -b $Config.branch $BaseBranch 2>&1 | Out-Null
                 if ($LASTEXITCODE -ne 0) {
-                    throw "❌ Error creando worktree fijo '$($Config.display)'."
+                    throw "❌ Error recreando worktree fijo '$($Config.display)' desde '$BaseBranch' local."
                 }
+
                 $created = $true
+                $freshRecreated = $true
             }
             finally {
                 Pop-Location
+            }
+        }
+        else {
+            if (Test-Path $Config.path) {
+                if (-not (Test-Path (Join-Path $Config.path ".git"))) {
+                    throw "❌ '$($Config.path)' existe pero no es un worktree válido."
+                }
+            }
+            else {
+                Push-Location $MainRepo
+                try {
+                    git fetch $PrimaryRemote $BaseBranch --prune 2>&1 | Out-Null
+                    if ($LASTEXITCODE -ne 0) { throw "❌ Error en git fetch $BaseRef --prune" }
+
+                    git show-ref --verify --quiet "refs/heads/$($Config.branch)" 2>&1 | Out-Null
+                    $branchExists = ($LASTEXITCODE -eq 0)
+                    if ($branchExists) {
+                        git worktree add $Config.path $Config.branch 2>&1 | Out-Null
+                    }
+                    else {
+                        git worktree add $Config.path -b $Config.branch $BaseRef 2>&1 | Out-Null
+                    }
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "❌ Error creando worktree fijo '$($Config.display)'."
+                    }
+                    $created = $true
+                }
+                finally {
+                    Pop-Location
+                }
             }
         }
     }
@@ -1905,7 +1941,11 @@ function Ensure-FixedMonitorWorktree {
         Install-WorktreeDependencies -WorktreePath $Config.path
     }
 
-    return $created
+    return [pscustomobject]@{
+        created            = $created
+        previousPathExisted = $previousPathExisted
+        freshRecreated     = $freshRecreated
+    }
 }
 
 function Invoke-GitAutoCommitIfDirty {
@@ -1989,8 +2029,6 @@ function Invoke-FixedMonitorOpen {
     )
 
     $config = Get-FixedMonitorConfig -RawKey $MonitorKey
-    $created = Ensure-FixedMonitorWorktree -Config $config
-    Ensure-FixedMonitorUpstreamMain -Config $config -ContextLabel "fixed-open"
     $mainSyncOk = Sync-MainLocalNonDestructive
     if ($mainSyncOk) {
         Write-Host "✅ '$BaseBranch' local sincronizado antes de abrir '$($config.display)'."
@@ -1999,24 +2037,13 @@ function Invoke-FixedMonitorOpen {
         Write-Warning "⚠️ No se pudo sincronizar '$BaseBranch' local antes de abrir '$($config.display)'. Continuando con estado seguro actual."
     }
 
+    $openState = Ensure-FixedMonitorWorktree -Config $config -FreshFromLocalMain
+    Ensure-FixedMonitorUpstreamMain -Config $config -ContextLabel "fixed-open"
     Ensure-WorktreeDependenciesReady -WorktreePath $config.path -ContextLabel "$($config.display)/fixed-open"
     Ensure-LintPluginDistReady -WorktreePath $config.path -ContextLabel "$($config.display)/fixed-open"
     $autosaveMsg = "chore(monitor-$($config.key)): session-start autosave"
     $committed = Invoke-GitAutoCommitIfDirty -RepoPath $config.path -CommitMessage $autosaveMsg -ContextLabel "session-start autosave"
     $aheadBehind = Get-MonitorAheadBehind -Config $config
-    $sessionRealigned = $false
-    if (-not $committed -and $aheadBehind.ahead -eq 0 -and $aheadBehind.behind -gt 0) {
-        Write-Host "🔄 '$($config.display)' está behind de $BaseRef sin commits propios. Realineando para iniciar sesión actualizado..."
-        git -C $config.path checkout $config.branch 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "❌ No se pudo hacer checkout de '$($config.branch)' durante fixed-open." }
-
-        git -C $config.path reset --hard $BaseRef 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "❌ No se pudo resetear '$($config.branch)' a $BaseRef durante fixed-open." }
-
-        Ensure-FixedMonitorUpstreamMain -Config $config -ContextLabel "fixed-open-post-reset"
-        $aheadBehind = Get-MonitorAheadBehind -Config $config
-        $sessionRealigned = $true
-    }
 
     Write-Host ""
     Write-Host "═══════════════════════════════════════════"
@@ -2031,20 +2058,12 @@ function Invoke-FixedMonitorOpen {
     else {
         Write-Host "   Base local sync: ⚠️ no sincronizado (bloqueado por estado local)"
     }
-    if ($sessionRealigned) {
-        Write-Host "   Session sync monitor: ✅ realineado a $BaseRef"
-    }
-    elseif (-not $committed -and $aheadBehind.ahead -eq 0 -and $aheadBehind.behind -eq 0) {
-        Write-Host "   Session sync monitor: ✅ ya estaba alineado"
+    Write-Host "   Session sync monitor: ✅ recreado fresco desde '$BaseBranch' local"
+    if ($openState.previousPathExisted) {
+        Write-Host "   Worktree: 🧹 previo eliminado y recreado desde cero"
     }
     else {
-        Write-Host "   Session sync monitor: ℹ️ preservado (hay historial propio pendiente)"
-    }
-    if ($created) {
-        Write-Host "   Worktree: creado en esta sesión"
-    }
-    else {
-        Write-Host "   Worktree: reutilizado"
+        Write-Host "   Worktree: ✅ creado fresco porque no existía"
     }
     if ($committed) {
         Write-Host "   Autosave: ✅ commit local realizado"
@@ -4558,4 +4577,3 @@ switch ($Command) {
         }
     }
 }
-
