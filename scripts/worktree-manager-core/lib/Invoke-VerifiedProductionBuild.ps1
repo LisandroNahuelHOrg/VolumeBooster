@@ -9,6 +9,7 @@ function Invoke-VerifiedProductionBuild {
 
     Push-Location $RepoPath
     try {
+        Ensure-RepoBuildToolingReady -RepoPath $RepoPath -ContextLabel $BranchLabel
         Write-Host "🔨 Compilando build de producción en '$BranchLabel'..."
         npm run build
         if ($LASTEXITCODE -ne 0) {

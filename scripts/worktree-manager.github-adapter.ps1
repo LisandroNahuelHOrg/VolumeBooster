@@ -59,8 +59,13 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Clear-IgnorableMainLocalDirtyState.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Ensure-RepoBuildToolingReady.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-GitHubHeadRef.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Invoke-VerifiedProductionBuild.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Remove-DirectoryRobust.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-AllowedMainLocalDirtyState.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-RunPRequired.ps1")
 
 function Invoke-HiddenSelf {
     param(
@@ -2136,7 +2141,8 @@ function Invoke-FixedMonitorShip {
         $prNumber = 0
         if ($null -eq $prList -or $prList.Count -eq 0) {
             Write-Host "📋 Creando Pull Request para '$($config.display)'..."
-            gh pr create --base $BaseBranch --fill
+            $headRef = Get-GitHubHeadRef -RepoRef $GitHubRepo -BranchName $config.branch
+            gh pr create --repo $GitHubRepo --base $BaseBranch --head $headRef --fill
             if ($LASTEXITCODE -ne 0) { throw "❌ Error creando PR para '$($config.display)'." }
             $newPr = gh pr list --head $config.branch --json number 2>$null | ConvertFrom-Json
             if ($newPr -and $newPr.Count -gt 0) {
@@ -2510,7 +2516,11 @@ function Try-SeedNodeModulesFromMain {
 
     Write-Host "⚡ Reutilizando node_modules desde main (lockfile idéntico)..."
     if (Test-Path $worktreeNodeModulesPath) {
-        Remove-Item -Recurse -Force $worktreeNodeModulesPath
+        $removed = Remove-DirectoryRobust -Path $worktreeNodeModulesPath
+        if (-not $removed) {
+            Write-Warning "⚠️  No se pudo limpiar '$worktreeNodeModulesPath' para reusar node_modules desde main."
+            return $false
+        }
     }
 
     $null = robocopy $mainNodeModulesPath $worktreeNodeModulesPath /MIR /COPY:DAT /DCOPY:DAT /R:2 /W:1 /NFL /NDL /NJH /NJS /NP
@@ -2562,16 +2572,17 @@ function Ensure-WorktreeDependenciesReady {
     $nodeModulesPath = Join-Path $WorktreePath "node_modules"
     $runPCommandPath = Join-Path $WorktreePath "node_modules\.bin\run-p.cmd"
     $runPPsPath = Join-Path $WorktreePath "node_modules\.bin\run-p.ps1"
+    $requiresRunP = Test-RunPRequired -RepoPath $WorktreePath
 
     $hasNodeModules = Test-Path $nodeModulesPath
-    $hasRunP = (Test-Path $runPCommandPath) -or (Test-Path $runPPsPath)
+    $hasRunP = (-not $requiresRunP) -or (Test-Path $runPCommandPath) -or (Test-Path $runPPsPath)
 
     if ($hasNodeModules -and $hasRunP) {
         Write-Host "📦 Dependencias OK para '$ContextLabel'."
         return
     }
 
-    Write-Host "📦 Dependencias incompletas para '$ContextLabel' (node_modules=$hasNodeModules, run-p=$hasRunP). Reinstalando..."
+    Write-Host "📦 Dependencias incompletas para '$ContextLabel' (node_modules=$hasNodeModules, run-p-required=$requiresRunP, run-p=$hasRunP). Reinstalando..."
     Install-WorktreeDependencies -WorktreePath $WorktreePath
 }
 
@@ -2593,6 +2604,14 @@ function Sync-MainLocalNonDestructive {
         )
         $currentBranch = git branch --show-current
         $dirty = (git status --porcelain | Measure-Object).Count -gt 0
+        if ($dirty) {
+            $noiseCleanup = Clear-IgnorableMainLocalDirtyState -RepoPath $MainRepo -AllowedPrefixes $allowedGeneratedDirtyPrefixes
+            if ($noiseCleanup.Cleared) {
+                $restoredList = $noiseCleanup.RestoredPaths -join ", "
+                Write-Host "🧽 Se restauró dirty state ignorable en '$BaseBranch' local: $restoredList"
+                $dirty = (git status --porcelain | Measure-Object).Count -gt 0
+            }
+        }
         if ($dirty) {
             Write-Warning "⚠️ Repo base tiene cambios locales. Se omite sync para evitar pérdida accidental."
             if ($RunBuild -and $currentBranch -eq $BaseBranch) {
@@ -3252,10 +3271,23 @@ function Invoke-MainLocalAutosanitizeForShip {
             $currentBranch = (git branch --show-current | Out-String).Trim()
             $rescueBranch = ""
             $lockRegistered = $false
+            $allowedGeneratedDirtyPrefixes = @(
+                "public/faust/",
+                "src/generated/"
+            )
 
             if ($currentBranch -eq $BaseBranch) {
                 $dirtyMain = (git status --porcelain | Measure-Object).Count -gt 0
                 $abMain = Get-RefAheadBehindCounts -RepoPath $MainRepo -BaseRef $BaseRef -TargetRef $BaseBranch
+
+                if ($dirtyMain -and $abMain.ahead -eq 0 -and $abMain.behind -eq 0) {
+                    $noiseCleanup = Clear-IgnorableMainLocalDirtyState -RepoPath $MainRepo -AllowedPrefixes $allowedGeneratedDirtyPrefixes
+                    if ($noiseCleanup.Cleared) {
+                        $restoredList = $noiseCleanup.RestoredPaths -join ", "
+                        Write-Host "🧽 Se limpió dirty state ignorable en '$BaseBranch' local: $restoredList"
+                        return $true
+                    }
+                }
 
                 if (-not $dirtyMain -and $abMain.ahead -eq 0 -and $abMain.behind -eq 0) {
                     Write-Host "✅ '$BaseBranch' local ya está limpio y sincronizado."
@@ -3282,6 +3314,22 @@ function Invoke-MainLocalAutosanitizeForShip {
                 }
             }
             else {
+                $headSha = (git rev-parse HEAD | Out-String).Trim()
+                $baseSha = (git rev-parse $BaseRef | Out-String).Trim()
+                $dirtyCurrentBranch = (git status --porcelain | Measure-Object).Count -gt 0
+                if ($dirtyCurrentBranch -and $headSha -eq $baseSha) {
+                    $noiseCleanup = Clear-IgnorableMainLocalDirtyState -RepoPath $MainRepo -AllowedPrefixes $allowedGeneratedDirtyPrefixes
+                    if ($noiseCleanup.Cleared) {
+                        $restoredList = $noiseCleanup.RestoredPaths -join ", "
+                        Write-Host "🧽 Se limpió dirty state ignorable en rama temporal '$currentBranch': $restoredList"
+                        git checkout $BaseBranch 2>&1 | Out-Null
+                        if ($LASTEXITCODE -eq 0) {
+                            Write-Host "✅ '$BaseBranch' local quedó restaurado sin necesidad de rescate."
+                            return $true
+                        }
+                    }
+                }
+
                 Write-Warning "⚠️ Repo principal estaba en '$currentBranch'. Se continuará saneamiento sobre rama de rescate."
                 $normalizedRescue = Get-ValidMainRescueBranchName -CurrentBranch $currentBranch
                 if ($normalizedRescue -ne $currentBranch) {
@@ -3351,7 +3399,8 @@ function Invoke-MainLocalAutosanitizeForShip {
                 $prNumber = 0
                 if ($null -eq $prList -or $prList.Count -eq 0) {
                     Write-Host "📋 Creando PR de saneamiento para '$rescueBranch'..."
-                    gh pr create --base $BaseBranch --fill
+                    $headRef = Get-GitHubHeadRef -RepoRef $GitHubRepo -BranchName $rescueBranch
+                    gh pr create --repo $GitHubRepo --base $BaseBranch --head $headRef --fill
                     if ($LASTEXITCODE -ne 0) { throw "❌ Error creando PR de saneamiento." }
                     $newPr = gh pr list --head $rescueBranch --json number 2>$null | ConvertFrom-Json
                     if ($newPr -and $newPr.Count -gt 0) {
@@ -4189,7 +4238,8 @@ switch ($Command) {
             $prNumber = 0
             if ($null -eq $prList -or $prList.Count -eq 0) {
                 Write-Host "📋 Creando Pull Request..."
-                gh pr create --base $BaseBranch --fill
+                $headRef = Get-GitHubHeadRef -RepoRef $GitHubRepo -BranchName $Branch
+                gh pr create --repo $GitHubRepo --base $BaseBranch --head $headRef --fill
                 if ($LASTEXITCODE -ne 0) { throw "❌ Error creando PR." }
                 $newPr = gh pr list --head $Branch --json number 2>$null | ConvertFrom-Json
                 if ($newPr -and $newPr.Count -gt 0) {
