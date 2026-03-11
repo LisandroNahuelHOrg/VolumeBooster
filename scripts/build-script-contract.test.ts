@@ -8,6 +8,7 @@ test("build script refreshes Faust assets before producing final extension bundl
     scripts?: Record<string, string>;
   };
   const buildFaustAssetsScript = fs.readFileSync(path.resolve("scripts/build-faust-assets.mjs"), "utf8");
+  const createFaustTargetsScript = fs.readFileSync(path.resolve("scripts/faust-build/lib/createFaustTargets.mjs"), "utf8");
   const buildScript = packageJson.scripts?.build ?? "";
   const viteBuildInvocation = buildScript.includes("node ./node_modules/vite/bin/vite.js build")
     ? "node ./node_modules/vite/bin/vite.js build"
@@ -22,8 +23,10 @@ test("build script refreshes Faust assets before producing final extension bundl
   expect(buildScript.indexOf("node scripts/build-registered-content-scripts.mjs")).toBeGreaterThan(
     buildScript.indexOf(viteBuildInvocation)
   );
-  expect(buildFaustAssetsScript).toContain('input: "faust/prism-premium-mono.dsp"');
-  expect(buildFaustAssetsScript).toContain('input: "faust/prism-premium-stereo.dsp"');
+  expect(createFaustTargetsScript).toContain('input: "faust/prism-premium-mono.dsp"');
+  expect(createFaustTargetsScript).toContain('input: "faust/prism-premium-stereo.dsp"');
   expect(buildFaustAssetsScript).toContain("prepareStableFaustWorkspace");
-  expect(buildFaustAssetsScript).toContain('await buildTarget(target, stableFaustWorkspace);');
+  expect(buildFaustAssetsScript).toContain("prepareStableFaustToolchain");
+  expect(buildFaustAssetsScript).toContain("createFaustTargets");
+  expect(buildFaustAssetsScript).toContain("buildFaustTarget");
 });
