@@ -1,5 +1,4 @@
 import type { LocalizedMessage } from "../../shared/types";
-import { getI18nMessageSafe } from "../runtime-api";
 
 export function localizeFallbackToastMessage(messageValue: LocalizedMessage): string {
   let substitutions: string[] | undefined;
@@ -12,5 +11,10 @@ export function localizeFallbackToastMessage(messageValue: LocalizedMessage): st
     }
   }
 
-  return getI18nMessageSafe(messageValue.key, substitutions) || messageValue.key;
+  try {
+    const localized = chrome.i18n?.getMessage?.(messageValue.key, substitutions) ?? "";
+    return localized || messageValue.key;
+  } catch {
+    return messageValue.key;
+  }
 }

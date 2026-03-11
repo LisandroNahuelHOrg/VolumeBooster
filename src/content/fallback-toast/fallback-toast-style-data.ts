@@ -1,6 +1,6 @@
 import { UI_FONT_STACK } from "../../shared/ui-font-stack";
 
-export const fallbackToastRootStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastRootStyle = {
   position: "fixed",
   top: "16px",
   right: "16px",
@@ -13,30 +13,30 @@ export const fallbackToastRootStyle: Partial<CSSStyleDeclaration> = {
   boxShadow: "0 24px 60px rgba(0, 0, 0, 0.32)",
   color: "#f7f3ed",
   fontFamily: UI_FONT_STACK
-};
+} satisfies Partial<CSSStyleDeclaration>;
 
-export const fallbackToastTitleStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastTitleStyle = {
   display: "block",
   marginBottom: "8px",
   fontSize: "14px",
   fontWeight: "700",
   letterSpacing: "-0.01em"
-};
+} satisfies Partial<CSSStyleDeclaration>;
 
-export const fallbackToastBodyStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastBodyStyle = {
   margin: "0",
   fontSize: "13px",
   lineHeight: "1.45",
   fontWeight: "500"
-};
+} satisfies Partial<CSSStyleDeclaration>;
 
-export const fallbackToastActionsStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastActionsStyle = {
   display: "flex",
   gap: "8px",
   marginTop: "14px"
-};
+} satisfies Partial<CSSStyleDeclaration>;
 
-export const fallbackToastPrimaryButtonStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastPrimaryButtonStyle = {
   appearance: "none",
   border: "none",
   borderRadius: "999px",
@@ -48,9 +48,9 @@ export const fallbackToastPrimaryButtonStyle: Partial<CSSStyleDeclaration> = {
   fontSize: "12px",
   letterSpacing: "0.03em",
   cursor: "pointer"
-};
+} satisfies Partial<CSSStyleDeclaration>;
 
-export const fallbackToastSecondaryButtonStyle: Partial<CSSStyleDeclaration> = {
+export const fallbackToastSecondaryButtonStyle = {
   appearance: "none",
   border: "1px solid rgba(255,255,255,0.18)",
   borderRadius: "999px",
@@ -62,4 +62,4 @@ export const fallbackToastSecondaryButtonStyle: Partial<CSSStyleDeclaration> = {
   fontSize: "12px",
   letterSpacing: "0.02em",
   cursor: "pointer"
-};
+} satisfies Partial<CSSStyleDeclaration>;

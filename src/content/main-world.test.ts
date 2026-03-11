@@ -757,7 +757,7 @@ describe("main-world bridge", () => {
     installBridgeTestGlobals();
     const { __unit } = await loadMainWorldUnitModule();
     const context = new AudioContext() as unknown as FakeAudioContext;
-    const bridgeState = __unit.createBridgeState(context as unknown as AudioContext, 42) as {
+    const bridgeState = __unit.createBridgeState(context as unknown as AudioContext, 42) as unknown as {
       id: number;
       inputNode: FakeGainNode;
       inputAnalyser: FakeAnalyserNode;

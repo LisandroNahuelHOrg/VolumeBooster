@@ -1,14 +1,15 @@
-import type { AutoSessionAttachFailedPayload } from "../../../../shared/types";
+import type { AutoSessionAttachFailedPayload, EngineLane } from "../../../../shared/types";
 import { makeAutoStatus } from "./make-auto-status";
 
 export function makeAttachFailure(
-  overrides: Partial<AutoSessionAttachFailedPayload> = {}
+  overrides: Omit<Partial<AutoSessionAttachFailedPayload>, "engineLane"> & { engineLane?: EngineLane } = {}
 ): AutoSessionAttachFailedPayload {
+  const { engineLane: _ignoredEngineLane, ...statusOverrides } = overrides;
   return {
     ...makeAutoStatus({
       autoAttachState: "failed",
       autoAttachReason: "attach_failed",
-      ...overrides
+      ...statusOverrides
     }),
     engineLane: "auto_media_element",
     streamState: "inactive",

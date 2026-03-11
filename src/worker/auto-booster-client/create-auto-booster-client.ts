@@ -7,6 +7,7 @@ import { injectRegisteredScriptsIntoTab } from "./inject-registered-scripts-into
 import { queryInjectableTabs } from "./query-injectable-tabs";
 import { registerGlobalContentScripts } from "./register-global-content-scripts";
 import { requestGlobalPermission } from "./request-global-permission";
+import { sendMessageToFrame } from "./send-message-to-frame";
 import { unregisterGlobalContentScripts } from "./unregister-global-content-scripts";
 
 export function createAutoBoosterClient(): AutoBoosterClient {
@@ -14,6 +15,7 @@ export function createAutoBoosterClient(): AutoBoosterClient {
     configure: configureAutoBooster,
     disable: disableAutoBooster,
     getDebugState: getAutoBoosterDebugState,
+    sendMessageToFrame,
     requestGlobalPermission,
     hasGlobalPermission,
     queryInjectableTabs,

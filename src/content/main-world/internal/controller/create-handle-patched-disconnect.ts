@@ -3,10 +3,18 @@ import type { MainWorldController } from "../main-world-runtime-state";
 export function createHandlePatchedDisconnect(controller: MainWorldController): AudioNode["disconnect"] {
   return function patchedDisconnect(
     this: AudioNode,
-    destinationNode?: AudioNode | AudioParam,
-    output?: number,
+    destinationOrOutput?: AudioNode | AudioParam | number,
+    outputOrInput?: number,
     input?: number
   ): void {
+    if (typeof destinationOrOutput === "number") {
+      (controller.originalDisconnect as unknown as (output?: number) => void).call(this, destinationOrOutput);
+      controller.reportStatus();
+      return;
+    }
+
+    const destinationNode = destinationOrOutput;
+    const output = outputOrInput;
     const bridgeState = controller.resolveBridgeStateForNode(this);
 
     if (bridgeState && !bridgeState.internalNodes.has(this)) {
