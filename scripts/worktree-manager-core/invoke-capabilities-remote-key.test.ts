@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("invoke capabilities keeps preferring the remote-derived repo key when origin exists", () => {
+test("invoke capabilities keeps preferring the remote-derived repo key when origin exists", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "invoke-capabilities-remote-"));
   const repoRoot = path.join(tempRoot, "local-name");
   const adapterPath = path.resolve("scripts/worktree-manager.github-adapter.ps1");

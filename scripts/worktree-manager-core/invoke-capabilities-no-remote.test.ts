@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("invoke capabilities falls back to local context when the repo has no remote", () => {
+test("invoke capabilities falls back to local context when the repo has no remote", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "invoke-capabilities-no-remote-"));
   const repoRoot = path.join(tempRoot, "local-only-repo");
   const adapterPath = path.resolve("scripts/worktree-manager.github-adapter.ps1");

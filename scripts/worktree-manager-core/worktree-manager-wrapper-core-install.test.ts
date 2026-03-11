@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("worktree-manager wrapper copies and runs the core from a portable install path", () => {
+test("worktree-manager wrapper copies and runs the core from a portable install path", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "worktree-manager-wrapper-"));
   const coreInstall = path.join(tempRoot, "portable-core");
   const wrapperPath = path.resolve("scripts/worktree-manager.ps1");

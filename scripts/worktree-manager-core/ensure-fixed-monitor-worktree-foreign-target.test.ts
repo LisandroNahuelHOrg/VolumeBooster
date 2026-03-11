@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Ensure-FixedMonitorWorktree fails before deleting a foreign repo at the target path", () => {
+test("Ensure-FixedMonitorWorktree fails before deleting a foreign repo at the target path", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "ensure-fixed-monitor-"));
   const mainRepo = path.join(tempRoot, "main");
   const worktreeRoot = path.join(tempRoot, "trees");

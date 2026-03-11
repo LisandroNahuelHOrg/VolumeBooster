@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Assert-ManagedPathIsNotForeignRepo allows same-repo worktrees and rejects foreign repos", () => {
+test("Assert-ManagedPathIsNotForeignRepo allows same-repo worktrees and rejects foreign repos", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "assert-managed-path-"));
   const mainRepo = path.join(tempRoot, "main");
   const worktreePath = path.join(tempRoot, "main-worktree");

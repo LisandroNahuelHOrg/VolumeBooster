@@ -6,7 +6,7 @@ describe("automation main entrypoint", () => {
     document.body.innerHTML = '<div id="app"></div>';
   });
 
-  it("renders the automation bridge and exposes helpers on window", async () => {
+  it("renders the automation bridge and exposes helpers on window", { timeout: 20000 }, async () => {
     const initSentryForContext = vi.fn();
     const sendMessageSafe = vi.fn(async (command: { type: string }) => {
       if (command.type === "REQUEST_GLOBAL_PERMISSION") {

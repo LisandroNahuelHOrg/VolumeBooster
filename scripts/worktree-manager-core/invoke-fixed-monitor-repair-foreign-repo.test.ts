@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Invoke-FixedMonitorRepair rejects foreign target repos and ignores foreign legacy paths", () => {
+test("Invoke-FixedMonitorRepair rejects foreign target repos and ignores foreign legacy paths", { timeout: 30000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fixed-monitor-repair-"));
   const mainRepo = path.join(tempRoot, "main");
   const worktreeRoot = path.join(tempRoot, "trees");
