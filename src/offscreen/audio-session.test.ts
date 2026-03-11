@@ -114,8 +114,53 @@ type AudioSessionTestFallbackGraph = {
   dryGain: GainNode;
 };
 
+type AudioSessionTestState = {
+  audioContext: FakeAudioContext | null;
+  currentAsset: ReturnType<typeof selectFaustAsset>;
+  currentSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS;
+  engineStrategy: string;
+  fatalErrorNotified: boolean;
+  faustNode: MockFaustNode | null;
+  faustRecoveryInFlight: boolean;
+  faustRecoveryIntervalId: number | null;
+  fallbackGraph: AudioSessionTestFallbackGraph | null;
+  inputAnalyserNode: FakeAnalyserNode | null;
+  latestMetrics: Record<string, unknown>;
+  meterIntervalId: number | null;
+  outputAnalyserNode: FakeAnalyserNode | null;
+  sourceNode: FakeNode | null;
+  stream: FakeMediaStream | null;
+};
+
+type AudioSessionRecoveryDependencies = {
+  activateNativeFallbackGraph?: (
+    state: AudioSessionTestState,
+    audioContext: AudioContext,
+    inputAnalyserNode: AnalyserNode,
+    outputAnalyserNode: AnalyserNode
+  ) => void;
+  connectFaustGraph?: (
+    state: AudioSessionTestState,
+    audioContext: AudioContext,
+    inputAnalyserNode: AnalyserNode,
+    outputAnalyserNode: AnalyserNode,
+    asset: ReturnType<typeof selectFaustAsset>
+  ) => Promise<void>;
+};
+
 type AudioSessionTestables = {
+  activateNativeFallbackFromFaust(state: AudioSessionTestState): void;
+  applyAudioSessionRuntimeParameters(state: AudioSessionTestState): void;
+  applyFaustRuntimeParameters(state: AudioSessionTestState, runtime: DspRuntimeParameters): void;
   createAnalyser(audioContext: AudioContext): AnalyserNode;
+  createAudioSessionState(
+    gainPercent: number,
+    advancedAudioSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS,
+    callbacks: {
+      onTelemetry: (payload: unknown) => void;
+      onFatalError?: (errorMessage: { key: string }) => void;
+    }
+  ): AudioSessionTestState;
   getSampleSize(meta: { compile_options?: string | null | undefined }): number;
   readPeak(analyser: AnalyserNode): number;
   roundTo(value: number, decimals: number): number;
@@ -129,9 +174,21 @@ type AudioSessionTestables = {
     fallbackGraph: AudioSessionTestFallbackGraph,
     runtime: DspRuntimeParameters
   ): void;
+  attemptFaustRecovery(
+    state: AudioSessionTestState,
+    dependencies?: AudioSessionRecoveryDependencies
+  ): Promise<void>;
+  cancelFaustRecovery(state: AudioSessionTestState): void;
   createSoftClipCurve(intensity: number): Float32Array;
   dbToGain(decibels: number): number;
   clampNumber(value: number, min: number, max: number): number;
+  emitCurrentAudioSessionTelemetry(state: AudioSessionTestState): void;
+  ensureWorkletModule(audioContext: BaseAudioContext, modulePath: string): Promise<void>;
+  handleAudioSessionFatalError(state: AudioSessionTestState, errorMessage: { key: string }): void;
+  scheduleFaustRecovery(state: AudioSessionTestState): void;
+  startAudioSession(state: AudioSessionTestState, streamId: string): Promise<void>;
+  startAudioSessionMeter(state: AudioSessionTestState): void;
+  stopAudioSession(state: AudioSessionTestState): Promise<void>;
 };
 
 function getAudioSessionTestables(): AudioSessionTestables {
@@ -334,7 +391,7 @@ describe("AudioSession", () => {
 
     context.inputAnalyser.peak = 0.76321;
     context.outputAnalyser.peak = 0.42123;
-    (session as unknown as { emitCurrentTelemetry: () => void }).emitCurrentTelemetry();
+    session.setGainPercent(240);
 
     expect(onTelemetry).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -356,7 +413,7 @@ describe("AudioSession", () => {
     await session.start("stream-fallback-start");
     const context = FakeAudioContext.instances[0];
 
-    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
+    expect(hoisted.faustNodeInstances).toHaveLength(0);
     expect(context.createGain).toHaveBeenCalledTimes(3);
     expect(context.createBiquadFilter).toHaveBeenCalledTimes(2);
     expect(context.createDynamicsCompressor).toHaveBeenCalledTimes(1);
@@ -377,9 +434,14 @@ describe("AudioSession", () => {
     hoisted.factoryLoader.mockRejectedValueOnce(new Error("Faust init failed"));
     const onTelemetry = vi.fn();
     const onFatalError = vi.fn();
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry, onFatalError });
+    const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry, onFatalError }
+    );
 
-    await expect(session.start("stream-hard-fail")).rejects.toThrow(
+    await expect(__testables.startAudioSession(state, "stream-hard-fail")).rejects.toThrow(
       "The manual audio session could not initialize either Faust or the native fallback."
     );
 
@@ -390,33 +452,9 @@ describe("AudioSession", () => {
         warning: "danger"
       })
     );
-    expect(
-      (
-        session as unknown as {
-          audioContext: AudioContext | null;
-          sourceNode: MediaStreamAudioSourceNode | null;
-          engineStrategy: string;
-        }
-      ).audioContext
-    ).toBeNull();
-    expect(
-      (
-        session as unknown as {
-          audioContext: AudioContext | null;
-          sourceNode: MediaStreamAudioSourceNode | null;
-          engineStrategy: string;
-        }
-      ).sourceNode
-    ).toBeNull();
-    expect(
-      (
-        session as unknown as {
-          audioContext: AudioContext | null;
-          sourceNode: MediaStreamAudioSourceNode | null;
-          engineStrategy: string;
-        }
-      ).engineStrategy
-    ).toBe("faust");
+    expect(state.audioContext).toBeNull();
+    expect(state.sourceNode).toBeNull();
+    expect(state.engineStrategy).toBe("faust");
   });
 
   it("periodically retries Faust while running on the native fallback and restores it when available", async () => {
@@ -426,12 +464,12 @@ describe("AudioSession", () => {
 
     await session.start("stream-fallback-recovery");
 
-    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
+    expect(hoisted.faustNodeInstances).toHaveLength(0);
 
     const recoveryCallback = [...intervalCallbacks.values()][0];
     recoveryCallback?.();
     await vi.waitFor(() => {
-      expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("faust");
+      expect(hoisted.faustNodeInstances).toHaveLength(1);
     });
     expect(hoisted.faustNodeInstances).toHaveLength(1);
     expect(windowClearInterval).toHaveBeenCalledWith(1);
@@ -495,7 +533,6 @@ describe("AudioSession", () => {
         level: 0
       })
     );
-    expect((session as unknown as { engineStrategy: string }).engineStrategy).toBe("native_fallback");
     expect(faustNode.disconnect).toHaveBeenCalled();
     expect(windowSetInterval).toHaveBeenCalledTimes(2);
     expect(onFatalError).not.toHaveBeenCalled();
@@ -522,6 +559,12 @@ describe("AudioSession", () => {
   it("allows setters and meter guards to no-op before start", () => {
     const onTelemetry = vi.fn();
     const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry });
+    const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry: vi.fn() }
+    );
 
     expect(() => session.setGainPercent(240)).not.toThrow();
     expect(() =>
@@ -530,8 +573,8 @@ describe("AudioSession", () => {
         softClipMix: 11
       })
     ).not.toThrow();
-    expect(() => (session as unknown as { emitCurrentTelemetry: () => void }).emitCurrentTelemetry()).not.toThrow();
-    expect(() => (session as unknown as { startMeter: () => void }).startMeter()).not.toThrow();
+    expect(() => __testables.emitCurrentAudioSessionTelemetry(state)).not.toThrow();
+    expect(() => __testables.startAudioSessionMeter(state)).not.toThrow();
 
     expect(onTelemetry).not.toHaveBeenCalled();
     expect(windowSetInterval).not.toHaveBeenCalled();
@@ -740,34 +783,15 @@ describe("AudioSession", () => {
     expect(source).not.toContain("export const __testables");
   });
 
-  it("keeps exact initial state, applies parameters to the active engine, and only reports fatal errors once", async () => {
+  it("keeps exact initial state, applies parameters to the active engine, and only reports fatal errors once", () => {
     const onTelemetry = vi.fn();
     const onFatalError = vi.fn();
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry, onFatalError });
-    const internal = session as unknown as {
-      fatalErrorNotified: boolean;
-      faustRecoveryInFlight: boolean;
-      engineStrategy: string;
-      currentSettings: typeof DEFAULT_ADVANCED_AUDIO_SETTINGS;
-      currentAsset: {
-        controlPaths: Record<string, string>;
-      };
-      faustNode: MockFaustNode | null;
-      fallbackGraph: AudioSessionTestFallbackGraph | null;
-      inputAnalyserNode: FakeAnalyserNode | null;
-      outputAnalyserNode: FakeAnalyserNode | null;
-      latestMetrics: ReturnType<typeof applyQualityProtector>;
-      applyRuntimeParameters(): void;
-      emitCurrentTelemetry(): void;
-      startMeter(): void;
-      handleFatalError(errorMessage: { key: string }): void;
-    };
-
-    expect(internal.fatalErrorNotified).toBe(false);
-    expect(internal.faustRecoveryInFlight).toBe(false);
-    expect(internal.engineStrategy).toBe("faust");
-
     const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry, onFatalError }
+    );
     const context = new FakeAudioContext();
     const fallbackGraph = __testables.createNativeFallbackGraph(
       context as unknown as AudioContext,
@@ -783,49 +807,32 @@ describe("AudioSession", () => {
       options: {}
     } as unknown as MockFaustNode;
 
-    internal.currentAsset = {
-      controlPaths: {
-        inputDriveDb: "inputDriveDb",
-        lookaheadMs: "lookaheadMs",
-        releaseMs: "releaseMs",
-        multibandDepth: "multibandDepth",
-        protectorEnabled: "protectorEnabled",
-        outputLimiterEnabled: "outputLimiterEnabled",
-        lowBandTrimDb: "lowBandTrimDb",
-        lowBandMakeupDb: "lowBandMakeupDb",
-        lowBandThresholdOffsetDb: "lowBandThresholdOffsetDb",
-        lowBandRatioBias: "lowBandRatioBias",
-        midHighThresholdOffsetDb: "midHighThresholdOffsetDb",
-        outputCeilingDb: "outputCeilingDb",
-        outputSoftClipMix: "outputSoftClipMix",
-        clarityPresenceTiltDb: "clarityPresenceTiltDb",
-        toneLowBandGainDb: "toneLowBandGainDb",
-        toneMidBandGainDb: "toneMidBandGainDb"
-      }
-    };
-    internal.fallbackGraph = fallbackGraph;
-    internal.inputAnalyserNode = context.inputAnalyser;
-    internal.outputAnalyserNode = null;
-    internal.emitCurrentTelemetry();
-    internal.startMeter();
+    expect(state.fatalErrorNotified).toBe(false);
+    expect(state.faustRecoveryInFlight).toBe(false);
+    expect(state.engineStrategy).toBe("faust");
+    state.fallbackGraph = fallbackGraph;
+    state.inputAnalyserNode = context.inputAnalyser;
+    state.outputAnalyserNode = null;
+    __testables.emitCurrentAudioSessionTelemetry(state);
+    __testables.startAudioSessionMeter(state);
     expect(onTelemetry).not.toHaveBeenCalled();
     expect(windowSetInterval).not.toHaveBeenCalled();
 
-    internal.outputAnalyserNode = context.outputAnalyser;
-    internal.faustNode = faustNode;
-    internal.engineStrategy = "faust";
-    internal.applyRuntimeParameters();
+    state.outputAnalyserNode = context.outputAnalyser;
+    state.faustNode = faustNode;
+    state.engineStrategy = "faust";
+    __testables.applyAudioSessionRuntimeParameters(state);
     expect(faustNode.setParamValue).toHaveBeenCalled();
     expect(fallbackGraph.preGain.gain.value).toBe(0);
 
     faustNode.setParamValue.mockClear();
-    internal.faustNode = null;
-    internal.applyRuntimeParameters();
+    state.faustNode = null;
+    __testables.applyAudioSessionRuntimeParameters(state);
     expect(faustNode.setParamValue).not.toHaveBeenCalled();
     expect(fallbackGraph.preGain.gain.value).not.toBe(0);
 
-    internal.handleFatalError({ key: "errorAudioPipelineStart" });
-    internal.handleFatalError({ key: "errorAudioPipelineStart" });
+    __testables.handleAudioSessionFatalError(state, { key: "errorAudioPipelineStart" });
+    __testables.handleAudioSessionFatalError(state, { key: "errorAudioPipelineStart" });
     expect(onFatalError).toHaveBeenCalledTimes(1);
     expect(onTelemetry).toHaveBeenCalledTimes(1);
     expect(onTelemetry).toHaveBeenLastCalledWith(
@@ -834,114 +841,71 @@ describe("AudioSession", () => {
         warning: "danger"
       })
     );
-    expect(internal.fatalErrorNotified).toBe(true);
+    expect(state.fatalErrorNotified).toBe(true);
   });
 
   it("keeps fatal handlers optional and resets exact runtime state after stop", async () => {
     getUserMedia.mockResolvedValue(new FakeMediaStream() as unknown as MediaStream);
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn() });
-    const internal = session as unknown as {
-      latestMetrics: { clipEvents: number; protectionBypassed: boolean };
-      fatalErrorNotified: boolean;
-      faustRecoveryInFlight: boolean;
-      engineStrategy: string;
-      handleFatalError(errorMessage: { key: string }): void;
-    };
+    const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry: vi.fn() }
+    );
 
-    expect(() => internal.handleFatalError({ key: "errorAudioPipelineStart" })).not.toThrow();
-    expect(internal.fatalErrorNotified).toBe(true);
+    expect(() => __testables.handleAudioSessionFatalError(state, { key: "errorAudioPipelineStart" })).not.toThrow();
+    expect(state.fatalErrorNotified).toBe(true);
 
-    await session.start("stream-reset");
-    internal.fatalErrorNotified = true;
-    internal.faustRecoveryInFlight = true;
-    internal.engineStrategy = "native_fallback";
+    await __testables.startAudioSession(state, "stream-reset");
+    state.fatalErrorNotified = true;
+    state.faustRecoveryInFlight = true;
+    state.engineStrategy = "native_fallback";
+    await __testables.stopAudioSession(state);
 
-    await session.stop();
-
-    expect(internal.latestMetrics).toMatchObject({
+    expect(state.latestMetrics).toMatchObject({
       clipEvents: 0,
       protectionBypassed: false
     });
-    expect(internal.fatalErrorNotified).toBe(false);
-    expect(internal.faustRecoveryInFlight).toBe(false);
-    expect(internal.engineStrategy).toBe("faust");
+    expect(state.fatalErrorNotified).toBe(false);
+    expect(state.faustRecoveryInFlight).toBe(false);
+    expect(state.engineStrategy).toBe("faust");
   });
 
-  it("lets native fallback activation tolerate missing optional Faust and source nodes and no-op faust param writes", async () => {
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn() });
-    const internal = session as unknown as {
-      engineStrategy: string;
-      audioContext: FakeAudioContext | null;
-      sourceNode: FakeNode | null;
-      inputAnalyserNode: FakeAnalyserNode | null;
-      outputAnalyserNode: FakeAnalyserNode | null;
-      faustNode: MockFaustNode | null;
-      fallbackGraph: unknown;
-      currentAsset: {
-        controlPaths: Record<string, string>;
-      };
-      activateNativeFallbackFromFaust(): void;
-      applyFaustRuntimeParameters(runtime: ReturnType<typeof applyQualityProtector>): void;
-    };
+  it("lets native fallback activation tolerate missing optional Faust and source nodes and no-op faust param writes", () => {
+    const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry: vi.fn() }
+    );
     const context = new FakeAudioContext();
 
-    internal.engineStrategy = "faust";
-    internal.audioContext = context;
-    internal.sourceNode = null;
-    internal.inputAnalyserNode = context.inputAnalyser;
-    internal.outputAnalyserNode = context.outputAnalyser;
-    internal.faustNode = null;
-    internal.currentAsset = {
-      controlPaths: {
-        inputDriveDb: "inputDriveDb",
-        lookaheadMs: "lookaheadMs",
-        releaseMs: "releaseMs",
-        multibandDepth: "multibandDepth",
-        protectorEnabled: "protectorEnabled",
-        outputLimiterEnabled: "outputLimiterEnabled",
-        lowBandTrimDb: "lowBandTrimDb",
-        lowBandMakeupDb: "lowBandMakeupDb",
-        lowBandThresholdOffsetDb: "lowBandThresholdOffsetDb",
-        lowBandRatioBias: "lowBandRatioBias",
-        midHighThresholdOffsetDb: "midHighThresholdOffsetDb",
-        outputCeilingDb: "outputCeilingDb",
-        outputSoftClipMix: "outputSoftClipMix",
-        clarityPresenceTiltDb: "clarityPresenceTiltDb",
-        toneLowBandGainDb: "toneLowBandGainDb",
-        toneMidBandGainDb: "toneMidBandGainDb"
-      }
-    };
+    state.engineStrategy = "faust";
+    state.audioContext = context;
+    state.sourceNode = null;
+    state.inputAnalyserNode = context.inputAnalyser;
+    state.outputAnalyserNode = context.outputAnalyser;
+    state.faustNode = null;
 
     expect(() =>
-      internal.applyFaustRuntimeParameters(
+      __testables.applyFaustRuntimeParameters(
+        state,
         applyQualityProtector(buildDspRuntimeParameters(180, DEFAULT_ADVANCED_AUDIO_SETTINGS))
       )
     ).not.toThrow();
 
-    internal.activateNativeFallbackFromFaust();
-
-    expect(internal.engineStrategy).toBe("native_fallback");
-    expect(internal.fallbackGraph).not.toBeNull();
+    __testables.activateNativeFallbackFromFaust(state);
+    expect(state.engineStrategy).toBe("native_fallback");
+    expect(state.fallbackGraph).not.toBeNull();
   });
 
   it("guards fallback activation and recovery timers, and caches worklet modules per context", async () => {
     const __testables = getAudioSessionTestables();
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn() });
-    const internal = session as unknown as {
-      engineStrategy: string;
-      audioContext: FakeAudioContext | null;
-      sourceNode: FakeNode | null;
-      inputAnalyserNode: FakeAnalyserNode | null;
-      outputAnalyserNode: FakeAnalyserNode | null;
-      faustNode: MockFaustNode | null;
-      fallbackGraph: AudioSessionTestFallbackGraph | null;
-      faustRecoveryIntervalId: number | null;
-      faustRecoveryInFlight: boolean;
-      activateNativeFallbackFromFaust(): void;
-      scheduleFaustRecovery(): void;
-      cancelFaustRecovery(): void;
-      attemptFaustRecovery(): Promise<void>;
-    };
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry: vi.fn() }
+    );
     const context = new FakeAudioContext();
     const faustNode = {
       listeners: new Map<string, EventListener>(),
@@ -952,70 +916,57 @@ describe("AudioSession", () => {
       options: {}
     } as unknown as MockFaustNode;
 
-    internal.engineStrategy = "native_fallback";
-    internal.activateNativeFallbackFromFaust();
-    expect(internal.fallbackGraph).toBeNull();
+    state.engineStrategy = "native_fallback";
+    __testables.activateNativeFallbackFromFaust(state);
+    expect(state.fallbackGraph).toBeNull();
 
-    internal.engineStrategy = "faust";
-    internal.audioContext = context;
-    internal.sourceNode = context.sourceNode;
-    internal.inputAnalyserNode = context.inputAnalyser;
-    internal.outputAnalyserNode = context.outputAnalyser;
-    internal.faustNode = faustNode;
-    internal.activateNativeFallbackFromFaust();
+    state.engineStrategy = "faust";
+    state.audioContext = context;
+    state.sourceNode = context.sourceNode;
+    state.inputAnalyserNode = context.inputAnalyser;
+    state.outputAnalyserNode = context.outputAnalyser;
+    state.faustNode = faustNode;
+    __testables.activateNativeFallbackFromFaust(state);
 
-    expect(internal.engineStrategy).toBe("native_fallback");
+    expect(state.engineStrategy).toBe("native_fallback");
     expect(faustNode.disconnect).toHaveBeenCalledTimes(1);
     expect(context.sourceNode.disconnect).toHaveBeenCalledTimes(1);
     expect(context.sourceNode.connect).toHaveBeenCalledWith(context.inputAnalyser);
-    expect(internal.fallbackGraph).not.toBeNull();
-
-    internal.scheduleFaustRecovery();
-    internal.scheduleFaustRecovery();
+    expect(state.fallbackGraph).not.toBeNull();
+    __testables.scheduleFaustRecovery(state);
+    __testables.scheduleFaustRecovery(state);
     expect(windowSetInterval).toHaveBeenCalledTimes(1);
 
-    await internal.attemptFaustRecovery();
-    expect(internal.engineStrategy).toBe("faust");
-    expect(internal.faustRecoveryInFlight).toBe(false);
-
-    internal.cancelFaustRecovery();
+    await __testables.attemptFaustRecovery(state);
+    expect(state.engineStrategy).toBe("faust");
+    expect(state.faustRecoveryInFlight).toBe(false);
+    __testables.cancelFaustRecovery(state);
     expect(windowClearInterval).toHaveBeenCalled();
-    expect(internal.faustRecoveryIntervalId).toBeNull();
-    expect(internal.faustRecoveryInFlight).toBe(false);
+    expect(state.faustRecoveryIntervalId).toBeNull();
+    expect(state.faustRecoveryInFlight).toBe(false);
 
-    const ensureWorkletModule = AudioSession as unknown as {
-      ensureWorkletModule(audioContext: BaseAudioContext, modulePath: string): Promise<void>;
-    };
     const cacheContext = new FakeAudioContext() as unknown as BaseAudioContext;
-
-    await ensureWorkletModule.ensureWorkletModule(cacheContext, "mono-worklet.js");
-    await ensureWorkletModule.ensureWorkletModule(cacheContext, "mono-worklet.js");
-
+    await __testables.ensureWorkletModule(cacheContext, "mono-worklet.js");
+    await __testables.ensureWorkletModule(cacheContext, "mono-worklet.js");
     expect((cacheContext as unknown as FakeAudioContext).audioWorklet.addModule).toHaveBeenCalledTimes(1);
   });
 
   it("guards faust recovery while in flight and reports fatal errors when recovery cannot restore either engine", async () => {
     const onFatalError = vi.fn();
-    const session = new AudioSession(180, { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }, { onTelemetry: vi.fn(), onFatalError });
-    const internal = session as unknown as {
-      engineStrategy: string;
-      audioContext: FakeAudioContext | null;
-      inputAnalyserNode: FakeAnalyserNode | null;
-      outputAnalyserNode: FakeAnalyserNode | null;
-      faustRecoveryInFlight: boolean;
-      currentAsset: ReturnType<typeof selectFaustAsset>;
-      connectFaustGraph: ReturnType<typeof vi.fn>;
-      activateNativeFallbackGraph: ReturnType<typeof vi.fn>;
-      attemptFaustRecovery(): Promise<void>;
-    };
+    const __testables = getAudioSessionTestables();
+    const state = __testables.createAudioSessionState(
+      180,
+      { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+      { onTelemetry: vi.fn(), onFatalError }
+    );
     const context = new FakeAudioContext();
     let resolveRecovery: (() => void) | undefined;
 
-    internal.engineStrategy = "native_fallback";
-    internal.audioContext = context;
-    internal.inputAnalyserNode = context.inputAnalyser;
-    internal.outputAnalyserNode = context.outputAnalyser;
-    internal.currentAsset = (selectFaustAsset as ReturnType<typeof vi.fn>).mock.results[0]?.value ?? {
+    state.engineStrategy = "native_fallback";
+    state.audioContext = context;
+    state.inputAnalyserNode = context.inputAnalyser;
+    state.outputAnalyserNode = context.outputAnalyser;
+    state.currentAsset = (selectFaustAsset as ReturnType<typeof vi.fn>).mock.results[0]?.value ?? {
       meta: { compile_options: "-single" },
       processorName: "mono",
       workletModulePath: "mono-worklet.js",
@@ -1039,36 +990,34 @@ describe("AudioSession", () => {
       },
       loadFactory: hoisted.factoryLoader
     };
-    internal.connectFaustGraph = vi.fn(
+    const connectFaustGraph = vi.fn(
       () =>
         new Promise<void>((resolve) => {
           resolveRecovery = resolve;
         })
     );
 
-    const firstRecovery = internal.attemptFaustRecovery();
-    expect(internal.faustRecoveryInFlight).toBe(true);
+    const firstRecovery = __testables.attemptFaustRecovery(state, { connectFaustGraph });
+    expect(state.faustRecoveryInFlight).toBe(true);
+    await __testables.attemptFaustRecovery(state, { connectFaustGraph });
+    expect(connectFaustGraph).toHaveBeenCalledTimes(1);
 
-    await internal.attemptFaustRecovery();
-    expect(internal.connectFaustGraph).toHaveBeenCalledTimes(1);
-
-    const completeRecovery = resolveRecovery;
-    completeRecovery?.();
+    resolveRecovery?.();
     await firstRecovery;
-    expect(internal.faustRecoveryInFlight).toBe(false);
-    expect(internal.engineStrategy).toBe("faust");
+    expect(state.faustRecoveryInFlight).toBe(false);
+    expect(state.engineStrategy).toBe("faust");
 
-    internal.engineStrategy = "native_fallback";
-    internal.connectFaustGraph = vi.fn(async () => {
-      throw new Error("Faust recovery failed");
+    state.engineStrategy = "native_fallback";
+    await __testables.attemptFaustRecovery(state, {
+      activateNativeFallbackGraph: vi.fn(() => {
+        throw new Error("Fallback recovery failed");
+      }),
+      connectFaustGraph: vi.fn(async () => {
+        throw new Error("Faust recovery failed");
+      })
     });
-    internal.activateNativeFallbackGraph = vi.fn(() => {
-      throw new Error("Fallback recovery failed");
-    });
-
-    await internal.attemptFaustRecovery();
 
     expect(onFatalError).toHaveBeenCalledWith({ key: "errorAudioPipelineStart" });
-    expect(internal.faustRecoveryInFlight).toBe(false);
+    expect(state.faustRecoveryInFlight).toBe(false);
   });
 });

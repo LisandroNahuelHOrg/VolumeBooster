@@ -1,0 +1,6 @@
+export const LOW_SHELF_FREQUENCY_HZ = 180;
+export const MID_PEAK_FREQUENCY_HZ = 1700;
+export const MID_PEAK_Q = 0.82;
+export const PROTECTION_DEPTH_ATTACK_FLOOR_SEC = 0.003;
+export const MAX_OUTPUT_GAIN_DB = 0;
+export const FAUST_RECOVERY_RETRY_MS = 15000;
