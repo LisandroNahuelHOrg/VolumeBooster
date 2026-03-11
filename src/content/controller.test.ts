@@ -42,6 +42,7 @@ import {
   createBridgeStatusEvent,
   createBridgeTelemetryEvent
 } from "./bridge-protocol";
+import type { MediaElementSessionHandle } from "./media-element-session";
 import { MediaElementSession, MediaElementSessionError } from "./media-element-session";
 
 function makeTelemetry(
@@ -1497,7 +1498,7 @@ describe("AutoBoosterController", () => {
           controllerInternals.state.attachReason = "no_media";
           controllerInternals.trackedSessions.clear();
           controllerInternals.trackedSessions.set({} as HTMLMediaElement, {
-            session: createFakeSession() as unknown as MediaElementSession,
+            session: createFakeSession() as unknown as MediaElementSessionHandle,
             lastTelemetry: makeTelemetry()
           });
         }
