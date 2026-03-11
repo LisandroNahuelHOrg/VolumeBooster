@@ -39,7 +39,7 @@
 
 param(
     [Parameter(Position = 0, Mandatory = $true)]
-    [ValidateSet("create", "ship", "list", "cleanup", "scope-check", "fixed-open", "fixed-ship", "fixed-ship-all", "fixed-list", "help")]
+    [ValidateSet("create", "ship", "list", "cleanup", "scope-check", "fixed-open", "fixed-ship", "fixed-ship-all", "fixed-list", "help", "sanitize-main")]
     [string]$Command,
 
     [Parameter(Position = 1)]
@@ -4475,6 +4475,13 @@ switch ($Command) {
 
             Write-Host ""
             Write-Host "🧹 Cleanup completado (aislado): $cleaned objetivo(s) removido(s), $($remaining.Count) lock(s) activo(s)."
+        }
+    }
+
+    "sanitize-main" {
+        $sanitized = Invoke-MainLocalAutosanitizeForShip
+        if (-not $sanitized) {
+            throw "❌ El saneamiento automático de '$BaseBranch' local no quedó confirmado."
         }
     }
 }

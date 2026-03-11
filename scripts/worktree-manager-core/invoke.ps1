@@ -4,6 +4,7 @@ param(
     [string]$Type,
     [string]$Agent,
     [string]$Scope,
+    [switch]$Json,
     [Parameter(Mandatory = $true)]
     [string]$RepoRoot,
     [Parameter(Mandatory = $true)]
@@ -25,7 +26,6 @@ $config = Read-ManagerConfig -RepoRoot $resolvedRepoRoot
 $remoteMeta = Resolve-RemoteMetadata -RepoRoot $resolvedRepoRoot -PreferredRemote "$($config.preferredRemote)"
 $baseBranch = Resolve-BaseBranch -RepoRoot $resolvedRepoRoot -RemoteName $remoteMeta.Name -BaseBranchOverride "$($config.baseBranch)"
 $repoKey = Resolve-RepoKey -RepoRoot $resolvedRepoRoot -RemoteUrl $remoteMeta.Url
-$adapter = Resolve-AdapterPath -RepoRoot $resolvedRepoRoot -AdapterPathHint $AdapterPath -Config $config
 $diagnosticsDir = if ([string]::IsNullOrWhiteSpace("$($config.diagnosticsDir)")) {
     Join-Path $resolvedRepoRoot ".agent\0. Agents Brain\diagnostics\worktree-manager"
 } elseif ([System.IO.Path]::IsPathRooted("$($config.diagnosticsDir)")) {
@@ -36,8 +36,22 @@ $diagnosticsDir = if ([string]::IsNullOrWhiteSpace("$($config.diagnosticsDir)"))
 $worktreeRoot = Join-Path "D:\Local Worktrees" $repoKey
 $hookPrep = if ([string]::IsNullOrWhiteSpace("$($config.hooks.dependencyPrep)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.dependencyPrep)" }
 $hookShip = if ([string]::IsNullOrWhiteSpace("$($config.hooks.preShip)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.preShip)" }
+$scopeLockFile = Join-Path $resolvedRepoRoot ".agent\worktree-scope-lock.$repoKey.json"
 $definitions = Get-FixedMonitorDefinitions -WorktreeRoot $worktreeRoot
 $monitorKeys = @()
+
+if ($Command -eq "capabilities") {
+    $capabilities = Get-ManagerCapabilities `
+        -RepoRoot $resolvedRepoRoot `
+        -BaseBranch $baseBranch `
+        -WorktreeRoot $worktreeRoot `
+        -RepoKey $repoKey `
+        -ScopeLockFilePath $scopeLockFile
+    Write-ManagerCapabilities -Capabilities $capabilities -Json:$Json
+    exit 0
+}
+
+$adapter = Resolve-AdapterPath -RepoRoot $resolvedRepoRoot -AdapterPathHint $AdapterPath -Config $config
 
 if ($Command -eq "fixed-list" -or $Command -eq "fixed-ship-all") { $monitorKeys = $definitions.Keys }
 if ($Command -eq "fixed-open" -or $Command -eq "fixed-ship") {
