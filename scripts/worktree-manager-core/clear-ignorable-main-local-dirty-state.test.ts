@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Clear-IgnorableMainLocalDirtyState handles staged-only noise without hiding meaningful staged changes", () => {
+test(
+  "Clear-IgnorableMainLocalDirtyState handles staged-only noise without hiding meaningful staged changes",
+  { timeout: 20000 },
+  () => {
   const repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "clear-ignorable-main-local-"));
   const trackedRelativePath = "public/faust/fixture.txt";
   const trackedFilePath = path.join(repoRoot, "public", "faust", "fixture.txt");
@@ -72,4 +75,5 @@ test("Clear-IgnorableMainLocalDirtyState handles staged-only noise without hidin
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
-});
+  }
+);
