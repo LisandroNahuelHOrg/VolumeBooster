@@ -5,6 +5,7 @@ import {
   closePopupSettings,
   createPopupUiState,
   enqueuePopupThemePersistence,
+  getNextPopupTheme,
   openPopupSettings,
   togglePopupThemeLocally,
   togglePopupTheme
@@ -28,6 +29,11 @@ describe("popup-ui-state", () => {
 
     applyPopupTheme("dark");
     expect(document.documentElement.dataset.popupTheme).toBe("dark");
+  });
+
+  it("resolves the opposite popup theme", () => {
+    expect(getNextPopupTheme("dark")).toBe("light");
+    expect(getNextPopupTheme("light")).toBe("dark");
   });
 
   it("toggles the popup theme, updates the document, and persists the new choice", async () => {

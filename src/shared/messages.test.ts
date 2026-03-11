@@ -44,6 +44,9 @@ describe("messages helpers", () => {
       ok: false,
       errorMessage: { key: "errorRuntimeNoResponse" }
     });
+    expect(message("errorRuntimeNoResponse")).toEqual({
+      key: "errorRuntimeNoResponse"
+    });
     expect(message("rememberSite", { domain: "youtube.com" })).toEqual({
       key: "rememberSite",
       substitutions: { domain: "youtube.com" }
@@ -170,6 +173,17 @@ describe("messages helpers", () => {
 
   it("converts a rejected runtime message into a controlled failure", async () => {
     runtimeSendMessage.mockRejectedValue(new Error("Could not establish connection. Receiving end does not exist."));
+
+    await expect(sendMessageSafe({ type: "GET_STATE" })).resolves.toEqual({
+      ok: false,
+      errorMessage: { key: "errorRuntimeMessageUndeliverable" }
+    });
+  });
+
+  it("converts a synchronously thrown runtime message into a controlled failure", async () => {
+    runtimeSendMessage.mockImplementation(() => {
+      throw new Error("Synchronous runtime failure");
+    });
 
     await expect(sendMessageSafe({ type: "GET_STATE" })).resolves.toEqual({
       ok: false,

@@ -1,8 +1,7 @@
 // @vitest-environment happy-dom
 
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import {
   applyQualityPreset,
   applyQualityProtector,
@@ -13,6 +12,7 @@ import {
   deriveWarningFromMetrics
 } from "../shared/audio-settings";
 import { METER_SAMPLE_MS } from "../shared/constants";
+import type { MainWorldTestables } from "./main-world/internal/main-world-runtime-state";
 import type { BridgeStatusPayload, BridgeTelemetryPayload } from "./bridge-protocol";
 import {
   BRIDGE_COMMAND_EVENT,
@@ -214,47 +214,21 @@ function expectedCurveValue(intensity: number, index: number, length: number): n
   return Math.tanh(x * drive);
 }
 
-const generatedUnitModulePaths = new Set<string>();
+function getMainWorldTestables(): MainWorldTestables {
+  const testables = window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__;
+
+  if (!testables) {
+    throw new Error("Expected __PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__ to be attached in test mode.");
+  }
+
+  return testables;
+}
 
 async function loadMainWorldUnitModule() {
-  const sourcePath = resolve(process.cwd(), "src/content/main-world.ts");
-  const source = readFileSync(sourcePath, "utf8");
-  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const unitPath = resolve(process.cwd(), `src/content/__main-world-unit-${suffix}.ts`);
-  const unitSource = `${source}
-
-export const __unit = {
-  WebAudioBridgeController,
-  createBridgeState,
-  createAnalyser,
-  createSoftClipCurve,
-  readPeak,
-  getAutoplayPolicy,
-  dbToGain,
-  clampNumber,
-  roundTo,
-  pickHighestWarning
-};
-`;
-
-  writeFileSync(unitPath, unitSource, "utf8");
-  generatedUnitModulePaths.add(unitPath);
   window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_BOOTED__ = true;
+  await import("./main-world");
 
-  return import(`${pathToFileURL(unitPath).href}?t=${suffix}`) as Promise<{
-    __unit: {
-      WebAudioBridgeController: new () => unknown;
-      createBridgeState: (context: AudioContext, id: number) => unknown;
-      createAnalyser: (context: AudioContext) => AnalyserNode;
-      createSoftClipCurve: (intensity: number) => Float32Array;
-      readPeak: (analyser: AnalyserNode) => number;
-      getAutoplayPolicy: (audioContext: AudioContext) => string | undefined;
-      dbToGain: (decibels: number) => number;
-      clampNumber: (value: number, min: number, max: number) => number;
-      roundTo: (value: number, precision: number) => number;
-      pickHighestWarning: (current: "none" | "high" | "danger", next: "none" | "high" | "danger") => string;
-    };
-  }>;
+  return { __unit: getMainWorldTestables() };
 }
 
 describe("main-world bridge", () => {
@@ -264,15 +238,12 @@ describe("main-world bridge", () => {
     vi.unstubAllGlobals();
     vi.resetModules();
     FakeAudioContext.reset();
-    for (const unitPath of generatedUnitModulePaths) {
-      rmSync(unitPath, { force: true });
-    }
-    generatedUnitModulePaths.clear();
     delete window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_BOOTED__;
     delete window.__PRISM_AUTO_BOOSTER_MAIN_IMPORT_PROMISE__;
+    delete window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__;
   });
 
-  it("bootstraps, patches constructors, wires the bridge graph, and emits idle status without test hooks", async () => {
+  it("bootstraps, patches constructors, wires the bridge graph, and emits idle status with test-only hooks", async () => {
     installBridgeTestGlobals();
     const { statusEvents } = seedStatusAndTelemetryCollectors();
 
@@ -289,8 +260,10 @@ describe("main-world bridge", () => {
     });
     expect(window.AudioContext.name).toBe("FakeAudioContext");
     expect(window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_BOOTED__).toBe(true);
-    expect((window as Window & { __PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__?: unknown })
-      .__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__).toBeUndefined();
+    expect(window.__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__).toMatchObject({
+      createMainWorldController: expect.any(Function),
+      createBridgeState: expect.any(Function)
+    });
 
     const context = new AudioContext() as unknown as FakeAudioContext;
     const bridgeNodes = getBridgeNodes(context);
@@ -727,7 +700,7 @@ describe("main-world bridge", () => {
     });
   });
 
-  it("exposes helper math and policy fallbacks through a test-only transformed module", async () => {
+  it("exposes helper math and policy fallbacks through the test-only window hook", async () => {
     installBridgeTestGlobals();
     const { __unit } = await loadMainWorldUnitModule();
 
@@ -780,11 +753,11 @@ describe("main-world bridge", () => {
     expect(__unit.getAutoplayPolicy(context)).toBe("allowed");
   });
 
-  it("creates bridge state with internal-node membership and default bypass metrics through the transformed module", async () => {
+  it("creates bridge state with internal-node membership and default bypass metrics through the test-only hook", async () => {
     installBridgeTestGlobals();
     const { __unit } = await loadMainWorldUnitModule();
     const context = new AudioContext() as unknown as FakeAudioContext;
-    const bridgeState = __unit.createBridgeState(context as unknown as AudioContext, 42) as {
+    const bridgeState = __unit.createBridgeState(context as unknown as AudioContext, 42) as unknown as {
       id: number;
       inputNode: FakeGainNode;
       inputAnalyser: FakeAnalyserNode;
@@ -820,14 +793,14 @@ describe("main-world bridge", () => {
     expect(bridgeState.dryGain.connections[0]?.destination).toBe(context.destination);
   });
 
-  it("guards telemetry timers, filters inactive bridge states, and tracks bridge memberships through the transformed controller", async () => {
+  it("guards telemetry timers, filters inactive bridge states, and tracks bridge memberships through the test-only controller factory", async () => {
     vi.useFakeTimers();
     installBridgeTestGlobals();
     const setIntervalSpy = vi.spyOn(window, "setInterval");
     const clearIntervalSpy = vi.spyOn(window, "clearInterval");
     const { __unit } = await loadMainWorldUnitModule();
     const { telemetryEvents } = seedStatusAndTelemetryCollectors();
-    const controller = new __unit.WebAudioBridgeController() as {
+    const controller = __unit.createMainWorldController() as {
       bridgeStateList: Array<ReturnType<typeof __unit.createBridgeState>>;
       nodeBridgeMembership: WeakMap<AudioNode, Set<number>>;
       telemetryTimer: number | null;
@@ -930,7 +903,8 @@ describe("main-world bridge", () => {
 
     expect(registeredMainSource).toContain('import "./main-world";');
     expect(mainWorldSource).not.toMatch(/^\s*export\s/m);
-    expect(mainWorldSource).not.toContain("__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__");
+    expect(mainWorldSource).toContain("__PRISM_AUTO_BOOSTER_MAIN_WORLD_TESTABLES__");
+    expect(mainWorldSource).toContain('import.meta.env.MODE === "test"');
     expect(mainWorldSource).not.toContain("export const __testables");
     expect(registeredScriptConfigSource).toContain('formats: ["iife"]');
     expect(registeredScriptConfigSource).toContain('"src/content/registered-main.ts"');

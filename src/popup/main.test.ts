@@ -350,6 +350,35 @@ describe("popup main theme integration", () => {
     expect(getThemeButton().dataset.popupThemeTarget).toBe("dark");
     expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")?.textContent).not.toBe(initialThemeName);
   });
+
+  it("returns to the main popup view when the settings toolbar button is clicked twice", async () => {
+    await importPopupMain();
+
+    const openSettingsButton = document.querySelector<HTMLButtonElement>("[data-action='open-popup-settings']");
+
+    if (!openSettingsButton) {
+      throw new Error("Expected the popup settings button to be rendered.");
+    }
+
+    openSettingsButton.click();
+    await flushMicrotasks();
+
+    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")).not.toBeNull();
+    expect(document.querySelector<HTMLButtonElement>("[data-action='close-popup-settings']")).not.toBeNull();
+
+    const toggledSettingsButton = document.querySelector<HTMLButtonElement>("[data-action='open-popup-settings']");
+
+    if (!toggledSettingsButton) {
+      throw new Error("Expected the popup settings button to remain rendered.");
+    }
+
+    toggledSettingsButton.click();
+    await flushMicrotasks();
+
+    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")).toBeNull();
+    expect(document.querySelector<HTMLButtonElement>("[data-action='close-popup-settings']")).toBeNull();
+  });
+
   it("clamps session meter width for invalid and out-of-range telemetry updates", async () => {
     sendMessageSafeMock.mockImplementation(async (command: { type: string }) => {
       if (command.type === "GET_STATE") {
