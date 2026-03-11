@@ -18,6 +18,7 @@ export const DEFAULT_I18N_CONFIG = {
     "**/coverage/**",
     "**/src/generated/**",
     "**/*.test.ts",
+    "**/*.suite.ts",
     "**/*.d.ts"
   ],
   localeDirectories: ["public/_locales"],
