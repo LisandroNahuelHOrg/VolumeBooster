@@ -56,9 +56,9 @@ import {
   closePopupSettings,
   createPopupUiState,
   enqueuePopupThemePersistence,
-  openPopupSettings,
   togglePopupThemeLocally
 } from "./popup-ui-state";
+import { togglePopupSettingsView } from "./toggle-popup-settings-view";
 import {
   getQualityPresetCopy,
   getQualityPresetSubtitleCopy
@@ -1284,7 +1284,7 @@ function handleRootClick(event: Event): void {
       void handlePopupThemeToggle();
       return;
     case "open-popup-settings":
-      popupUiState = openPopupSettings(popupUiState);
+      popupUiState = togglePopupSettingsView(popupUiState);
       render();
       return;
     case "close-popup-settings":
