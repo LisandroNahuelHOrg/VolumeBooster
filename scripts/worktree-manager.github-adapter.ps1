@@ -59,6 +59,8 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Invoke-VerifiedProductionBuild.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-AllowedMainLocalDirtyState.ps1")
 
 function Invoke-HiddenSelf {
     param(
@@ -2581,13 +2583,40 @@ function Sync-MainLocalNonDestructive {
     Write-Host "🔄 Sincronizando rama base local con $BaseRef (NO destructivo)..."
     Push-Location $MainRepo
     try {
+        $requiredBuildArtifacts = @(
+            "dist/content-scripts/auto-booster-main.js",
+            "dist/content-scripts/auto-booster-isolated.js"
+        )
+        $allowedGeneratedDirtyPrefixes = @(
+            "public/faust/",
+            "src/generated/"
+        )
+        $currentBranch = git branch --show-current
         $dirty = (git status --porcelain | Measure-Object).Count -gt 0
         if ($dirty) {
             Write-Warning "⚠️ Repo base tiene cambios locales. Se omite sync para evitar pérdida accidental."
+            if ($RunBuild -and $currentBranch -eq $BaseBranch) {
+                $dirtyState = Test-AllowedMainLocalDirtyState -RepoPath $MainRepo -AllowedPrefixes $allowedGeneratedDirtyPrefixes
+                if ($dirtyState.Allowed) {
+                    try {
+                        $baseState = Get-RefAheadBehindCounts -RepoPath $MainRepo -BaseRef $BaseRef -TargetRef $BaseBranch
+                        if ($baseState.ahead -eq 0 -and $baseState.behind -eq 0) {
+                            Write-Host "ℹ️ '$BaseBranch' local ya está alineado con $BaseRef. Se fuerza rebuild verificado aunque el repo tenga artefactos generados pendientes."
+                            return Invoke-VerifiedProductionBuild -RepoPath $MainRepo -BranchLabel "$BaseBranch local" -RequiredRelativePaths $requiredBuildArtifacts
+                        }
+                    }
+                    catch {
+                        Write-Warning "⚠️ No se pudo verificar alineación de '$BaseBranch' local contra ${BaseRef}: $_"
+                    }
+                }
+                else {
+                    $blockedList = $dirtyState.BlockedPaths -join ", "
+                    Write-Warning "⚠️ Dirty state incluye rutas fuera del allowlist seguro para auto-build: $blockedList"
+                }
+            }
             return $false
         }
 
-        $currentBranch = git branch --show-current
         if ($currentBranch -ne $BaseBranch) {
             $env:SPEEDSUITE_SKIP_POST_SYNC = "1"
             try {
@@ -2621,13 +2650,7 @@ function Sync-MainLocalNonDestructive {
         }
 
         if ($RunBuild) {
-            Write-Host "🔨 Compilando build de producción en '$BaseBranch' local..."
-            npm run build
-            if ($LASTEXITCODE -ne 0) {
-                Write-Warning "⚠️ Build falló. dist/ puede quedar desactualizado."
-                return $false
-            }
-            Write-Host "✅ Build exitoso. dist/ refleja el último estado de '$BaseBranch'."
+            return Invoke-VerifiedProductionBuild -RepoPath $MainRepo -BranchLabel "$BaseBranch local" -RequiredRelativePaths $requiredBuildArtifacts
         }
 
         return $true
