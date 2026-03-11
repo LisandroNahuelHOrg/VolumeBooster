@@ -1,7 +1,8 @@
-import { copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { spawn } from "node:child_process";
+import { publishFaustArtifact } from "./faust-build/lib/publishFaustArtifact.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "..");
 const compilerScript = resolve(repoRoot, "node_modules/@grame/faustwasm/scripts/faust2wasm.js");
@@ -50,7 +51,7 @@ async function publishOutputs(sourceDirectory, destinationDirectory, fileNames) 
   for (const fileName of fileNames) {
     const sourcePath = resolve(sourceDirectory, fileName);
     const destinationPath = resolve(destinationDirectory, fileName);
-    await withFsRetries(() => copyFile(sourcePath, destinationPath));
+    await withFsRetries(() => publishFaustArtifact(sourcePath, destinationPath));
   }
 }
 
