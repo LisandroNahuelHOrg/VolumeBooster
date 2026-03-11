@@ -4,6 +4,9 @@
  */
 import "./popup.css";
 import "./popup-lane-buttons.css";
+import "./popup-quality-protector.css";
+import "./popup-session-boost-bar.css";
+import "./popup-toolbar.css";
 
 import {
   QUALITY_PRESET_ORDER,
@@ -13,6 +16,7 @@ import {
   deriveProtectionLoadPercent,
   sanitizeAdvancedAudioSettings
 } from "../shared/audio-settings";
+import { areBoostSettingsBundlesEqual } from "../shared/boost-settings";
 import {
   DEFAULT_GAIN_PERCENT,
   MAX_GAIN_PERCENT,
@@ -35,6 +39,7 @@ import {
   translate,
   type UiCatalog
 } from "../shared/runtime-i18n";
+import { escapeHtml } from "../shared/escape-html";
 import { captureExceptionSafe, initSentryForContext } from "../shared/observability/sentry";
 import { SettingsRepository } from "../shared/storage";
 import { ensureExtensionUiFontFaces } from "../shared/ui-font-extension";
@@ -52,6 +57,7 @@ import type {
 } from "../shared/types";
 import { buildPopupViewModel } from "./model";
 import { POPUP_TOOLBAR_ICON_MARKUP, getPopupToolbarItems } from "./popup-toolbar";
+import { renderPopupToolbar } from "./render-popup-toolbar";
 import {
   applyPopupTheme,
   closePopupSettings,
@@ -74,8 +80,11 @@ import {
   buildSessionCarouselModel,
   shiftSessionCarouselOffset
 } from "./session-carousel";
+import { getVisibleBoostSettingsBundle } from "./get-visible-boost-settings-bundle";
 import { getLaneButtonCopy, type LaneButtonCopyKind } from "./lane-button-copy";
 import { deriveLiveActivityPercent, deriveSessionMeterWidthPercent } from "./live-activity";
+import { renderSessionBoostActionBar } from "./render-session-boost-action-bar";
+import { shouldShowSessionBoostActionBar } from "./should-show-session-boost-action-bar";
 
 const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -233,6 +242,7 @@ let pendingAdvancedAudioSettings: AdvancedAudioSettings | null = null;
 let advancedCommitTimer: number | null = null;
 let advancedCommitInFlight = false;
 let isAdjustingAdvancedSettings = false;
+let sessionBoostBarHiddenLocally = false;
 let rootEventsBound = false;
 let statePollTimer: number | null = null;
 let lastBoosterButtonMode: "active" | "idle" | "disabled" | null = null;
@@ -453,7 +463,7 @@ function renderMarkup(viewModel: ReturnType<typeof buildPopupViewModel>): string
 
   return `
     <div class="app-shell" data-popup-view="${popupUiState.currentView}">
-      ${renderPopupToolbar()}
+      ${renderPopupToolbar(popupUiState.popupTheme, popupUiState.currentView, currentCatalog)}
       ${popupUiState.currentView === "settings" ? renderSettingsView(popupUiState.popupTheme) : renderMainView(viewModel)}
     </div>
   `;
@@ -487,6 +497,12 @@ function renderMainView(viewModel: ReturnType<typeof buildPopupViewModel>): stri
   const clippingSafety = formatClippingSafety(currentSession?.outputPeak ?? 0);
   const clippingSafetyAlert = getClippingSafetyAlert(currentSession?.outputPeak ?? 0, currentSession?.clipEvents ?? 0);
   const sessionCarousel = buildSessionCarouselModel(viewModel.activeSessions, sessionCarouselOffset);
+  const sessionBoostBarVisible = shouldShowSessionBoostActionBar(
+    viewModel,
+    popupUiState.currentView === "settings",
+    sessionBoostBarHiddenLocally,
+    pendingGainPercent !== null || pendingAdvancedAudioSettings !== null
+  );
   sessionCarouselOffset = sessionCarousel.offset;
 
   return `
@@ -840,41 +856,20 @@ function renderMainView(viewModel: ReturnType<typeof buildPopupViewModel>): stri
           </button>
         </div>
     </section>
-  `;
-}
-
-function renderPopupToolbar(): string {
-  if (!currentCatalog) {
-    return "";
-  }
-
-  const items = getPopupToolbarItems(popupUiState.popupTheme, popupUiState.currentView, currentCatalog);
-
-  return `
-    <section class="popup-toolbar" aria-label="${escapeHtml(translate(currentCatalog, "popupToolbarRegionLabel"))}">
-      <div class="popup-toolbar__bar">
-        ${items
-          .map(
-            (item) => `
-              <button
-                class="popup-toolbar__button ${item.isActive ? "is-active" : ""} ${item.isInert ? "is-inert" : ""}"
-                data-action="${item.action}"
-                data-popup-toolbar="${item.action}"
-                aria-label="${escapeHtml(item.label)}"
-                title="${escapeHtml(item.title)}"
-                ${item.isInert ? 'aria-disabled="true"' : ""}
-                ${item.isActive ? 'aria-pressed="true"' : ""}
-                type="button"
-              >
-                <span class="popup-toolbar__icon" aria-hidden="true">
-                  ${POPUP_TOOLBAR_ICON_MARKUP[item.icon]}
-                </span>
-              </button>
-            `
-          )
-          .join("")}
-      </div>
-    </section>
+    ${renderSessionBoostActionBar({
+      visible: sessionBoostBarVisible,
+      siteApplyLabel: escapeHtml(translate(currentCatalog, "sessionBoostApplySite")),
+      allSitesApplyLabel: escapeHtml(translate(currentCatalog, "sessionBoostApplyAllSites")),
+      siteResetLabel: escapeHtml(translate(currentCatalog, "sessionBoostResetSite")),
+      allSitesResetLabel: escapeHtml(translate(currentCatalog, "sessionBoostResetAllSites")),
+      dismissLabel: escapeHtml(translate(currentCatalog, "sessionBoostDismiss")),
+      siteIconMarkup: renderSiteFavicon(
+        currentTab?.title || translate(currentCatalog, "siteLabel"),
+        currentTab?.domain,
+        "small"
+      ),
+      allSitesIconMarkup: renderLaneButtonIcon("all-sites")
+    })}
   `;
 }
 
@@ -901,22 +896,6 @@ function renderSettingsView(popupTheme: PopupTheme): string {
       </header>
 
       <div class="popup-settings-view__grid">
-        <article class="popup-settings-card popup-settings-card--appearance">
-          <div class="popup-settings-card__copy">
-            <p class="panel__title">${escapeHtml(translate(currentCatalog, "popupSettingsAppearanceTitle"))}</p>
-            <strong class="popup-settings-card__title" data-role="popup-theme-name">
-              ${escapeHtml(getPopupThemeDisplayName(popupTheme))}
-            </strong>
-            <p class="muted-copy">${escapeHtml(translate(currentCatalog, "popupSettingsAppearanceDetail"))}</p>
-          </div>
-          <dl class="popup-settings-card__facts">
-            <div>
-              <dt>${escapeHtml(translate(currentCatalog, "popupSettingsCurrentThemeLabel"))}</dt>
-              <dd data-role="popup-theme-name">${escapeHtml(getPopupThemeDisplayName(popupTheme))}</dd>
-            </div>
-          </dl>
-        </article>
-
         <article class="popup-settings-card">
           <div class="popup-settings-card__copy">
             <p class="panel__title">${escapeHtml(translate(currentCatalog, "popupSettingsRoadmapTitle"))}</p>
@@ -1346,6 +1325,103 @@ function handleRootClick(event: Event): void {
     case "request-global-auto-permission":
       void requestGlobalAutoPermission();
       return;
+    case "apply-session-boost-to-site": {
+      const tabId = currentState?.currentTab?.tabId;
+
+      if (tabId) {
+        void (async () => {
+          await flushGainCommit();
+          await flushAdvancedSettingsCommit();
+          const response = await sendMessageSafe<WorkerState>({
+            type: "APPLY_SESSION_BOOST_TO_SITE",
+            payload: { tabId }
+          });
+
+          if (response.ok && response.data) {
+            sessionBoostBarHiddenLocally = true;
+          }
+
+          await handleWorkerResponse(response);
+        })();
+      }
+      return;
+    }
+    case "apply-session-boost-to-all-sites": {
+      const tabId = currentState?.currentTab?.tabId;
+
+      if (tabId) {
+        void (async () => {
+          await flushGainCommit();
+          await flushAdvancedSettingsCommit();
+          const response = await sendMessageSafe<WorkerState>({
+            type: "APPLY_SESSION_BOOST_TO_ALL_SITES",
+            payload: { tabId }
+          });
+
+          if (response.ok && response.data) {
+            sessionBoostBarHiddenLocally = true;
+          }
+
+          await handleWorkerResponse(response);
+        })();
+      }
+      return;
+    }
+    case "reset-session-boost-on-site": {
+      const tabId = currentState?.currentTab?.tabId;
+
+      if (tabId) {
+        void (async () => {
+          await flushGainCommit();
+          await flushAdvancedSettingsCommit();
+          const response = await sendMessageSafe<WorkerState>({
+            type: "RESET_SESSION_BOOST_ON_SITE",
+            payload: { tabId }
+          });
+
+          if (response.ok && response.data) {
+            sessionBoostBarHiddenLocally = true;
+          }
+
+          await handleWorkerResponse(response);
+        })();
+      }
+      return;
+    }
+    case "reset-session-boost-on-all-sites": {
+      const tabId = currentState?.currentTab?.tabId;
+
+      if (tabId) {
+        void (async () => {
+          await flushGainCommit();
+          await flushAdvancedSettingsCommit();
+          const response = await sendMessageSafe<WorkerState>({
+            type: "RESET_SESSION_BOOST_ON_ALL_SITES",
+            payload: { tabId }
+          });
+
+          if (response.ok && response.data) {
+            sessionBoostBarHiddenLocally = true;
+          }
+
+          await handleWorkerResponse(response);
+        })();
+      }
+      return;
+    }
+    case "dismiss-session-boost-prompt":
+      void (async () => {
+        await flushGainCommit();
+        await flushAdvancedSettingsCommit();
+        const response = await sendMessageSafe<WorkerState>({ type: "DISMISS_SESSION_BOOST_PROMPT" });
+
+        if (response.ok && response.data) {
+          sessionBoostBarHiddenLocally = true;
+        }
+
+        await handleWorkerResponse(response);
+      })();
+      return;
     case "disable-global-auto":
       void disableGlobalAutoBooster();
       return;
@@ -1434,19 +1510,15 @@ function setDraftGain(nextValue: number, options: GainVisualSyncOptions = {}): v
 }
 
 function scheduleGainCommit(immediate: boolean): void {
-  const currentSession = getCurrentSession();
-
-  if (!currentSession) {
-    pendingGainPercent = null;
-    return;
-  }
-
   pendingGainPercent = draftGainPercent;
+  sessionBoostBarHiddenLocally = false;
 
   if (gainCommitTimer !== null) {
     window.clearTimeout(gainCommitTimer);
     gainCommitTimer = null;
   }
+
+  syncCurrentViewModel();
 
   if (immediate) {
     void flushGainCommit();
@@ -1486,11 +1558,14 @@ function scheduleAdvancedSettingsCommit(immediate: boolean): void {
   }
 
   pendingAdvancedAudioSettings = { ...nextSettings };
+  sessionBoostBarHiddenLocally = false;
 
   if (advancedCommitTimer !== null) {
     window.clearTimeout(advancedCommitTimer);
     advancedCommitTimer = null;
   }
+
+  syncCurrentViewModel();
 
   if (immediate) {
     void flushAdvancedSettingsCommit();
@@ -1513,15 +1588,26 @@ async function flushGainCommit(): Promise<void> {
     return;
   }
 
-  const currentSession = getCurrentSession();
+  const currentTabId = currentState?.currentTab?.tabId;
   const targetGain = pendingGainPercent;
 
-  if (!currentSession || targetGain === null) {
+  if (!currentState || !currentTabId || targetGain === null) {
     pendingGainPercent = null;
     return;
   }
 
-  if (currentSession.gainPercent === targetGain) {
+  const viewModel = buildPopupViewModel(currentState);
+  const targetBundle = getVisibleBoostSettingsBundle(
+    viewModel,
+    draftGainPercent,
+    draftAdvancedAudioSettings,
+    pendingAdvancedAudioSettings
+  );
+
+  if (
+    currentState.boostSettingsBundle &&
+    areBoostSettingsBundlesEqual(currentState.boostSettingsBundle, targetBundle)
+  ) {
     pendingGainPercent = null;
     return;
   }
@@ -1529,8 +1615,8 @@ async function flushGainCommit(): Promise<void> {
   gainCommitInFlight = true;
 
   const response = await sendMessageSafe<WorkerState>({
-    type: "SET_GAIN",
-    payload: { tabId: currentSession.tabId, gainPercent: targetGain }
+    type: "SET_SESSION_BOOST_BUNDLE",
+    payload: { tabId: currentTabId, bundle: targetBundle }
   });
 
   gainCommitInFlight = false;
@@ -1544,10 +1630,15 @@ async function flushGainCommit(): Promise<void> {
 
   await applyState(response.data);
 
-  if (pendingGainPercent !== null) {
-    const refreshedSession = getCurrentSession();
+  if (pendingGainPercent !== null || pendingAdvancedAudioSettings !== null) {
+    const refreshedBundle = getVisibleBoostSettingsBundle(
+      buildPopupViewModel(currentState ?? response.data),
+      draftGainPercent,
+      draftAdvancedAudioSettings,
+      pendingAdvancedAudioSettings
+    );
 
-    if (refreshedSession && refreshedSession.gainPercent !== pendingGainPercent) {
+    if (!response.data.boostSettingsBundle || !areBoostSettingsBundlesEqual(response.data.boostSettingsBundle, refreshedBundle)) {
       await flushGainCommit();
     }
   }
@@ -1565,7 +1656,23 @@ async function flushAdvancedSettingsCommit(): Promise<void> {
 
   const targetSettings = pendingAdvancedAudioSettings;
 
-  if (!targetSettings || areAdvancedSettingsEqual(targetSettings, currentState?.advancedAudioSettings)) {
+  if (!targetSettings || !currentState?.currentTab?.tabId) {
+    pendingAdvancedAudioSettings = null;
+    return;
+  }
+
+  const viewModel = buildPopupViewModel(currentState);
+  const targetBundle = getVisibleBoostSettingsBundle(
+    viewModel,
+    draftGainPercent,
+    draftAdvancedAudioSettings,
+    pendingAdvancedAudioSettings
+  );
+
+  if (
+    currentState.boostSettingsBundle &&
+    areBoostSettingsBundlesEqual(currentState.boostSettingsBundle, targetBundle)
+  ) {
     pendingAdvancedAudioSettings = null;
     return;
   }
@@ -1573,8 +1680,8 @@ async function flushAdvancedSettingsCommit(): Promise<void> {
   advancedCommitInFlight = true;
 
   const response = await sendMessageSafe<WorkerState>({
-    type: "SET_ADVANCED_AUDIO_SETTINGS",
-    payload: targetSettings
+    type: "SET_SESSION_BOOST_BUNDLE",
+    payload: { tabId: currentState.currentTab.tabId, bundle: targetBundle }
   });
 
   advancedCommitInFlight = false;
@@ -1588,17 +1695,15 @@ async function flushAdvancedSettingsCommit(): Promise<void> {
 
   await applyState(response.data);
 
-  if (
-    pendingAdvancedAudioSettings &&
-    !areAdvancedSettingsEqual(pendingAdvancedAudioSettings, response.data.advancedAudioSettings)
-  ) {
+  if (pendingGainPercent !== null || pendingAdvancedAudioSettings !== null) {
     await flushAdvancedSettingsCommit();
   }
 }
 
 async function startCapture(tabId: number): Promise<void> {
   clearTransientError();
-  pendingGainPercent = null;
+  await flushGainCommit();
+  await flushAdvancedSettingsCommit();
   render();
   const response = await sendMessageSafe<WorkerState>({
     type: "START_CAPTURE",
@@ -1613,6 +1718,8 @@ async function enableCurrentTabBooster(tabId: number): Promise<void> {
   }
 
   clearTransientError();
+  await flushGainCommit();
+  await flushAdvancedSettingsCommit();
   const response = await sendMessageSafe<WorkerState>({
     type: "ENABLE_CURRENT_TAB_BOOSTER",
     payload: { tabId, gainPercent: draftGainPercent }
@@ -1638,6 +1745,8 @@ async function enableGlobalAutoBooster(
   }
 
   clearTransientError();
+  await flushGainCommit();
+  await flushAdvancedSettingsCommit();
   const response = await sendMessageSafe<WorkerState>({
     type: "ENABLE_GLOBAL_AUTO_BOOSTER",
     payload: { tabId, gainPercent: draftGainPercent }
@@ -1776,7 +1885,15 @@ function syncCurrentViewModel(options: GainVisualSyncOptions = {}): void {
     return;
   }
 
-  syncDynamicUi(buildPopupViewModel(currentState), options);
+  const viewModel = buildPopupViewModel(currentState);
+  const nextSignature = createRenderSignature(viewModel);
+
+  if (nextSignature !== renderedSignature) {
+    render();
+    return;
+  }
+
+  syncDynamicUi(viewModel, options);
 }
 
 function syncDynamicUi(
@@ -2107,6 +2224,12 @@ function createRenderSignature(viewModel: ReturnType<typeof buildPopupViewModel>
   return JSON.stringify({
     popupView: popupUiState.currentView,
     transientError: transientError?.key ?? null,
+    sessionBoostBarVisible: shouldShowSessionBoostActionBar(
+      viewModel,
+      popupUiState.currentView === "settings",
+      sessionBoostBarHiddenLocally,
+      pendingGainPercent !== null || pendingAdvancedAudioSettings !== null
+    ),
     currentTab: viewModel.currentTab
       ? {
           tabId: viewModel.currentTab.tabId,
@@ -2181,7 +2304,6 @@ function syncPopupThemeUi(): void {
   }
 
   syncPopupToolbarThemeButton();
-  syncPopupSettingsThemeSummary();
 }
 
 function syncPopupToolbarThemeButton(): void {
@@ -2216,14 +2338,6 @@ function syncPopupToolbarThemeButton(): void {
   }
 }
 
-function syncPopupSettingsThemeSummary(): void {
-  const themeName = getPopupThemeDisplayName(popupUiState.popupTheme);
-
-  for (const themeNameNode of rootElement.querySelectorAll<HTMLElement>("[data-role='popup-theme-name']")) {
-    themeNameNode.textContent = themeName;
-  }
-}
-
 async function persistPopupThemeSafely(popupTheme: PopupTheme): Promise<PopupTheme> {
   try {
     return await settingsRepository.setPopupTheme(popupTheme);
@@ -2234,14 +2348,6 @@ async function persistPopupThemeSafely(popupTheme: PopupTheme): Promise<PopupThe
     });
     return popupTheme;
   }
-}
-
-function getPopupThemeDisplayName(popupTheme: PopupTheme): string {
-  if (!currentCatalog) {
-    return popupTheme;
-  }
-
-  return translate(currentCatalog, popupTheme === "light" ? "popupThemeLightName" : "popupThemeDarkName");
 }
 
 function syncSliderVisuals(slider: HTMLInputElement, animateVisuals = false): void {
@@ -3105,13 +3211,4 @@ function getSiteGlyph(label: string, domain?: string): string {
 function roundTo(value: number, precision: number): number {
   const factor = Math.pow(10, precision);
   return Math.round(value * factor) / factor;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }

@@ -32,10 +32,13 @@ export function buildPopupViewModel(state: WorkerState): PopupViewModel {
     activeSessions: state.sessions,
     advancedAudioSettings: state.advancedAudioSettings,
     autoBoosterMode: state.autoBoosterMode,
+    boostSettingsBundle: state.boostSettingsBundle,
     globalAutoGainPercent: state.globalAutoGainPercent,
     hasGlobalPermission: state.hasGlobalPermission,
+    sessionBoostPromptState: state.sessionBoostPromptState,
     gainPercent:
       currentSession?.gainPercent ??
+      state.boostSettingsBundle?.gainPercent ??
       (state.autoBoosterMode === "global" ? state.globalAutoGainPercent : DEFAULT_GAIN_PERCENT),
     sessionCount: state.sessions.length,
     canStart: state.currentTab?.supported === true

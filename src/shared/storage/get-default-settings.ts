@@ -10,6 +10,7 @@ import type { ExtensionSettings } from "../types";
 export function getDefaultSettings(): ExtensionSettings {
   return {
     domainGains: {},
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },

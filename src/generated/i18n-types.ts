@@ -213,6 +213,11 @@ export const I18N_KEYS = [
   "rememberSite",
   "rememberedForDomain",
   "savedForSite",
+  "sessionBoostApplyAllSites",
+  "sessionBoostApplySite",
+  "sessionBoostDismiss",
+  "sessionBoostResetAllSites",
+  "sessionBoostResetSite",
   "sessionCarouselNext",
   "sessionCarouselPrevious",
   "sessionPlaceholderDetail",
@@ -476,6 +481,11 @@ export const I18N_PLACEHOLDER_ORDER = {
   "savedForSite": [
     "domain"
   ],
+  "sessionBoostApplyAllSites": [],
+  "sessionBoostApplySite": [],
+  "sessionBoostDismiss": [],
+  "sessionBoostResetAllSites": [],
+  "sessionBoostResetSite": [],
   "sessionCarouselNext": [],
   "sessionCarouselPrevious": [],
   "sessionPlaceholderDetail": [],

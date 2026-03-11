@@ -10,6 +10,7 @@ import type { SettingsRepositoryApi, SettingsRepositoryContext } from "./contrac
 import { SETTINGS_REPOSITORY_STORAGE_AREA } from "./contracts";
 import { getDefaultSettings } from "./get-default-settings";
 import { sanitizeAutoBoosterMode } from "./sanitize-auto-booster-mode";
+import { sanitizeDomainAudioSettings } from "./sanitize-domain-audio-settings";
 import { sanitizeDomainGains } from "./sanitize-domain-gains";
 import { sanitizeGlobalAutoGainPercent } from "./sanitize-global-auto-gain-percent";
 import { sanitizePopupTheme } from "./sanitize-popup-theme";
@@ -28,6 +29,7 @@ export async function getSettings(
 
   return {
     domainGains: sanitizeDomainGains(settings.domainGains),
+    domainAudioSettings: sanitizeDomainAudioSettings(settings.domainAudioSettings),
     audioSettings: {
       global: sanitizeAdvancedAudioSettings(settings.audioSettings?.global)
     },

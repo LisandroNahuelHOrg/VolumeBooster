@@ -1,3 +1,4 @@
+import { SessionBoostRepository } from "../../shared/session-boost";
 import { SettingsRepository } from "../../shared/storage";
 import { createAutoBoosterClient } from "../auto-booster-client";
 import { AutoFrameRegistry } from "../auto-frame-registry";
@@ -8,6 +9,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps = {}): WorkerRuntime
   return {
     offscreenClient: deps.offscreenClient ?? createOffscreenClient(),
     settingsRepository: deps.settingsRepository ?? new SettingsRepository(),
+    sessionBoostRepository: deps.sessionBoostRepository ?? new SessionBoostRepository(),
     now: deps.now ?? (() => Date.now()),
     autoBoosterClient: deps.autoBoosterClient ?? createAutoBoosterClient(),
     sessions: new Map(),

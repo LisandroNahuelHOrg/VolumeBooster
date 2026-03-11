@@ -1,5 +1,4 @@
 import { isProtectionBypassedSettings } from "../../../shared/audio-settings";
-import { DEFAULT_GAIN_PERCENT } from "../../../shared/constants";
 import { getDomainFromUrl, isSupportedTabUrl } from "../../../shared/domain";
 import { clampGainPercent } from "../../../shared/gain";
 import { message } from "../../../shared/messages";
@@ -7,6 +6,7 @@ import type { CaptureSessionState } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
 import { pauseAutoLaneForManual } from "../auto/pause-auto-lane-for-manual";
 import { resumeAutoLaneIfNeeded } from "../auto/resume-auto-lane-if-needed";
+import { resolveEffectiveBoostSettingsBundle } from "../session-boost/resolve-effective-boost-settings-bundle";
 import { broadcastState } from "../state/broadcast-state";
 import { rebuildEffectiveSessions } from "../state/rebuild-effective-sessions";
 import { replaceManualSessions } from "./replace-manual-sessions";
@@ -23,8 +23,11 @@ export async function startCapture(runtime: WorkerRuntimeState, tabId: number, g
   }
 
   const domain = getDomainFromUrl(targetTab.url);
-  const nextGain = clampGainPercent(gainPercent);
-  const advancedAudioSettings = await runtime.settingsRepository.getAdvancedAudioSettings();
+  const settings = await runtime.settingsRepository.getSettings();
+  const sessionBoostState = await runtime.sessionBoostRepository.getState();
+  const resolvedBundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, domain);
+  const nextGain = clampGainPercent(gainPercent ?? resolvedBundle.gainPercent);
+  const advancedAudioSettings = resolvedBundle.advancedAudioSettings;
   const provisionalSession: CaptureSessionState = {
     tabId,
     title: targetTab.title || targetTab.url || "",

@@ -21,6 +21,7 @@ export async function assertMissingNestedAudioSettingsAreSanitized(): Promise<vo
 
   await expect(repository.getSettings()).resolves.toEqual({
     domainGains: {},
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },

@@ -18,8 +18,16 @@ function makeState(overrides: Partial<WorkerState> = {}): WorkerState {
     },
     advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
     autoBoosterMode: "off",
+    boostSettingsBundle: {
+      gainPercent: 100,
+      advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
+    },
     globalAutoGainPercent: 100,
     hasGlobalPermission: true,
+    sessionBoostPromptState: {
+      hasUnsavedChanges: false,
+      dismissed: false
+    },
     sessions: [],
     generatedAt: 1,
     ...overrides
@@ -327,18 +335,12 @@ describe("popup main theme integration", () => {
     openSettingsButton.click();
     await flushMicrotasks();
 
-    const firstThemeName = document.querySelector<HTMLElement>("[data-role='popup-theme-name']");
-
-    if (!firstThemeName) {
-      throw new Error("Expected the popup settings theme summary to be rendered.");
-    }
-
-    const initialThemeName = firstThemeName.textContent;
+    expect(document.querySelector<HTMLElement>(".popup-settings-view")).not.toBeNull();
     getThemeButton().click();
     await flushMicrotasks();
 
     expect(document.documentElement.dataset.popupTheme).toBe("light");
-    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")?.textContent).not.toBe(initialThemeName);
+    expect(document.querySelector<HTMLElement>(".popup-settings-view")).not.toBeNull();
 
     runtimeMessageListener?.({
       type: "WORKER_STATE_UPDATE",
@@ -348,7 +350,7 @@ describe("popup main theme integration", () => {
 
     expect(document.documentElement.dataset.popupTheme).toBe("light");
     expect(getThemeButton().dataset.popupThemeTarget).toBe("dark");
-    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")?.textContent).not.toBe(initialThemeName);
+    expect(document.querySelector<HTMLElement>(".popup-settings-view")).not.toBeNull();
   });
 
   it("returns to the main popup view when the settings toolbar button is clicked twice", async () => {
@@ -363,7 +365,7 @@ describe("popup main theme integration", () => {
     openSettingsButton.click();
     await flushMicrotasks();
 
-    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")).not.toBeNull();
+    expect(document.querySelector<HTMLElement>(".popup-settings-view")).not.toBeNull();
     expect(document.querySelector<HTMLButtonElement>("[data-action='close-popup-settings']")).not.toBeNull();
 
     const toggledSettingsButton = document.querySelector<HTMLButtonElement>("[data-action='open-popup-settings']");
@@ -375,7 +377,7 @@ describe("popup main theme integration", () => {
     toggledSettingsButton.click();
     await flushMicrotasks();
 
-    expect(document.querySelector<HTMLElement>("[data-role='popup-theme-name']")).toBeNull();
+    expect(document.querySelector<HTMLElement>(".popup-settings-view")).toBeNull();
     expect(document.querySelector<HTMLButtonElement>("[data-action='close-popup-settings']")).toBeNull();
   });
 

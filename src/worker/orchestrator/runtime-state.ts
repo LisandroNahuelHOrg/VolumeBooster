@@ -1,4 +1,5 @@
 import type { SettingsRepository } from "../../shared/storage";
+import type { SessionBoostRepository } from "../../shared/session-boost";
 import type {
   AutoBoosterMode,
   AutoBoosterScope,
@@ -19,6 +20,7 @@ export type AutoDebugStateSnapshot = WorkerAutoDebugStateSnapshot;
 export interface WorkerRuntimeState {
   offscreenClient: OffscreenClient;
   settingsRepository: SettingsRepository;
+  sessionBoostRepository: SessionBoostRepository;
   now: () => number;
   autoBoosterClient: AutoBoosterClient;
   sessions: Map<number, CaptureSessionState>;
@@ -39,6 +41,7 @@ export interface WorkerRuntimeState {
 export interface WorkerRuntimeDeps {
   offscreenClient?: OffscreenClient;
   settingsRepository?: SettingsRepository;
+  sessionBoostRepository?: SessionBoostRepository;
   now?: () => number;
   autoBoosterClient?: AutoBoosterClient;
 }

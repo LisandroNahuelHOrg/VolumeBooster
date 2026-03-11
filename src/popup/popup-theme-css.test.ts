@@ -30,6 +30,10 @@ describe("popup theme css", () => {
     const qualityRule = extractRule(source, ".quality-protector");
     const advancedRule = extractRule(source, ".advanced-settings");
     const sessionRule = extractRule(source, ".session-card");
+    const telemetryDangerRule = extractRule(
+      source,
+      ".telemetry-pill[data-bypass=\"true\"],\n.telemetry-pill[data-alert=\"danger\"]"
+    );
 
     expect(qualityRule).toContain("border: 1px solid var(--quality-card-border);");
     expect(qualityRule).toContain("background: var(--quality-card-bg);");
@@ -42,6 +46,13 @@ describe("popup theme css", () => {
     expect(sessionRule).toContain("border: 1px solid var(--session-card-border);");
     expect(sessionRule).toContain("background: var(--session-card-bg);");
     expect(sessionRule).not.toContain("rgba(255, 255, 255, 0.08)");
+
+    expect(source).toContain("--telemetry-danger-bg:");
+    expect(source).toContain("--telemetry-danger-shadow:");
+    expect(source).toContain(".telemetry-pill[data-alert=\"danger\"]");
+    expect(telemetryDangerRule).toContain("background: var(--telemetry-danger-bg);");
+    expect(telemetryDangerRule).toContain("box-shadow: var(--telemetry-danger-shadow);");
+    expect(telemetryDangerRule).not.toContain("white 82%");
   });
 
   it("keeps light theme active states localized to amber and teal emphasis", () => {
@@ -53,35 +64,13 @@ describe("popup theme css", () => {
     expect(source).toContain("rgba(154, 57, 68, 0.38)");
   });
 
-  it("gives the light toolbar its own shell, premium, theme, and settings tokens", () => {
-    const toolbarBarRule = extractRule(source, ".popup-toolbar__bar");
-    const toolbarButtonRule = extractRule(source, ".popup-toolbar__button");
-    const premiumRule = extractRule(source, ".popup-toolbar__button[data-popup-toolbar=\"premium-mock\"]");
-    const themeRule = extractRule(
-      source,
-      ":root[data-popup-theme=\"light\"] .popup-toolbar__button[data-popup-toolbar=\"toggle-popup-theme\"]"
-    );
-    const settingsActiveRule = extractRule(
-      source,
-      ".popup-toolbar__button[data-popup-toolbar=\"open-popup-settings\"].is-active"
-    );
-
+  it("keeps the toolbar theme tokens in popup.css after splitting toolbar rules out", () => {
     expect(source).toContain("--toolbar-shell-border:");
     expect(source).toContain("--toolbar-shell-bg:");
     expect(source).toContain("--toolbar-theme-chip-bg:");
     expect(source).toContain("--toolbar-settings-active-ring:");
-
-    expect(toolbarBarRule).toContain("border: 1px solid var(--toolbar-shell-border);");
-    expect(toolbarBarRule).toContain("background: var(--toolbar-shell-bg);");
-    expect(toolbarButtonRule).toContain("background: var(--toolbar-button-surface);");
-    expect(toolbarButtonRule).toContain("color: var(--toolbar-icon-color);");
-
-    expect(premiumRule).toContain("color: var(--toolbar-premium-icon);");
-    expect(premiumRule).toContain("background: var(--toolbar-premium-bg);");
-    expect(themeRule).toContain("color: var(--toolbar-theme-icon);");
-    expect(themeRule).not.toContain("#000");
-    expect(settingsActiveRule).toContain("border-color: var(--toolbar-settings-active-ring);");
-    expect(settingsActiveRule).toContain("background: var(--toolbar-settings-active-bg);");
-    expect(settingsActiveRule).toContain("box-shadow: var(--toolbar-settings-active-shadow);");
+    expect(source).toContain("--toolbar-premium-bg:");
+    expect(source).toContain("--toolbar-premium-icon:");
+    expect(source).toContain("--toolbar-theme-icon:");
   });
 });

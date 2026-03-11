@@ -5,6 +5,10 @@
  */
 
 import type { I18nKey, I18nSubstitutionsFor } from "../generated/i18n-types";
+import type {
+  BoostSettingsBundle,
+  SessionBoostPromptState
+} from "./boost-settings-bundle";
 
 /** Lifecycle state of a session stream from the user-facing perspective. */
 export type SessionStreamState = "inactive" | "pending" | "active" | "error";
@@ -157,8 +161,10 @@ export interface WorkerState {
   currentTab: TabSummary | null;
   advancedAudioSettings: AdvancedAudioSettings;
   autoBoosterMode: AutoBoosterMode;
+  boostSettingsBundle?: BoostSettingsBundle;
   globalAutoGainPercent: number;
   hasGlobalPermission: boolean;
+  sessionBoostPromptState?: SessionBoostPromptState;
   sessions: CaptureSessionState[];
   generatedAt: number;
 }
@@ -172,8 +178,10 @@ export interface PopupViewModel {
   activeSessions: CaptureSessionState[];
   advancedAudioSettings: AdvancedAudioSettings;
   autoBoosterMode: AutoBoosterMode;
+  boostSettingsBundle?: BoostSettingsBundle;
   globalAutoGainPercent: number;
   hasGlobalPermission: boolean;
+  sessionBoostPromptState?: SessionBoostPromptState;
   gainPercent: number;
   sessionCount: number;
   canStart: boolean;
@@ -182,6 +190,7 @@ export interface PopupViewModel {
 /** Persisted extension settings stored in Chrome local storage. */
 export interface ExtensionSettings {
   domainGains: Record<string, number>;
+  domainAudioSettings: Record<string, AdvancedAudioSettings>;
   audioSettings: GlobalAudioSettings;
   autoBoosterMode: AutoBoosterMode;
   globalAutoGainPercent: number;

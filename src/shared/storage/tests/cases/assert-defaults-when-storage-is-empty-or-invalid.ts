@@ -18,6 +18,7 @@ export async function assertDefaultsWhenStorageIsEmptyOrInvalid(): Promise<void>
 
   await expect(emptyRepository.getSettings()).resolves.toEqual({
     domainGains: {},
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },
@@ -28,6 +29,7 @@ export async function assertDefaultsWhenStorageIsEmptyOrInvalid(): Promise<void>
 
   await expect(invalidRepository.getSettings()).resolves.toEqual({
     domainGains: {},
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },

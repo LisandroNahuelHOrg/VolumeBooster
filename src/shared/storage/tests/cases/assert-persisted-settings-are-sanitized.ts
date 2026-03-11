@@ -37,6 +37,7 @@ export async function assertPersistedSettingsAreSanitized(): Promise<void> {
       "youtube.com": 150,
       "x.com": 10000
     },
+    domainAudioSettings: {},
     audioSettings: {
       global: {
         ...DEFAULT_ADVANCED_AUDIO_SETTINGS,

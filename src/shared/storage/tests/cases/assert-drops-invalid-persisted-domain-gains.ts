@@ -31,6 +31,7 @@ export async function assertDropsInvalidPersistedDomainGains(): Promise<void> {
     domainGains: {
       "twitch.tv": 175
     },
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },

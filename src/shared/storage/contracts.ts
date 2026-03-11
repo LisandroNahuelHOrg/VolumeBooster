@@ -3,6 +3,7 @@
  * @module shared/storage/contracts
  */
 
+import type { BoostSettingsBundle } from "../boost-settings-bundle";
 import type { AdvancedAudioSettings, AutoBoosterMode, ExtensionSettings, PopupTheme } from "../types";
 
 export interface StorageAreaLike {
@@ -19,12 +20,24 @@ export interface SettingsRepositoryContext {
 export interface SettingsRepositoryApi {
   getSettings(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<ExtensionSettings>;
   getDomainGain(this: SettingsRepositoryApi & SettingsRepositoryContext, domain?: string): Promise<number | undefined>;
+  getDomainBoostSettingsBundle(
+    this: SettingsRepositoryApi & SettingsRepositoryContext,
+    domain?: string
+  ): Promise<BoostSettingsBundle | null>;
+  getGlobalBoostSettingsBundle(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<BoostSettingsBundle>;
   setDomainGain(
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     domain: string | undefined,
     gainPercent: number
   ): Promise<void>;
+  setDomainBoostSettingsBundle(
+    this: SettingsRepositoryApi & SettingsRepositoryContext,
+    domain: string | undefined,
+    bundle: BoostSettingsBundle
+  ): Promise<void>;
   removeDomainGain(this: SettingsRepositoryApi & SettingsRepositoryContext, domain?: string): Promise<void>;
+  removeDomainBoostSettingsBundle(this: SettingsRepositoryApi & SettingsRepositoryContext, domain?: string): Promise<void>;
+  clearDomainBoostSettingsBundles(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<void>;
   getAdvancedAudioSettings(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<AdvancedAudioSettings>;
   getAutoBoosterMode(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<AutoBoosterMode>;
   getGlobalAutoGainPercent(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<number>;
@@ -37,6 +50,10 @@ export interface SettingsRepositoryApi {
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     gainPercent: number
   ): Promise<number>;
+  setGlobalBoostSettingsBundle(
+    this: SettingsRepositoryApi & SettingsRepositoryContext,
+    bundle: BoostSettingsBundle
+  ): Promise<BoostSettingsBundle>;
   setPopupTheme(
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     popupTheme: PopupTheme

@@ -19,6 +19,7 @@ export async function assertDomainGainIsClampedBeforeStorage(): Promise<void> {
     domainGains: {
       "youtube.com": 10000
     },
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },

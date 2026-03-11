@@ -23,6 +23,6 @@ export async function setAdvancedAudioSettings(
     replaceManualSessions(runtime, snapshot);
   }
 
-  await syncConfiguredAutoTabs(runtime, persistedSettings);
+  await syncConfiguredAutoTabs(runtime);
   await broadcastState(runtime);
 }

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Shared popup copy helpers for Sound Mode presets.
+ * @fileoverview Shared popup copy helpers for Boost Profile presets.
  * @module popup/quality-preset-copy
  */
 

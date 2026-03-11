@@ -9,7 +9,7 @@
     "message": "Ajusta en detalle el motor DSP premium global que se aplica a cada sesión activa."
   },
   "advancedTitle": {
-    "message": "Modo de sonido"
+    "message": "Perfil de Sonido"
   },
   "autoBoosterFailureToast": {
     "message": "El booster automático no pudo enganchar esta página. Usa el booster manual desde el popup."
@@ -495,7 +495,7 @@
     "message": "Premium llegará pronto."
   },
   "popupToolbarPremiumLabel": {
-    "message": "Versión premium"
+    "message": "Obtener Premium"
   },
   "popupToolbarRegionLabel": {
     "message": "Acciones rápidas del popup"
@@ -633,7 +633,7 @@
     "message": "Elige como el DSP protege la calidad cuando llevas el boost mas arriba."
   },
   "qualityProtectorTitle": {
-    "message": "Protector de calidad de audio"
+    "message": "Protector de distorsión y calidad"
   },
   "qualityProtectorTrebleSafe": {
     "message": "Agudos suaves"
@@ -700,6 +700,21 @@
   },
   "sessionPlaceholderTitle": {
     "message": "Esperando una sesión"
+  },
+  "sessionBoostApplyAllSites": {
+    "message": "Aplicar estas configuraciones en todos los sitios"
+  },
+  "sessionBoostApplySite": {
+    "message": "Aplicar estas configuraciones solo en este sitio"
+  },
+  "sessionBoostDismiss": {
+    "message": "No guardar configuraciones: estas se perderán al cerrar el navegador"
+  },
+  "sessionBoostResetAllSites": {
+    "message": "Restablecer valores predeterminados en todos los sitios"
+  },
+  "sessionBoostResetSite": {
+    "message": "Restablecer valores predeterminados en este sitio"
   },
   "siteAutoSwitchWarningBody": {
     "message": "Esto cambiará la extensión al modo Single Tab y desactivará primero el modo Global. El booster automático solo quedará activo para la sesión actual de esta pestaña. Si recargás la página o abrís otra pestaña, vas a tener que activarlo manualmente otra vez."

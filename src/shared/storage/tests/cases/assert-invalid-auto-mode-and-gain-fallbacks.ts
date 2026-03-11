@@ -25,6 +25,7 @@ export async function assertInvalidAutoModeAndGainFallbacks(): Promise<void> {
 
   await expect(repository.getSettings()).resolves.toEqual({
     domainGains: {},
+    domainAudioSettings: {},
     audioSettings: {
       global: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
     },
