@@ -3,6 +3,7 @@
  * incluyendo controles de boost, modo global, métricas, tooltips e i18n.
  */
 import "./popup.css";
+import "./popup-lane-buttons.css";
 
 import {
   QUALITY_PRESET_ORDER,
