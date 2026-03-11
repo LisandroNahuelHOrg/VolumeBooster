@@ -79,6 +79,9 @@ describe("automation main entrypoint", () => {
       ok: true,
       data: { attachState: "attached" }
     });
+    await expect(window.__PRISM_AUTOMATION__?.sendCommand({ type: "GET_STATE" })).resolves.toEqual({
+      sessions: []
+    });
     await expect(window.__PRISM_AUTOMATION__?.sendCommandDetailed({ type: "GET_STATE" })).resolves.toEqual({
       ok: true,
       data: { sessions: [] }
