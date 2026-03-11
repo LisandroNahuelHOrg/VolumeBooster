@@ -195,6 +195,7 @@ try {
 catch {
     # fallback a env si no se puede leer remote
 }
+$global:LASTEXITCODE = 0
 $ScopeLockFile = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_SCOPE_LOCK_FILE)")) { Join-Path $MainRepo ".agent\worktree-scope-lock.json" } else { "$($env:WORKTREE_MANAGER_SCOPE_LOCK_FILE)" }
 $MutexName = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_SCOPE_MUTEX_NAME)")) { "Global\WorktreeManagerScopeLock" } else { "$($env:WORKTREE_MANAGER_SCOPE_MUTEX_NAME)" }
 $MutexTimeout = 15000  # 15 seconds

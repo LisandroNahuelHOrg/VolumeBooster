@@ -9,7 +9,7 @@
     "i18n:generate": "node scripts/generate-i18n-types.mjs",
     "i18n:check": "node scripts/check-i18n.mjs",
     "i18n:audit": "node scripts/audit-i18n-literals.mjs",
-    "build": "npm run i18n:generate && npm run i18n:check && npm run i18n:audit && vite build && node scripts/build-registered-content-scripts.mjs",
+    "build": "npm run i18n:generate && npm run i18n:check && npm run i18n:audit && npm run faust:refresh && vite build && node scripts/build-registered-content-scripts.mjs",
     "build:registered-content-scripts": "node scripts/build-registered-content-scripts.mjs",
     "dev": "npm run i18n:generate && node scripts/watch.mjs",
     "watch": "npm run i18n:generate && node scripts/watch.mjs",

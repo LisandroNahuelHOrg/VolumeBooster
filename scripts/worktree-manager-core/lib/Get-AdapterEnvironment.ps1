@@ -15,9 +15,7 @@ function Get-AdapterEnvironment {
         WORKTREE_MANAGER_MAIN_REPO = $RepoRoot
         WORKTREE_MANAGER_WORKTREE_ROOT = $WorktreeRoot
         WORKTREE_MANAGER_TREE_ROOT = $WorktreeRoot
-        WORKTREE_MANAGER_PRIMARY_REMOTE = $RemoteMeta.Name
         WORKTREE_MANAGER_BASE_BRANCH = $BaseBranch
-        WORKTREE_MANAGER_BASE_REF = "$($RemoteMeta.Name)/$BaseBranch"
         WORKTREE_MANAGER_REPO_KEY = $RepoKey
         WORKTREE_MANAGER_DIAGNOSTICS_DIR = $DiagnosticsDir
         WORKTREE_MANAGER_SCOPE_LOCK_FILE = (Join-Path $RepoRoot ".agent\worktree-scope-lock.$RepoKey.json")
@@ -43,6 +41,10 @@ function Get-AdapterEnvironment {
         WORKTREE_MANAGER_SKIP_POST_SYNC = "SPEEDSUITE_SKIP_POST_SYNC"
     }
 
+    if (-not [string]::IsNullOrWhiteSpace("$($RemoteMeta.Name)")) {
+        $variables.WORKTREE_MANAGER_PRIMARY_REMOTE = $RemoteMeta.Name
+        $variables.WORKTREE_MANAGER_BASE_REF = "$($RemoteMeta.Name)/$BaseBranch"
+    }
     if (-not [string]::IsNullOrWhiteSpace($RemoteMeta.GitHubRepo)) { $variables.WORKTREE_MANAGER_GITHUB_REPO = $RemoteMeta.GitHubRepo }
     if (-not [string]::IsNullOrWhiteSpace($HookDependencyPrep)) { $variables.WORKTREE_MANAGER_HOOK_DEPENDENCY_PREP = $HookDependencyPrep }
     if (-not [string]::IsNullOrWhiteSpace($HookPreShip)) { $variables.WORKTREE_MANAGER_HOOK_PRE_SHIP = $HookPreShip }
