@@ -8,12 +8,12 @@ const repoRoot = resolve(import.meta.dirname, "..");
 const compilerScript = resolve(repoRoot, "node_modules/@grame/faustwasm/scripts/faust2wasm.js");
 const targets = [
   {
-    input: resolve(repoRoot, "faust/prism-premium-mono.dsp"),
+    input: "faust/prism-premium-mono.dsp",
     output: resolve(repoRoot, "src/generated/faust/mono"),
     runtimeOutput: resolve(repoRoot, "public/faust/mono")
   },
   {
-    input: resolve(repoRoot, "faust/prism-premium-stereo.dsp"),
+    input: "faust/prism-premium-stereo.dsp",
     output: resolve(repoRoot, "src/generated/faust/stereo"),
     runtimeOutput: resolve(repoRoot, "public/faust/stereo")
   }
