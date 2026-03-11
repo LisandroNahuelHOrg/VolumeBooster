@@ -168,6 +168,53 @@ Preferred MCP usage:
 - `chrome-devtools`: UI/runtime investigation when relevant.
 - `playwright`: browser automation and regression checks.
 - `ripgrep`: fast repository search and discovery.
+- `serena`: semantic code navigation and refactoring for agents using real language symbols instead of text-only search.
+
+  | Command | Purpose |
+  | :------ | :------ |
+  | `activate_project` | Activate a Serena project by name or path. |
+  | `check_onboarding_performed` | Check whether project onboarding has already been completed. |
+  | `create_text_file` | Create or overwrite a file inside the project. |
+  | `delete_lines` | Delete a range of lines inside a file. |
+  | `delete_memory` | Delete a Serena persistent memory entry. |
+  | `edit_memory` | Replace memory content using a regular expression. |
+  | `execute_shell_command` | Execute a shell command from Serena. |
+  | `find_file` | Find files in relative project paths. |
+  | `find_referencing_symbols` | Find symbols that reference another symbol through the language-server backend. |
+  | `find_symbol` | Search for symbols globally or locally using semantic indexing. |
+  | `get_current_config` | Show the current Serena configuration, projects, tools, contexts, and modes. |
+  | `get_symbols_overview` | Get an overview of top-level symbols defined in a file. |
+  | `initial_instructions` | Return Serena usage instructions when the client did not auto-load the system prompt. |
+  | `insert_after_symbol` | Insert content after the end of a symbol definition. |
+  | `insert_at_line` | Insert content at a specific line in a file. |
+  | `insert_before_symbol` | Insert content before the beginning of a symbol definition. |
+  | `jet_brains_find_referencing_symbols` | Find symbol references through the JetBrains backend. |
+  | `jet_brains_find_symbol` | Search symbols through the JetBrains backend. |
+  | `jet_brains_get_symbols_overview` | Get top-level symbol overview through the JetBrains backend. |
+  | `jet_brains_type_hierarchy` | Retrieve supertypes and subtypes of a symbol through the JetBrains backend. |
+  | `list_dir` | List files and directories, optionally recursively. |
+  | `list_memories` | List available Serena memories. |
+  | `list_queryable_projects` | List external Serena projects that can be queried with `query_project`. |
+  | `onboarding` | Perform Serena onboarding for project structure, build, and testing workflows. |
+  | `open_dashboard` | Open the Serena web dashboard in the default browser. |
+  | `prepare_for_new_conversation` | Prepare context and instructions for continuing in a new conversation. |
+  | `query_project` | Query read-only information from other Serena-registered projects. |
+  | `read_file` | Read a file inside the project. |
+  | `read_memory` | Read a Serena persistent memory entry. |
+  | `remove_project` | Remove a project from Serena configuration. |
+  | `rename_memory` | Rename or move a Serena memory, including between global and project scope. |
+  | `rename_symbol` | Rename a symbol across the codebase with semantic refactoring support. |
+  | `replace_content` | Replace file content, optionally using regular expressions. |
+  | `replace_lines` | Replace a specific range of lines with new content. |
+  | `replace_symbol_body` | Replace the complete definition body of a symbol. |
+  | `restart_language_server` | Restart the language server after out-of-band edits or desynchronization. |
+  | `search_for_pattern` | Search for text patterns across the project. |
+  | `summarize_changes` | Generate instructions for summarizing codebase changes. |
+  | `switch_modes` | Activate Serena modes by name. |
+  | `think_about_collected_information` | Reasoning tool for checking whether enough information has been gathered. |
+  | `think_about_task_adherence` | Reasoning tool for checking whether work still matches the current task. |
+  | `think_about_whether_you_are_done` | Reasoning tool for checking whether the task is truly complete. |
+  | `write_memory` | Save a persistent Markdown memory for future project tasks. |
 
 This section is a catalog; commands are executed only when available and relevant.
 
