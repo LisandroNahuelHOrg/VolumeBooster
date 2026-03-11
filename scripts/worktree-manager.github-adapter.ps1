@@ -59,11 +59,15 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Assert-ManagedPathIsNotForeignRepo.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Clear-IgnorableMainLocalDirtyState.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Ensure-RepoBuildToolingReady.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-RefAheadBehindCounts.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-PathGitTopLevel.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-GitHubHeadRef.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Invoke-VerifiedProductionBuild.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Remove-DirectoryRobust.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-BaseRefAlignedAfterFetch.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-AllowedMainLocalDirtyState.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-RunPRequired.ps1")
 
@@ -1861,6 +1865,7 @@ function Ensure-FixedMonitorWorktree {
         if ($FreshFromLocalMain) {
             $previousPathExisted = Test-Path $Config.path
             if ($previousPathExisted) {
+                Assert-ManagedPathIsNotForeignRepo -PathUnderCheck $Config.path -RepoRoot $MainRepo
                 $null = Remove-WorktreeDirectoryRobust -WorktreePath $Config.path -BranchName $Config.branch
             }
 
@@ -2637,8 +2642,8 @@ function Sync-MainLocalNonDestructive {
                 $dirtyState = Test-AllowedMainLocalDirtyState -RepoPath $MainRepo -AllowedPrefixes $allowedGeneratedDirtyPrefixes
                 if ($dirtyState.Allowed) {
                     try {
-                        $baseState = Get-RefAheadBehindCounts -RepoPath $MainRepo -BaseRef $BaseRef -TargetRef $BaseBranch
-                        if ($baseState.ahead -eq 0 -and $baseState.behind -eq 0) {
+                        $baseState = Test-BaseRefAlignedAfterFetch -RepoPath $MainRepo -PrimaryRemote $PrimaryRemote -BaseBranch $BaseBranch -BaseRef $BaseRef -TargetRef $BaseBranch
+                        if ($baseState.Aligned) {
                             Write-Host "ℹ️ '$BaseBranch' local ya está alineado con $BaseRef. Se fuerza rebuild verificado aunque el repo tenga artefactos generados pendientes."
                             return Invoke-VerifiedProductionBuild -RepoPath $MainRepo -BranchLabel "$BaseBranch local" -RequiredRelativePaths $requiredBuildArtifacts
                         }
@@ -2699,37 +2704,6 @@ function Sync-MainLocalNonDestructive {
     }
     finally {
         Pop-Location
-    }
-}
-
-function Get-RefAheadBehindCounts {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$RepoPath,
-        [Parameter(Mandatory = $true)]
-        [string]$BaseRef,
-        [Parameter(Mandatory = $true)]
-        [string]$TargetRef
-    )
-
-    $raw = (git -C $RepoPath rev-list --left-right --count "$BaseRef...$TargetRef" | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($raw)) {
-        throw "❌ No se pudo obtener ahead/behind para '$TargetRef' vs '$BaseRef' en '$RepoPath'."
-    }
-
-    $parts = $raw -split "\s+"
-    if ($parts.Count -lt 2) {
-        throw "❌ Salida inválida de rev-list: '$raw'."
-    }
-
-    $behind = 0
-    $ahead = 0
-    [void][int]::TryParse("$($parts[0])", [ref]$behind)
-    [void][int]::TryParse("$($parts[1])", [ref]$ahead)
-
-    return [pscustomobject]@{
-        behind = $behind
-        ahead  = $ahead
     }
 }
 
