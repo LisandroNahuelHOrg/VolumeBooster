@@ -2,14 +2,14 @@
 
 ## 1. Create the locale catalog
 
-Create a new folder under [`public/_locales`](/D:/Local%20Worktrees/WorktreeIzqAbajo/public/_locales) using the Chrome locale code:
+Create a new folder under [`public/_locales`](../../public/_locales) using the Chrome locale code:
 
 - `fr`
 - `de`
 - `pt_BR`
 - `ar`
 
-Add `messages.json` by copying the canonical English catalog from [`public/_locales/en/messages.json`](/D:/Local%20Worktrees/WorktreeIzqAbajo/public/_locales/en/messages.json).
+Add `messages.json` by copying the canonical English catalog from [`public/_locales/en/messages.json`](../../public/_locales/en/messages.json).
 
 ## 2. Translate only the `message` values
 
@@ -21,7 +21,7 @@ Add `messages.json` by copying the canonical English catalog from [`public/_loca
 
 If a key should intentionally stay identical to English, add it to:
 
-- [`scripts/i18n-identical-allowlist.json`](/D:/Local%20Worktrees/WorktreeIzqAbajo/scripts/i18n-identical-allowlist.json)
+- [`scripts/i18n-identical-allowlist.json`](../../scripts/i18n-identical-allowlist.json)
 
 Do not rely on accidental English carry-over.
 
