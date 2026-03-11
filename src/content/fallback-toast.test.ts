@@ -97,7 +97,7 @@ describe("AutoFallbackToast", () => {
     expect(document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID)).toBeNull();
   });
 
-  it("uses error copy when the worker passes a structured error message", () => {
+  it("uses error copy for structured errors and falls back to the message key when i18n is empty", () => {
     const toast = new AutoFallbackToast({
       onManualFallback: vi.fn(),
       onDismiss: vi.fn()
@@ -111,6 +111,16 @@ describe("AutoFallbackToast", () => {
 
     const body = document.querySelector<HTMLParagraphElement>(`#${AUTO_BOOSTER_FALLBACK_TOAST_ID} [data-role='body']`);
     expect(body?.textContent).toBe("Automatic boosting failed.");
+
+    i18nGetMessage.mockReturnValue("");
+
+    toast.show({
+      tabId: 7,
+      reason: "attach_failed",
+      errorMessage: { key: "errorAutoAttachFailed" }
+    });
+
+    expect(body?.textContent).toBe("errorAutoAttachFailed");
   });
 
   it("uses the default attach-failed body copy and resolves structured substitutions through i18n", () => {
@@ -343,24 +353,38 @@ describe("AutoFallbackToast", () => {
     expect(toast.isVisible()).toBe(false);
   });
 
-  it("keeps the ensured root hidden until a show call makes it visible", () => {
-    const toast = new AutoFallbackToast({
-      onManualFallback: vi.fn(),
-      onDismiss: vi.fn()
-    });
-    const root = (
-      toast as unknown as {
-        ensureRoot(): HTMLDivElement;
-      }
-    ).ensureRoot();
-
-    expect(root.hidden).toBe(true);
+  it("recreates the toast after destroy and keeps actions functional", () => {
+    const onManualFallback = vi.fn();
+    const onDismiss = vi.fn();
+    const toast = new AutoFallbackToast({ onManualFallback, onDismiss });
 
     toast.show({
       tabId: 16,
       reason: "attach_failed"
     });
 
-    expect(root.hidden).toBe(false);
+    const firstRoot = document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID) as HTMLDivElement | null;
+    expect(firstRoot).not.toBeNull();
+
+    toast.destroy();
+    expect(document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID)).toBeNull();
+
+    toast.show({
+      tabId: 16,
+      reason: "permission_missing"
+    });
+
+    const secondRoot = document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID) as HTMLDivElement | null;
+    const buttons = [...(secondRoot?.querySelectorAll("button") ?? [])] as HTMLButtonElement[];
+
+    expect(secondRoot).not.toBeNull();
+    expect(secondRoot).not.toBe(firstRoot);
+    expect(secondRoot?.hidden).toBe(false);
+
+    buttons[0]?.click();
+    buttons[1]?.click();
+
+    expect(onManualFallback).toHaveBeenCalledTimes(1);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
