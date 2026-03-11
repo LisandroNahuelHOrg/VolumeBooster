@@ -8,6 +8,7 @@ test("worktree-manager wrapper copies and runs the core from a portable install 
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "worktree-manager-wrapper-"));
   const coreInstall = path.join(tempRoot, "portable-core");
   const wrapperPath = path.resolve("scripts/worktree-manager.ps1");
+  const repoName = "Chromium - Volume Booster";
   const output = execFileSync(
     "pwsh",
     ["-NoProfile", "-File", wrapperPath, "capabilities", "-Json"],
@@ -22,7 +23,7 @@ test("worktree-manager wrapper copies and runs the core from a portable install 
     expect(fs.existsSync(path.join(coreInstall, "invoke.ps1"))).toBe(true);
     expect(JSON.parse(output)).toMatchObject({
       manager_runtime: "pwsh",
-      canonical_main_repo_path: expect.stringContaining(path.basename(path.resolve(".")))
+      canonical_main_repo_path: expect.stringContaining(repoName)
     });
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });

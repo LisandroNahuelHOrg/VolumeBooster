@@ -8,14 +8,17 @@ test("build script refreshes Faust assets before producing final extension bundl
     scripts?: Record<string, string>;
   };
   const buildScript = packageJson.scripts?.build ?? "";
+  const viteBuildInvocation = buildScript.includes("node ./node_modules/vite/bin/vite.js build")
+    ? "node ./node_modules/vite/bin/vite.js build"
+    : "vite build";
 
   expect(packageJson.scripts?.["faust:refresh"]).toBe("node scripts/build-faust-assets.mjs");
   expect(buildScript).toContain("npm run faust:refresh");
-  expect(buildScript).toContain("vite build");
+  expect(buildScript).toContain(viteBuildInvocation);
   expect(buildScript).toContain("node scripts/build-registered-content-scripts.mjs");
   expect(buildScript.indexOf("npm run faust:refresh")).toBeGreaterThan(-1);
-  expect(buildScript.indexOf("vite build")).toBeGreaterThan(buildScript.indexOf("npm run faust:refresh"));
+  expect(buildScript.indexOf(viteBuildInvocation)).toBeGreaterThan(buildScript.indexOf("npm run faust:refresh"));
   expect(buildScript.indexOf("node scripts/build-registered-content-scripts.mjs")).toBeGreaterThan(
-    buildScript.indexOf("vite build")
+    buildScript.indexOf(viteBuildInvocation)
   );
 });

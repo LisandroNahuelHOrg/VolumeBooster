@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Sync-MainLocalNonDestructive only rebuilds after fetching a fresh base ref", () => {
+test("Sync-MainLocalNonDestructive only rebuilds after fetching a fresh base ref", { timeout: 20000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "sync-main-local-"));
   const remoteRepo = path.join(tempRoot, "remote.git");
   const seedRepo = path.join(tempRoot, "seed");

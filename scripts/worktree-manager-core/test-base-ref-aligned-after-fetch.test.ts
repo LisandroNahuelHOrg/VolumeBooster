@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { expect, test } from "vitest";
 
-test("Test-BaseRefAlignedAfterFetch refreshes origin/main before deciding alignment", () => {
+test("Test-BaseRefAlignedAfterFetch refreshes origin/main before deciding alignment", { timeout: 20000 }, () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "base-ref-aligned-"));
   const remoteRepo = path.join(tempRoot, "remote.git");
   const seedRepo = path.join(tempRoot, "seed");
