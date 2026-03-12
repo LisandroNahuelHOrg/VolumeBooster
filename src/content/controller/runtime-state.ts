@@ -15,7 +15,7 @@ import type {
 } from "../bridge-protocol";
 import type { CurrentFrameContext } from "../frame-runtime";
 import type {
-  MediaElementSession,
+  MediaElementSessionHandle,
   MediaElementTelemetry
 } from "../media-element-session";
 
@@ -33,7 +33,7 @@ export interface ControllerState {
 }
 
 export type TrackedSession = {
-  session: MediaElementSession;
+  session: MediaElementSessionHandle;
   lastTelemetry: MediaElementTelemetry;
 };
 

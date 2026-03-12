@@ -25,9 +25,9 @@ function Invoke-FixedMonitorRepair {
             $sourceFull = [System.IO.Path]::GetFullPath($sourcePath).TrimEnd("\")
             if ($sourceFull -eq $targetFull -and (Test-Path $sourcePath)) { continue }
             if ($entry.Prunable -or -not (Test-Path $sourcePath)) { & git -C $RepoRoot worktree prune 2>$null | Out-Null; $registry = Get-WorktreeRegistry -RepoRoot $RepoRoot; continue }
-            $sourceRoot = (& git -C $sourcePath rev-parse --show-toplevel 2>$null | Out-String).Trim()
+            $sourceRoot = Get-PathGitTopLevel -Path $sourcePath
             if (-not $sourceRoot) { throw "❌ '$sourcePath' ya no es un worktree válido. Ejecutar limpieza manual." }
-            if ([System.IO.Path]::GetFullPath($sourceRoot).TrimEnd("\") -ne $repoFull) { throw "❌ '$sourcePath' pertenece a otro repo. No se adoptará automáticamente." }
+            Assert-ManagedPathIsNotForeignRepo -PathUnderCheck $sourcePath -RepoRoot $RepoRoot
             $state = Test-WorktreeClean -Path $sourcePath
             if (-not $state.IsClean) { throw "❌ '$sourcePath' no está listo para migrarse: $($state.Reason)" }
             if ((Test-Path $targetPath) -and $sourceFull -ne $targetFull) { throw "❌ El destino '$targetPath' ya existe. Resolver manualmente." }
@@ -40,9 +40,19 @@ function Invoke-FixedMonitorRepair {
 
         foreach ($candidate in (Get-LegacyMonitorPaths -Display $definition.display -TargetPath $targetPath)) {
             if (-not (Test-Path $candidate)) { continue }
-            $candidateRoot = (& git -C $candidate rev-parse --show-toplevel 2>$null | Out-String).Trim()
+            $candidateFull = [System.IO.Path]::GetFullPath($candidate).TrimEnd("\")
+            $candidateRoot = Get-PathGitTopLevel -Path $candidate
             if (-not $candidateRoot) { throw "❌ '$candidate' existe pero no es un worktree reparable. Resolver manualmente." }
-            if ([System.IO.Path]::GetFullPath($candidateRoot).TrimEnd("\") -ne $repoFull) { continue }
+            try {
+                Assert-ManagedPathIsNotForeignRepo -PathUnderCheck $candidate -RepoRoot $RepoRoot
+            }
+            catch {
+                if ($candidateFull -eq $targetFull) {
+                    throw
+                }
+
+                continue
+            }
             if ((& git -C $candidate branch --show-current | Out-String).Trim() -ne $definition.branch) { throw "❌ '$candidate' usa una rama distinta a '$($definition.branch)'." }
             $state = Test-WorktreeClean -Path $candidate
             if (-not $state.IsClean) { throw "❌ '$candidate' no está listo para migrarse: $($state.Reason)" }

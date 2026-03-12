@@ -1,10 +1,10 @@
-import { DEFAULT_GAIN_PERCENT } from "../../../shared/constants";
 import { getDomainFromUrl, isSupportedTabUrl } from "../../../shared/domain";
 import { clampGainPercent } from "../../../shared/gain";
 import { message } from "../../../shared/messages";
 import type { AdvancedAudioSettings, AutoBoosterConfigPayload, AutoBoosterScope } from "../../../shared/types";
 import type { AutoTabRuntimeState, WorkerRuntimeState } from "../runtime-state";
 import { rebuildEffectiveSessions } from "../state/rebuild-effective-sessions";
+import { resolveEffectiveBoostSettingsBundle } from "../session-boost/resolve-effective-boost-settings-bundle";
 import { toErrorMessage } from "../state/to-error-message";
 import { markAutoUnsupported } from "./mark-auto-unsupported";
 import { shouldKeepAutoLaneInObservingMode } from "./should-keep-auto-lane-in-observing-mode";
@@ -30,13 +30,14 @@ export async function activateAutoBoosterForTab(
   }
 
   const domain = getDomainFromUrl(tab.url);
+  const settings = await runtime.settingsRepository.getSettings();
+  const sessionBoostState = await runtime.sessionBoostRepository.getState();
+  const resolvedBundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, domain);
   const gainPercent =
     gainOverride !== undefined
       ? clampGainPercent(gainOverride)
-      : scope === "global"
-        ? await runtime.settingsRepository.getGlobalAutoGainPercent()
-        : clampGainPercent((await runtime.settingsRepository.getDomainGain(domain)) ?? DEFAULT_GAIN_PERCENT);
-  const advancedAudioSettings = settingsOverride ?? (await runtime.settingsRepository.getAdvancedAudioSettings());
+      : clampGainPercent(resolvedBundle.gainPercent);
+  const advancedAudioSettings = settingsOverride ?? resolvedBundle.advancedAudioSettings;
   const suspended = runtime.manualSessions.has(tab.id) || runtime.autoSuppressedTabs.has(tab.id);
   const state: AutoTabRuntimeState = {
     tabId: tab.id,

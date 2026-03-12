@@ -3,6 +3,8 @@ import { syncActionBadges } from "../badge/sync-action-badges";
 import { syncFromOffscreen } from "../manual/sync-from-offscreen";
 import { registerGlobalContentScripts } from "../auto/register-global-content-scripts";
 import { syncGlobalAutoBoosterAcrossTabs } from "../auto/sync-global-auto-booster-across-tabs";
+import { getSessionBoostPromptState } from "../session-boost/get-session-boost-prompt-state";
+import { syncSessionBoostAcrossRuntime } from "../session-boost/sync-session-boost-across-runtime";
 import { unregisterGlobalContentScripts } from "../auto/unregister-global-content-scripts";
 
 export async function bootstrap(runtime: WorkerRuntimeState): Promise<void> {
@@ -23,6 +25,12 @@ export async function bootstrap(runtime: WorkerRuntimeState): Promise<void> {
   }
 
   await syncFromOffscreen(runtime);
+  const sessionBoostState = await runtime.sessionBoostRepository.getState();
+
+  if (getSessionBoostPromptState(sessionBoostState).hasUnsavedChanges) {
+    await syncSessionBoostAcrossRuntime(runtime);
+    return;
+  }
 
   if (runtime.autoBoosterMode === "global") {
     await syncGlobalAutoBoosterAcrossTabs(runtime);

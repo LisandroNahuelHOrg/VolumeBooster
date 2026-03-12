@@ -1,29 +1,26 @@
 import type { SettingsRepository } from "../../shared/storage";
+import type { SessionBoostRepository } from "../../shared/session-boost";
 import type {
-  AutoBoosterDebugState,
   AutoBoosterMode,
   AutoBoosterScope,
-  AutoBoosterTabState,
   CaptureSessionState,
-  LocalizedMessage
 } from "../../shared/types";
+import type {
+  AggregatedAutoTabState as WorkerAggregatedAutoTabState,
+  AutoDebugStateSnapshot as WorkerAutoDebugStateSnapshot
+} from "../auto-tab-aggregate";
 import type { AutoBoosterClient } from "../auto-booster-client";
 import type { AutoFrameRegistry } from "../auto-frame-registry";
 import type { OffscreenClient } from "../offscreen-client";
 
-export interface AutoTabRuntimeState extends AutoBoosterTabState {
-  gainPercent: number;
-  lastError?: LocalizedMessage;
-}
+export type AutoTabRuntimeState = WorkerAggregatedAutoTabState;
 
-export type AutoDebugStateSnapshot = Pick<
-  AutoBoosterDebugState,
-  "frameCount" | "readyFrameCount" | "attachedFrameCount" | "toastVisible"
->;
+export type AutoDebugStateSnapshot = WorkerAutoDebugStateSnapshot;
 
 export interface WorkerRuntimeState {
   offscreenClient: OffscreenClient;
   settingsRepository: SettingsRepository;
+  sessionBoostRepository: SessionBoostRepository;
   now: () => number;
   autoBoosterClient: AutoBoosterClient;
   sessions: Map<number, CaptureSessionState>;
@@ -44,6 +41,7 @@ export interface WorkerRuntimeState {
 export interface WorkerRuntimeDeps {
   offscreenClient?: OffscreenClient;
   settingsRepository?: SettingsRepository;
+  sessionBoostRepository?: SessionBoostRepository;
   now?: () => number;
   autoBoosterClient?: AutoBoosterClient;
 }

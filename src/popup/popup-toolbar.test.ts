@@ -8,8 +8,11 @@ describe("popup-toolbar", () => {
     expect(items[0]).toMatchObject({
       action: "premium-mock",
       icon: "crown",
+      visibleLabel: "Get Premium",
       isInert: true
     });
+    expect(items[1]?.visibleLabel).toBeUndefined();
+    expect(items[2]?.visibleLabel).toBeUndefined();
     expect(items[2]).toMatchObject({
       action: "open-popup-settings",
       icon: "settings_future",

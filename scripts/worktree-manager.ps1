@@ -37,10 +37,12 @@ if ($PSVersionTable.PSEdition -ne "Core") {
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$coreSource = Join-Path $repoRoot "scripts\worktree-manager-core"
-$coreInstall = "C:\Users\Lisandro\.codex\tools\worktree-manager"
+$coreResolverPath = Join-Path $repoRoot "scripts/worktree-manager-core/lib/Resolve-CoreInstallPath.ps1"
+. $coreResolverPath
+$coreSource = Join-Path $repoRoot "scripts/worktree-manager-core"
+$coreInstall = Resolve-CoreInstallPath
 $coreEntry = Join-Path $coreInstall "invoke.ps1"
-$adapterPath = Join-Path $repoRoot "scripts\worktree-manager.github-adapter.ps1"
+$adapterPath = Join-Path $repoRoot "scripts/worktree-manager.github-adapter.ps1"
 
 if (Test-Path $coreSource) {
     New-Item -ItemType Directory -Path $coreInstall -Force | Out-Null

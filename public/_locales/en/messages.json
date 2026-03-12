@@ -1,8 +1,4 @@
 {
-  "activateBooster": {
-    "message": "Activate booster",
-    "description": "Standalone UI copy shown in a button, notice, or helper surface: \"Activate booster\"."
-  },
   "advancedGlobalHint": {
     "message": "Applied to every active session instantly.",
     "description": "Advanced DSP settings copy for advancedGlobalHint."
@@ -12,8 +8,8 @@
     "description": "Advanced DSP settings copy for advancedSubtitle."
   },
   "advancedTitle": {
-    "message": "Sound Mode",
-    "description": "Advanced DSP settings copy for advancedTitle."
+    "message": "Boost Profile",
+    "description": "Card title shown above the premium sound profile selector: \"Boost Profile\"."
   },
   "autoBoosterFailureToast": {
     "message": "Automatic booster could not hook this page. Use the manual booster from the popup.",
@@ -198,10 +194,6 @@
   "currentTabLabel": {
     "message": "Current tab",
     "description": "Compact label shown next to a popup control, metric, or surface: \"Current tab\"."
-  },
-  "disableBooster": {
-    "message": "Disable booster",
-    "description": "Standalone UI copy shown in a button, notice, or helper surface: \"Disable booster\"."
   },
   "disableBoosterInAllSites": {
     "message": "Disable Auto-Boost All Sites and Tabs",
@@ -646,8 +638,8 @@
     "description": "Tooltip and accessibility copy announced when the inert Premium toolbar button is focused."
   },
   "popupToolbarPremiumLabel": {
-    "message": "Premium",
-    "description": "Accessible label used by the top popup toolbar button reserved for the future premium flow."
+    "message": "Get Premium",
+    "description": "Visible CTA text and accessible label used by the top popup toolbar button reserved for the future premium flow."
   },
   "popupToolbarRegionLabel": {
     "message": "Popup quick actions",
@@ -667,51 +659,51 @@
   },
   "presetBalanced": {
     "message": "Balanced",
-    "description": "Preset button label shown in the Sound Mode selector: \"Balanced\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Balanced\"."
   },
   "presetBalancedSubtitle": {
     "message": "Keeps the overall tone neutral and controlled for everyday listening across music, video, and live streams.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Keeps the overall tone neutral and controlled for everyday listening across music, video, and live streams.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Keeps the overall tone neutral and controlled for everyday listening across music, video, and live streams.\"."
   },
   "presetBassBoost": {
     "message": "Bass Boost",
-    "description": "Preset button label shown in the Sound Mode selector: \"Bass Boost\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Bass Boost\"."
   },
   "presetBassBoostSubtitle": {
     "message": "Adds fuller low-end weight and slam while keeping the rest of the spectrum stable.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Adds fuller low-end weight and slam while keeping the rest of the spectrum stable.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Adds fuller low-end weight and slam while keeping the rest of the spectrum stable.\"."
   },
   "presetCustom": {
     "message": "Custom",
-    "description": "Preset button label shown in the Sound Mode selector: \"Custom\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Custom\"."
   },
   "presetCustomSubtitle": {
     "message": "Fine-tune the global premium DSP engine applied to every live booster session.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Fine-tune the global premium DSP engine applied to every live booster session.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Fine-tune the global premium DSP engine applied to every live booster session.\"."
   },
   "presetMaximumClarity": {
     "message": "Maximum Clarity",
-    "description": "Preset button label shown in the Sound Mode selector: \"Maximum Clarity\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Maximum Clarity\"."
   },
   "presetMaximumClaritySubtitle": {
     "message": "Prioritizes articulation and separation so vocals, guitars, and detail stay cleaner under boost.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Prioritizes articulation and separation so vocals, guitars, and detail stay cleaner under boost.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Prioritizes articulation and separation so vocals, guitars, and detail stay cleaner under boost.\"."
   },
   "presetMaximumLoudness": {
     "message": "Maximum Loudness",
-    "description": "Preset button label shown in the Sound Mode selector: \"Maximum Loudness\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Maximum Loudness\"."
   },
   "presetMaximumLoudnessSubtitle": {
     "message": "Pushes more density and loudness for aggressive playback while still keeping peaks under control.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Pushes more density and loudness for aggressive playback while still keeping peaks under control.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Pushes more density and loudness for aggressive playback while still keeping peaks under control.\"."
   },
   "presetPunchDrive": {
     "message": "Punch Drive",
-    "description": "Preset button label shown in the Sound Mode selector: \"Punch Drive\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Punch Drive\"."
   },
   "presetPunchDriveSubtitle": {
     "message": "Increases punch and forward energy so drums, hits, and trailers feel faster and more impactful.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Increases punch and forward energy so drums, hits, and trailers feel faster and more impactful.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Increases punch and forward energy so drums, hits, and trailers feel faster and more impactful.\"."
   },
   "presetsLabel": {
     "message": "Quick Presets (%)",
@@ -719,27 +711,27 @@
   },
   "presetSmoothBright": {
     "message": "Smooth Bright",
-    "description": "Preset button label shown in the Sound Mode selector: \"Smooth Bright\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Smooth Bright\"."
   },
   "presetSmoothBrightSubtitle": {
     "message": "Keeps top-end detail alive while softening harshness in bright masters, cymbals, and sibilant audio.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Keeps top-end detail alive while softening harshness in bright masters, cymbals, and sibilant audio.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Keeps top-end detail alive while softening harshness in bright masters, cymbals, and sibilant audio.\"."
   },
   "presetVocalPresence": {
     "message": "Vocal Presence",
-    "description": "Preset button label shown in the Sound Mode selector: \"Vocal Presence\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Vocal Presence\"."
   },
   "presetVocalPresenceSubtitle": {
     "message": "Brings speech and lead vocals forward so dialogue, podcasts, and streams stay easier to follow.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Brings speech and lead vocals forward so dialogue, podcasts, and streams stay easier to follow.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Brings speech and lead vocals forward so dialogue, podcasts, and streams stay easier to follow.\"."
   },
   "presetWarmCinematic": {
     "message": "Warm Cinematic",
-    "description": "Preset button label shown in the Sound Mode selector: \"Warm Cinematic\"."
+    "description": "Preset button label shown in the Boost Profile selector: \"Warm Cinematic\"."
   },
   "presetWarmCinematicSubtitle": {
     "message": "Adds body, depth, and smoothness for films, ambient music, and long listening sessions.",
-    "description": "Supporting copy shown in the Sound Mode card when this preset is selected: \"Adds body, depth, and smoothness for films, ambient music, and long listening sessions.\"."
+    "description": "Supporting copy shown in the Boost Profile card when this preset is selected: \"Adds body, depth, and smoothness for films, ambient music, and long listening sessions.\"."
   },
   "protectionActionBypassed": {
     "message": "Bypassed",
@@ -830,8 +822,8 @@
     "description": "Supporting copy shown in the Audio Quality Protector card when this mode is selected: \"Choose how the DSP protects quality when boost is pushed harder.\"."
   },
   "qualityProtectorTitle": {
-    "message": "Audio Quality Protector",
-    "description": "Label or state copy shown in the Audio Quality Protector section: \"Audio Quality Protector\"."
+    "message": "Distortion and Quality Protector",
+    "description": "Label shown in the popup section header for the distortion and quality protection card: \"Distortion and Quality Protector\"."
   },
   "qualityProtectorTrebleSafe": {
     "message": "Treble Safe",
@@ -914,6 +906,26 @@
   "sessionPlaceholderTitle": {
     "message": "Waiting for session",
     "description": "Placeholder title for an empty active-session carousel slot."
+  },
+  "sessionBoostApplyAllSites": {
+    "message": "Apply these settings on all sites",
+    "description": "Visible CTA in the popup session boost action bar that saves the current temporary boost bundle globally for every site."
+  },
+  "sessionBoostApplySite": {
+    "message": "Apply these settings only on this site",
+    "description": "Visible CTA in the popup session boost action bar that saves the current temporary boost bundle only for the current site."
+  },
+  "sessionBoostDismiss": {
+    "message": "Don't save these settings. They will be lost when you close the browser",
+    "description": "Visible CTA in the popup session boost action bar that keeps temporary session-only boost changes without persisting them."
+  },
+  "sessionBoostResetAllSites": {
+    "message": "Reset defaults on all sites",
+    "description": "Visible CTA in the popup session boost action bar that restores the default boost bundle globally for every site."
+  },
+  "sessionBoostResetSite": {
+    "message": "Reset defaults on this site",
+    "description": "Visible CTA in the popup session boost action bar that restores the default boost bundle only for the current site."
   },
   "siteAutoSwitchWarningBody": {
     "message": "This will switch the extension to Single Tab mode and turn off Global mode first. The automatic booster will only stay active for the current tab session. If you reload this page or open another tab, you will need to enable it again manually.",

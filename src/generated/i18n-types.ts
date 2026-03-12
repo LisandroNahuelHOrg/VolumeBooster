@@ -3,7 +3,6 @@
 // Do not edit by hand.
 
 export const I18N_KEYS = [
-  "activateBooster",
   "advancedGlobalHint",
   "advancedSubtitle",
   "advancedTitle",
@@ -44,7 +43,6 @@ export const I18N_KEYS = [
   "clippingSafetyLabel",
   "clippingSafetyMax",
   "currentTabLabel",
-  "disableBooster",
   "disableBoosterInAllSites",
   "disableBoosterInThisSite",
   "enableBoosterInAllSites",
@@ -213,6 +211,11 @@ export const I18N_KEYS = [
   "rememberSite",
   "rememberedForDomain",
   "savedForSite",
+  "sessionBoostApplyAllSites",
+  "sessionBoostApplySite",
+  "sessionBoostDismiss",
+  "sessionBoostResetAllSites",
+  "sessionBoostResetSite",
   "sessionCarouselNext",
   "sessionCarouselPrevious",
   "sessionPlaceholderDetail",
@@ -246,7 +249,6 @@ export const I18N_KEYS = [
 export type I18nKey = (typeof I18N_KEYS)[number];
 
 export const I18N_PLACEHOLDER_ORDER = {
-  "activateBooster": [],
   "advancedGlobalHint": [],
   "advancedSubtitle": [],
   "advancedTitle": [],
@@ -299,7 +301,6 @@ export const I18N_PLACEHOLDER_ORDER = {
   "clippingSafetyLabel": [],
   "clippingSafetyMax": [],
   "currentTabLabel": [],
-  "disableBooster": [],
   "disableBoosterInAllSites": [],
   "disableBoosterInThisSite": [],
   "enableBoosterInAllSites": [],
@@ -476,6 +477,11 @@ export const I18N_PLACEHOLDER_ORDER = {
   "savedForSite": [
     "domain"
   ],
+  "sessionBoostApplyAllSites": [],
+  "sessionBoostApplySite": [],
+  "sessionBoostDismiss": [],
+  "sessionBoostResetAllSites": [],
+  "sessionBoostResetSite": [],
   "sessionCarouselNext": [],
   "sessionCarouselPrevious": [],
   "sessionPlaceholderDetail": [],

@@ -17,7 +17,7 @@ describe("AutoFallbackToast", () => {
           "This page blocked the automatic booster runtime. You can still boost this tab with the manual lane.",
         autoBoosterFallbackToastManualAction: "Switch to manual mode",
         autoBoosterFallbackToastDismissAction: "Dismiss",
-        errorAutoAttachFailed: "Automatic boosting failed."
+        errorAutoAttachFailed: "The automatic site booster could not hook this page."
       };
       return dictionary[key] ?? "";
     });
@@ -97,7 +97,7 @@ describe("AutoFallbackToast", () => {
     expect(document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID)).toBeNull();
   });
 
-  it("uses error copy for structured errors and falls back to the message key when i18n is empty", () => {
+  it("uses error copy for structured errors and falls back to generated English when i18n is empty", () => {
     const toast = new AutoFallbackToast({
       onManualFallback: vi.fn(),
       onDismiss: vi.fn()
@@ -110,7 +110,7 @@ describe("AutoFallbackToast", () => {
     });
 
     const body = document.querySelector<HTMLParagraphElement>(`#${AUTO_BOOSTER_FALLBACK_TOAST_ID} [data-role='body']`);
-    expect(body?.textContent).toBe("Automatic boosting failed.");
+    expect(body?.textContent).toBe("The automatic site booster could not hook this page.");
 
     i18nGetMessage.mockReturnValue("");
 
@@ -120,7 +120,7 @@ describe("AutoFallbackToast", () => {
       errorMessage: { key: "errorAutoAttachFailed" }
     });
 
-    expect(body?.textContent).toBe("errorAutoAttachFailed");
+    expect(body?.textContent).toBe("The automatic site booster could not hook this page.");
   });
 
   it("uses the default attach-failed body copy and resolves structured substitutions through i18n", () => {
@@ -275,7 +275,7 @@ describe("AutoFallbackToast", () => {
     const firstRoot = document.getElementById(AUTO_BOOSTER_FALLBACK_TOAST_ID) as HTMLDivElement | null;
     const firstBody = firstRoot?.querySelector<HTMLParagraphElement>("[data-role='body']");
     expect(firstRoot?.dataset.mode).toBe("error");
-    expect(firstBody?.textContent).toBe("Automatic boosting failed.");
+    expect(firstBody?.textContent).toBe("The automatic site booster could not hook this page.");
 
     toast.hide();
     toast.show({

@@ -1,3 +1,4 @@
+import { getDomainFromUrl } from "../../../shared/domain";
 import { fail, message, ok, type PopupCommand } from "../../../shared/messages";
 import type { AutoBoosterDebugState, RuntimeResponse, WorkerState } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
@@ -6,6 +7,12 @@ import { disableCurrentTabBooster } from "../auto/disable-current-tab-booster";
 import { enableGlobalAutoBooster } from "../auto/enable-global-auto-booster";
 import { disableGlobalAutoBooster } from "../auto/disable-global-auto-booster";
 import { validateTabForAutoBooster } from "../auto/validate-tab-for-auto-booster";
+import { applySessionBoostToAllSites } from "../session-boost/apply-session-boost-to-all-sites";
+import { applySessionBoostToSite } from "../session-boost/apply-session-boost-to-site";
+import { dismissSessionBoostPrompt } from "../session-boost/dismiss-session-boost-prompt";
+import { resetSessionBoostOnAllSites } from "../session-boost/reset-session-boost-on-all-sites";
+import { resetSessionBoostOnSite } from "../session-boost/reset-session-boost-on-site";
+import { setSessionBoostBundle } from "../session-boost/set-session-boost-bundle";
 import { getDebugState } from "../state/get-debug-state";
 import { getState } from "../state/get-state";
 import { toErrorMessage } from "../state/to-error-message";
@@ -25,6 +32,26 @@ export async function handlePopupCommand(
     switch (command.type) {
       case "GET_STATE":
       case "GET_ADVANCED_AUDIO_SETTINGS":
+        return ok(await getState(runtime));
+      case "SET_SESSION_BOOST_BUNDLE":
+        await setSessionBoostBundle(runtime, command.payload.tabId, command.payload.bundle);
+        return ok(await getState(runtime));
+      case "APPLY_SESSION_BOOST_TO_SITE":
+        await applySessionBoostToSite(runtime, command.payload.tabId);
+        return ok(await getState(runtime));
+      case "APPLY_SESSION_BOOST_TO_ALL_SITES": {
+        const targetTab = await chrome.tabs.get(command.payload.tabId).catch(() => null);
+        await applySessionBoostToAllSites(runtime, getDomainFromUrl(targetTab?.url));
+        return ok(await getState(runtime));
+      }
+      case "RESET_SESSION_BOOST_ON_SITE":
+        await resetSessionBoostOnSite(runtime, command.payload.tabId);
+        return ok(await getState(runtime));
+      case "RESET_SESSION_BOOST_ON_ALL_SITES":
+        await resetSessionBoostOnAllSites(runtime);
+        return ok(await getState(runtime));
+      case "DISMISS_SESSION_BOOST_PROMPT":
+        await dismissSessionBoostPrompt(runtime);
         return ok(await getState(runtime));
       case "GET_DEBUG_STATE":
         return ok(await getDebugState(runtime, command.payload.tabId));

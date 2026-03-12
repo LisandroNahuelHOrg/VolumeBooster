@@ -1,13 +1,8 @@
 import { isSupportedTabUrl } from "../../../shared/domain";
-import type { AdvancedAudioSettings } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
 import { activateAutoBoosterForTab } from "./activate-auto-booster-for-tab";
 
-export async function syncConfiguredAutoTabs(
-  runtime: WorkerRuntimeState,
-  settings?: AdvancedAudioSettings
-): Promise<void> {
-  const nextSettings = settings ?? (await runtime.settingsRepository.getAdvancedAudioSettings());
+export async function syncConfiguredAutoTabs(runtime: WorkerRuntimeState): Promise<void> {
   const tabsToSync = new Map<number, "site" | "global">();
 
   for (const tabId of runtime.siteEnabledAutoTabs) {
@@ -34,7 +29,7 @@ export async function syncConfiguredAutoTabs(
     }
 
     try {
-      await activateAutoBoosterForTab(runtime, tab, scope, undefined, nextSettings);
+      await activateAutoBoosterForTab(runtime, tab, scope);
     } catch {
       // Per-tab attach failures must not abort the remaining auto-booster sync work.
     }

@@ -1,0 +1,18 @@
+.quality-protector__top {
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-top: 14px;
+  padding-bottom: 12px;
+}
+
+.quality-protector__header {
+  width: 100%;
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.quality-protector__copy {
+  align-content: start;
+  justify-items: start;
+  text-align: left;
+}

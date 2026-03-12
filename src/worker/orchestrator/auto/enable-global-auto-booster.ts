@@ -34,7 +34,12 @@ export async function enableGlobalAutoBooster(
   }
 
   runtime.autoBoosterMode = await runtime.settingsRepository.setAutoBoosterMode("global");
-  const globalGainPercent = await runtime.settingsRepository.setGlobalAutoGainPercent(gainPercent);
+  const sessionBoostState = await runtime.sessionBoostRepository.getState();
+  const hasUnsavedSessionBoostChanges =
+    sessionBoostState.globalDraftBundle !== null || Object.keys(sessionBoostState.siteSessionBundles).length > 0;
+  const globalGainPercent = hasUnsavedSessionBoostChanges
+    ? undefined
+    : await runtime.settingsRepository.setGlobalAutoGainPercent(gainPercent);
   runtime.autoSuppressedTabs.clear();
 
   let injectableTabs: chrome.tabs.Tab[] = [];

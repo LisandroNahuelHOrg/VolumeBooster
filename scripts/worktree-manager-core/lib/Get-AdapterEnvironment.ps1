@@ -10,20 +10,20 @@ function Get-AdapterEnvironment {
         [string]$HookPreShip
     )
 
+    $cacheRoot = Join-Path (Join-Path (Split-Path -Parent $WorktreeRoot) ".manager-cache") $RepoKey
+    $scopeLockFile = Join-Path (Join-Path $RepoRoot ".agent") "worktree-scope-lock.$RepoKey.json"
     $variables = [ordered]@{
         WORKTREE_MANAGER_REPO_ROOT = $RepoRoot
         WORKTREE_MANAGER_MAIN_REPO = $RepoRoot
         WORKTREE_MANAGER_WORKTREE_ROOT = $WorktreeRoot
         WORKTREE_MANAGER_TREE_ROOT = $WorktreeRoot
-        WORKTREE_MANAGER_PRIMARY_REMOTE = $RemoteMeta.Name
         WORKTREE_MANAGER_BASE_BRANCH = $BaseBranch
-        WORKTREE_MANAGER_BASE_REF = "$($RemoteMeta.Name)/$BaseBranch"
         WORKTREE_MANAGER_REPO_KEY = $RepoKey
         WORKTREE_MANAGER_DIAGNOSTICS_DIR = $DiagnosticsDir
-        WORKTREE_MANAGER_SCOPE_LOCK_FILE = (Join-Path $RepoRoot ".agent\worktree-scope-lock.$RepoKey.json")
+        WORKTREE_MANAGER_SCOPE_LOCK_FILE = $scopeLockFile
         WORKTREE_MANAGER_SCOPE_MUTEX_NAME = "Global\WorktreeManagerScopeLock-$RepoKey"
         WORKTREE_MANAGER_FIXED_SHIP_ALL_MUTEX_NAME = "Global\WorktreeManagerFixedShipAllLock-$RepoKey"
-        WORKTREE_MANAGER_CACHE_ROOT = (Join-Path "D:\Local Worktrees\.manager-cache" $RepoKey)
+        WORKTREE_MANAGER_CACHE_ROOT = $cacheRoot
     }
     $warnings = @()
     $aliases = [ordered]@{
@@ -43,6 +43,10 @@ function Get-AdapterEnvironment {
         WORKTREE_MANAGER_SKIP_POST_SYNC = "SPEEDSUITE_SKIP_POST_SYNC"
     }
 
+    if (-not [string]::IsNullOrWhiteSpace("$($RemoteMeta.Name)")) {
+        $variables.WORKTREE_MANAGER_PRIMARY_REMOTE = $RemoteMeta.Name
+        $variables.WORKTREE_MANAGER_BASE_REF = "$($RemoteMeta.Name)/$BaseBranch"
+    }
     if (-not [string]::IsNullOrWhiteSpace($RemoteMeta.GitHubRepo)) { $variables.WORKTREE_MANAGER_GITHUB_REPO = $RemoteMeta.GitHubRepo }
     if (-not [string]::IsNullOrWhiteSpace($HookDependencyPrep)) { $variables.WORKTREE_MANAGER_HOOK_DEPENDENCY_PREP = $HookDependencyPrep }
     if (-not [string]::IsNullOrWhiteSpace($HookPreShip)) { $variables.WORKTREE_MANAGER_HOOK_PRE_SHIP = $HookPreShip }

@@ -24,6 +24,12 @@ describe("bridge-protocol", () => {
         advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS }
       }
     };
+    const disablePayload = {
+      type: "disable" as const,
+      payload: {
+        tabId: 9
+      }
+    };
     const statusPayload = {
       enabled: true,
       suspended: false,
@@ -46,6 +52,7 @@ describe("bridge-protocol", () => {
     };
 
     const commandEvent = createBridgeCommandEvent(configurePayload);
+    const disableEvent = createBridgeCommandEvent(disablePayload);
     const statusEvent = createBridgeStatusEvent(statusPayload);
     const telemetryEvent = createBridgeTelemetryEvent(telemetryPayload);
 
@@ -53,6 +60,11 @@ describe("bridge-protocol", () => {
     expect(commandEvent.detail).toEqual({
       source: BRIDGE_SOURCE,
       payload: configurePayload
+    });
+    expect(disableEvent.type).toBe(BRIDGE_COMMAND_EVENT);
+    expect(disableEvent.detail).toEqual({
+      source: BRIDGE_SOURCE,
+      payload: disablePayload
     });
     expect(statusEvent.type).toBe(BRIDGE_STATUS_EVENT);
     expect(statusEvent.detail).toEqual({

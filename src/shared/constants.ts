@@ -24,6 +24,8 @@ export const POPUP_LANE_TRANSITION_FROM = "translateY(6px) scale(0.985)";
 export const POPUP_LANE_TRANSITION_TO = "translateY(0) scale(1)";
 /** Storage key used to persist extension settings in `chrome.storage.local`. */
 export const SETTINGS_STORAGE_KEY = "prismVolumeBoosterSettings";
+/** Storage key used to persist runtime-only boost drafts in `chrome.storage.session`. */
+export const SESSION_BOOST_STATE_STORAGE_KEY = "prismVolumeBoosterSessionBoostState";
 /** Path to the hidden offscreen document that owns manual capture audio graphs. */
 export const OFFSCREEN_DOCUMENT_PATH = "offscreen.html";
 /** Chrome-required explanation for why the extension needs an offscreen document. */

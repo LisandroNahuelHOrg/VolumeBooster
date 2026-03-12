@@ -111,9 +111,9 @@ describe("runtime i18n", () => {
     expect(getUiLanguage(null)).toBe("es-AR");
     expect(getBrowserLocale()).toBe("es-AR");
     await expect(loadLocaleCatalog("es")).resolves.toMatchObject({
-      advancedTitle: "Sound Mode"
+      advancedTitle: "Boost Profile"
     });
-    expect(translate({}, "advancedTitle")).toBe("Sound Mode");
+    expect(translate({}, "advancedTitle")).toBe("Boost Profile");
 
     vi.unstubAllGlobals();
     expect(getUiLanguage(null)).toBe(navigator.language);
@@ -160,7 +160,7 @@ describe("runtime i18n", () => {
       }
     };
 
-    expect(t("advancedTitle", undefined, api)).toBe("Sound Mode");
+    expect(t("advancedTitle", undefined, api)).toBe("Boost Profile");
     expect(tp("boostingCount", 5, { count: 5 }, api, "en")).toBe("5 booster sessions are active right now.");
     expect(tp("boostingCount", 0, undefined, api, "en")).toBe("No booster sessions are active right now.");
     expect(tp("not_real_key" as never, 5, undefined, null, "xx-XX")).toBe("5");

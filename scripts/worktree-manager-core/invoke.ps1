@@ -21,22 +21,19 @@ Get-ChildItem -Path (Join-Path $PSScriptRoot "lib") -Filter "*.ps1" |
     Sort-Object Name |
     ForEach-Object { . $_.FullName }
 
-$resolvedRepoRoot = Resolve-ManagerRepoRoot -RepoRootHint $RepoRoot -WorkingDirectory (Get-Location).Path
-$config = Read-ManagerConfig -RepoRoot $resolvedRepoRoot
-$remoteMeta = Resolve-RemoteMetadata -RepoRoot $resolvedRepoRoot -PreferredRemote "$($config.preferredRemote)"
-$baseBranch = Resolve-BaseBranch -RepoRoot $resolvedRepoRoot -RemoteName $remoteMeta.Name -BaseBranchOverride "$($config.baseBranch)"
-$repoKey = Resolve-RepoKey -RepoRoot $resolvedRepoRoot -RemoteUrl $remoteMeta.Url
-$diagnosticsDir = if ([string]::IsNullOrWhiteSpace("$($config.diagnosticsDir)")) {
-    Join-Path $resolvedRepoRoot ".agent\0. Agents Brain\diagnostics\worktree-manager"
-} elseif ([System.IO.Path]::IsPathRooted("$($config.diagnosticsDir)")) {
-    "$($config.diagnosticsDir)"
-} else {
-    Join-Path $resolvedRepoRoot "$($config.diagnosticsDir)"
-}
-$worktreeRoot = Join-Path "D:\Local Worktrees" $repoKey
-$hookPrep = if ([string]::IsNullOrWhiteSpace("$($config.hooks.dependencyPrep)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.dependencyPrep)" }
-$hookShip = if ([string]::IsNullOrWhiteSpace("$($config.hooks.preShip)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.preShip)" }
-$scopeLockFile = Join-Path $resolvedRepoRoot ".agent\worktree-scope-lock.$repoKey.json"
+$localContext = Resolve-ManagerLocalContext -RepoRootHint $RepoRoot -WorkingDirectory (Get-Location).Path
+$requiresRemoteMetadata = Test-CommandRequiresRemoteMetadata -Command $Command
+$remoteContext = Try-ResolveManagerRemoteContext -RepoRoot $localContext.RepoRoot -Config $localContext.Config -Required:$requiresRemoteMetadata
+$resolvedRepoRoot = $localContext.RepoRoot
+$config = $localContext.Config
+$remoteMeta = if ($null -eq $remoteContext) { $null } else { $remoteContext.RemoteMeta }
+$baseBranch = if ($null -eq $remoteContext) { $localContext.BaseBranch } else { $remoteContext.BaseBranch }
+$repoKey = if ($null -eq $remoteContext) { $localContext.RepoKey } else { $remoteContext.RepoKey }
+$diagnosticsDir = $localContext.DiagnosticsDir
+$worktreeRoot = Join-Path (Get-ManagerDefaultWorktreeRoot) $repoKey
+$hookPrep = $localContext.HookDependencyPrep
+$hookShip = $localContext.HookPreShip
+$scopeLockFile = Join-Path (Join-Path $resolvedRepoRoot ".agent") "worktree-scope-lock.$repoKey.json"
 $definitions = Get-FixedMonitorDefinitions -WorktreeRoot $worktreeRoot
 $monitorKeys = @()
 
@@ -59,11 +56,11 @@ if ($Command -eq "fixed-open" -or $Command -eq "fixed-ship") {
     if (-not [string]::IsNullOrWhiteSpace($monitorKey)) { $monitorKeys = @($monitorKey) }
 }
 
-if ($monitorKeys.Count -gt 0) {
+if ($Command -in @("fixed-open", "fixed-ship", "fixed-ship-all") -and $monitorKeys.Count -gt 0) {
     Invoke-FixedMonitorRepair -RepoRoot $resolvedRepoRoot -WorktreeRoot $worktreeRoot -MonitorKeys $monitorKeys -Definitions $definitions
 }
 
-if ($Command -in @("ship", "fixed-ship", "fixed-ship-all") -and $adapter.Provider -eq "github" -and $remoteMeta.Provider -ne "github") {
+if ($null -ne $remoteMeta -and $Command -in @("ship", "fixed-ship", "fixed-ship-all") -and $adapter.Provider -eq "github" -and $remoteMeta.Provider -ne "github") {
     throw "❌ Ship solo está soportado por el adapter GitHub. Remote actual: $($remoteMeta.Url)"
 }
 

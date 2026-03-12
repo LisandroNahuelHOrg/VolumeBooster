@@ -1,0 +1,8 @@
+export const GAIN_COMMIT_DEBOUNCE_MS = 60;
+export const GAIN_PRESET_ANIMATION_MS = 280;
+export const GAIN_TRACK_JUMP_WINDOW_MS = 250;
+export const GAIN_TRACK_DRAG_THRESHOLD_PX = 6;
+export const ADVANCED_COMMIT_DEBOUNCE_MS = 80;
+export const LANE_LAYOUT_TRANSITION_MS = 240;
+export const STATE_POLL_MS = 180;
+export const PROTECTOR_TELEMETRY_UI_MS = 80;

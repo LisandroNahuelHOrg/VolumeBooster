@@ -15,6 +15,7 @@ export interface PopupToolbarItem {
   action: "premium-mock" | "toggle-popup-theme" | "open-popup-settings";
   icon: PopupToolbarIconKey;
   label: string;
+  visibleLabel?: string;
   title: string;
   isActive: boolean;
   isInert: boolean;
@@ -48,6 +49,7 @@ export function getPopupToolbarItems(
       action: "premium-mock",
       icon: "crown",
       label: translate(catalog, "popupToolbarPremiumLabel"),
+      visibleLabel: translate(catalog, "popupToolbarPremiumLabel"),
       title: translate(catalog, "popupToolbarPremiumComingSoon"),
       isActive: false,
       isInert: true
