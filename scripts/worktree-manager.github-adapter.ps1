@@ -64,6 +64,7 @@ $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Ensure-RepoBuildToolingReady.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-RefAheadBehindCounts.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-PathGitTopLevel.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-ManagerDefaultWorktreeRoot.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-GitHubHeadRef.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Invoke-VerifiedProductionBuild.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Remove-DirectoryRobust.ps1")
@@ -152,7 +153,7 @@ function Get-PreferredWorktreeRoot {
         return $override
     }
 
-    $defaultRoot = "D:\Local Worktrees"
+    $defaultRoot = Get-ManagerDefaultWorktreeRoot
     New-Item -ItemType Directory -Path $defaultRoot -Force | Out-Null
     return $defaultRoot
 }
@@ -176,7 +177,7 @@ $MainRepo = Get-PreferredMainRepo
 $PrimaryRemote = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_PRIMARY_REMOTE)")) { "origin" } else { "$($env:WORKTREE_MANAGER_PRIMARY_REMOTE)".Trim() }
 $BaseBranch = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_BASE_BRANCH)")) { "main" } else { "$($env:WORKTREE_MANAGER_BASE_BRANCH)".Trim() }
 $BaseRef = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_BASE_REF)")) { "$PrimaryRemote/$BaseBranch" } else { "$($env:WORKTREE_MANAGER_BASE_REF)".Trim() }
-$SpeedCacheRoot = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_CACHE_ROOT)")) { "D:\Local Worktrees\.manager-cache\default" } else { "$($env:WORKTREE_MANAGER_CACHE_ROOT)".Trim() }
+$SpeedCacheRoot = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_CACHE_ROOT)")) { Join-Path (Join-Path (Get-ManagerDefaultWorktreeRoot) ".manager-cache") "default" } else { "$($env:WORKTREE_MANAGER_CACHE_ROOT)".Trim() }
 $NpmCacheDir = Join-Path $SpeedCacheRoot "npm"
 $TmpDir = Join-Path $SpeedCacheRoot "tmp"
 $NpmGlobalDir = Join-Path $SpeedCacheRoot "npm-global"

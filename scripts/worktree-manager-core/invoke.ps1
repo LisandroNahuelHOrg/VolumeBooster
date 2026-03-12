@@ -30,10 +30,10 @@ $remoteMeta = if ($null -eq $remoteContext) { $null } else { $remoteContext.Remo
 $baseBranch = if ($null -eq $remoteContext) { $localContext.BaseBranch } else { $remoteContext.BaseBranch }
 $repoKey = if ($null -eq $remoteContext) { $localContext.RepoKey } else { $remoteContext.RepoKey }
 $diagnosticsDir = $localContext.DiagnosticsDir
-$worktreeRoot = Join-Path "D:\Local Worktrees" $repoKey
+$worktreeRoot = Join-Path (Get-ManagerDefaultWorktreeRoot) $repoKey
 $hookPrep = $localContext.HookDependencyPrep
 $hookShip = $localContext.HookPreShip
-$scopeLockFile = Join-Path $resolvedRepoRoot ".agent\worktree-scope-lock.$repoKey.json"
+$scopeLockFile = Join-Path (Join-Path $resolvedRepoRoot ".agent") "worktree-scope-lock.$repoKey.json"
 $definitions = Get-FixedMonitorDefinitions -WorktreeRoot $worktreeRoot
 $monitorKeys = @()
 
