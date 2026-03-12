@@ -17,8 +17,8 @@ function Resolve-ManagerLocalContext {
     }
     $hookPrep = if ([string]::IsNullOrWhiteSpace("$($config.hooks.dependencyPrep)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.dependencyPrep)" }
     $hookShip = if ([string]::IsNullOrWhiteSpace("$($config.hooks.preShip)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.preShip)" }
-    $worktreeRoot = Join-Path (Get-ManagerDefaultWorktreeRoot) $repoKey
-    $scopeLockFile = Join-Path (Join-Path $resolvedRepoRoot ".agent") "worktree-scope-lock.$repoKey.json"
+    $worktreeRoot = Join-Path "D:\Local Worktrees" $repoKey
+    $scopeLockFile = Join-Path $resolvedRepoRoot ".agent\worktree-scope-lock.$repoKey.json"
 
     return [pscustomobject]@{
         RepoRoot          = $resolvedRepoRoot
