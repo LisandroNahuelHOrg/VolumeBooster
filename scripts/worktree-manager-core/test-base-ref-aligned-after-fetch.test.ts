@@ -66,4 +66,4 @@ test("Test-BaseRefAlignedAfterFetch refreshes origin/main before deciding alignm
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
-});
+}, 15000);

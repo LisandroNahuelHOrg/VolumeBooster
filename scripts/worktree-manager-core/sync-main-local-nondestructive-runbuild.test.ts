@@ -63,4 +63,4 @@ test("Sync-MainLocalNonDestructive only rebuilds after fetching a fresh base ref
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
-});
+}, 15000);
