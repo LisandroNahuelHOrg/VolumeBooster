@@ -34,6 +34,8 @@ export interface PopupMainViewRenderModel {
   laneStatus: LaneStatusDescriptor;
   siteAutoEnabled: boolean;
   globalAutoEnabled: boolean;
+  sessionBoostVisible: boolean;
+  sessionBoostActionBarMarkup: string;
   siteLaneButtonCopy: { action: string; mode: string };
   globalLaneButtonCopy: { action: string; mode: string };
   globalAutoAction: string;

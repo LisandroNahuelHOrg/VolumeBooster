@@ -12,6 +12,7 @@ import { clearPopupTransientError } from "../runtime/clear-popup-transient-error
 import { getVisibleAdvancedAudioSettings } from "../state/get-visible-advanced-audio-settings";
 import { popupRootClickContextRegistry } from "./popup-root-click-context-registry";
 import { runPopupRootAction } from "./run-popup-root-action";
+import { startSessionBoostActionFeedback } from "./start-session-boost-action-feedback";
 
 export function dispatchRootClick(event: Event): void {
   const target = event.target;
@@ -103,6 +104,10 @@ export function dispatchRootClick(event: Event): void {
     return;
   }
   if (actionButton?.dataset.action) {
+    if (actionButton.closest('[data-role="session-boost-bar"]')) {
+      startSessionBoostActionFeedback(context.commandContext, actionButton.dataset.action);
+    }
+
     runPopupRootAction(actionButton.dataset.action, context.commandContext);
   }
 }

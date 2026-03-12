@@ -16,7 +16,9 @@ import { getLaneStatus } from "../status/get-lane-status";
 import { globalBoosterButtonAction } from "../status/global-booster-button-action";
 import { isGlobalAutoEnabled } from "../status/is-global-auto-enabled";
 import { isSiteAutoEnabled } from "../status/is-site-auto-enabled";
+import { createSessionBoostActionBarMarkup } from "./create-session-boost-action-bar-markup";
 import type { PopupMainViewRenderResult, PopupRenderContext } from "./popup-render-types";
+import { resolveSessionBoostBarState } from "../../resolve-session-boost-bar-state";
 
 export function createMainViewRenderModel(
   viewModel: PopupViewModel,
@@ -37,6 +39,12 @@ export function createMainViewRenderModel(
   const protectionBypassed =
     currentSession?.protectionBypassed ?? advancedAudioSettings.qualityProtectorMode === "off";
   const sessionCarousel = buildSessionCarouselModel(viewModel.activeSessions, sessionCarouselOffset);
+  const sessionBoostBarState = resolveSessionBoostBarState(viewModel, {
+    currentView: renderContext.currentView,
+    draftGainPercent: renderContext.draftGainPercent,
+    draftAdvancedAudioSettings: renderContext.draftAdvancedAudioSettings,
+    pendingAdvancedAudioSettings: renderContext.pendingAdvancedAudioSettings
+  });
 
   return {
     model: {
@@ -55,6 +63,8 @@ export function createMainViewRenderModel(
       laneStatus: getLaneStatus(viewModel, renderContext.catalog),
       siteAutoEnabled: isSiteAutoEnabled(viewModel),
       globalAutoEnabled: isGlobalAutoEnabled(viewModel),
+      sessionBoostVisible: sessionBoostBarState.visible,
+      sessionBoostActionBarMarkup: createSessionBoostActionBarMarkup(viewModel, renderContext),
       siteLaneButtonCopy: getLaneButtonCopy(
         "current-tab",
         isSiteAutoEnabled(viewModel),

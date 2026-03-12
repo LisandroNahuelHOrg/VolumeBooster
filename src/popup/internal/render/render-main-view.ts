@@ -30,5 +30,6 @@ export function renderMainView(model: PopupMainViewRenderModel): string {
       </div>
     </section>
     ${renderOtherSessionsPanel(model)}
+    ${model.sessionBoostActionBarMarkup}
   `;
 }

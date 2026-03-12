@@ -27,6 +27,9 @@ export async function applyPopupWorkerState(
   const viewModel = buildPopupViewModel(nextState);
   const actualGain = viewModel.gainPercent;
   const tabContextChanged = didTabContextChange(previousState, nextState);
+  const sessionBoostPromptResolved =
+    previousState?.sessionBoostPromptState?.hasUnsavedChanges === true &&
+    nextState.sessionBoostPromptState?.hasUnsavedChanges !== true;
 
   if (state.pendingGainPercent !== null) {
     if (!viewModel.currentSession || actualGain === state.pendingGainPercent) {
@@ -37,7 +40,10 @@ export async function applyPopupWorkerState(
   if (
     !state.isAdjustingGain &&
     state.pendingGainPercent === null &&
-    (previousState === null || tabContextChanged || viewModel.currentSession)
+    (previousState === null ||
+      tabContextChanged ||
+      viewModel.currentSession ||
+      sessionBoostPromptResolved)
   ) {
     state.draftGainPercent = actualGain;
   }

@@ -58,6 +58,7 @@ export interface PopupRuntimeState {
   popupUiSyncRuntime: PopupUiSyncRuntime;
   renderedSignature: string;
   rootEventsBound: boolean;
+  sessionBoostAcknowledgedAction: string | null;
   sessionCarouselOffset: number;
   statePollTimer: number | null;
   transientError: LocalizedMessage | null;
