@@ -1,7 +1,4 @@
 {
-  "activateBooster": {
-    "message": "Activar booster"
-  },
   "advancedGlobalHint": {
     "message": "Se aplica al instante a cada sesión activa."
   },
@@ -157,9 +154,6 @@
   },
   "currentTabLabel": {
     "message": "Pestaña actual"
-  },
-  "disableBooster": {
-    "message": "Desactivar booster"
   },
   "disableBoosterInAllSites": {
     "message": "Desactivar auto-boost en todos los sitios y pestañas"

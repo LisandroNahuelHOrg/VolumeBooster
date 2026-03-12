@@ -3,7 +3,6 @@
 // Do not edit by hand.
 
 export const I18N_FALLBACK_MESSAGES = {
-  "activateBooster": "Activate booster",
   "advancedGlobalHint": "Applied to every active session instantly.",
   "advancedSubtitle": "Fine-tune the global premium DSP engine applied to every live booster session.",
   "advancedTitle": "Boost Profile",
@@ -44,7 +43,6 @@ export const I18N_FALLBACK_MESSAGES = {
   "clippingSafetyLabel": "Clipping Safety",
   "clippingSafetyMax": "9.9+ dB",
   "currentTabLabel": "Current tab",
-  "disableBooster": "Disable booster",
   "disableBoosterInAllSites": "Disable Auto-Boost All Sites and Tabs",
   "disableBoosterInThisSite": "Disable Boost On The Current Tab",
   "enableBoosterInAllSites": "Auto-Boost All Sites and Tabs",

@@ -1,8 +1,4 @@
 {
-  "activateBooster": {
-    "message": "Activate booster",
-    "description": "Standalone UI copy shown in a button, notice, or helper surface: \"Activate booster\"."
-  },
   "advancedGlobalHint": {
     "message": "Applied to every active session instantly.",
     "description": "Advanced DSP settings copy for advancedGlobalHint."
@@ -198,10 +194,6 @@
   "currentTabLabel": {
     "message": "Current tab",
     "description": "Compact label shown next to a popup control, metric, or surface: \"Current tab\"."
-  },
-  "disableBooster": {
-    "message": "Disable booster",
-    "description": "Standalone UI copy shown in a button, notice, or helper surface: \"Disable booster\"."
   },
   "disableBoosterInAllSites": {
     "message": "Disable Auto-Boost All Sites and Tabs",
