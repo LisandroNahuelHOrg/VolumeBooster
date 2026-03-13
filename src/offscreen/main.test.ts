@@ -8,6 +8,15 @@ describe("offscreen main entrypoint", () => {
   it("sets document metadata and routes runtime commands to the session manager", async () => {
     const captureExceptionSafe = vi.fn();
     const initSentryForContext = vi.fn();
+    const createOffscreenSessionManager = vi.fn(() => ({
+      startSession,
+      setGain,
+      setAdvancedAudioSettings,
+      stopSession,
+      stopAll,
+      updateMetadata,
+      getSnapshot
+    }));
     const startSession = vi.fn().mockResolvedValue({ ok: true });
     const setGain = vi.fn().mockResolvedValue({ ok: true });
     const setAdvancedAudioSettings = vi.fn().mockResolvedValue({ ok: true });
@@ -17,17 +26,7 @@ describe("offscreen main entrypoint", () => {
     const getSnapshot = vi.fn().mockReturnValue([{ tabId: 1 }]);
     const onMessageAddListener = vi.fn();
 
-    vi.doMock("./session-manager", () => ({
-      OffscreenSessionManager: class {
-        startSession = startSession;
-        setGain = setGain;
-        setAdvancedAudioSettings = setAdvancedAudioSettings;
-        stopSession = stopSession;
-        stopAll = stopAll;
-        updateMetadata = updateMetadata;
-        getSnapshot = getSnapshot;
-      }
-    }));
+    vi.doMock("./session-manager", () => ({ createOffscreenSessionManager }));
 
     vi.doMock("../shared/observability/sentry", () => ({
       captureExceptionSafe,
@@ -68,6 +67,7 @@ describe("offscreen main entrypoint", () => {
     await import("./main");
 
     expect(initSentryForContext).toHaveBeenCalledWith("offscreen");
+    expect(createOffscreenSessionManager).toHaveBeenCalledTimes(1);
     expect(setDocumentLocaleAttributes).toHaveBeenCalledWith(document);
     expect(document.title).toBe("Offscreen doc");
     expect(onMessageAddListener).toHaveBeenCalledTimes(1);

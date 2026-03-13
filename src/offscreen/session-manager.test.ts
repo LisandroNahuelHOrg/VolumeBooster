@@ -31,7 +31,12 @@ vi.mock("../generated/faust/stereo/dsp-meta", () => sessionManagerFaustMetaHoist
 import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../shared/audio-settings";
 import { message } from "../shared/messages";
 import type { CaptureSessionState } from "../shared/types";
-import { OffscreenSessionManager, type AudioSessionFactory, type AudioSessionPort } from "./session-manager";
+import {
+  createOffscreenSessionManager,
+  type AudioSessionFactory,
+  type AudioSessionPort,
+  type OffscreenSessionManager
+} from "./session-manager";
 
 type MockedAudioSessionPort = AudioSessionPort & {
   start: ReturnType<typeof vi.fn>;
@@ -62,6 +67,13 @@ function makeStartPayload(tabId: number, gainPercent: number, domain: string) {
   };
 }
 
+function makeManager(
+  now: () => number,
+  createAudioSession: AudioSessionFactory
+): OffscreenSessionManager {
+  return createOffscreenSessionManager(now, createAudioSession);
+}
+
 describe("OffscreenSessionManager", () => {
   const runtimeSendMessage = vi.fn();
 
@@ -89,7 +101,7 @@ describe("OffscreenSessionManager", () => {
       return session;
     };
 
-    const manager = new OffscreenSessionManager(() => 1_000, createAudioSession);
+    const manager = makeManager(() => 1_000, createAudioSession);
 
     await manager.startSession(makeStartPayload(1, 220, "one.example"));
     await manager.startSession(makeStartPayload(2, 180, "two.example"));
@@ -115,7 +127,7 @@ describe("OffscreenSessionManager", () => {
     const createAudioSession: AudioSessionFactory = () =>
       audioSession;
 
-    const manager = new OffscreenSessionManager(() => 2_000, createAudioSession);
+    const manager = makeManager(() => 2_000, createAudioSession);
     const response = await manager.startSession(makeStartPayload(3, 300, "broken.example"));
 
     expect(response.ok).toBe(false);
@@ -126,7 +138,7 @@ describe("OffscreenSessionManager", () => {
 
   it("creates manual sessions with exact default state and publishes pending then ready status", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 1_234, () => audioSession);
+    const manager = makeManager(() => 1_234, () => audioSession);
 
     const response = await manager.startSession(makeStartPayload(9, 240, "nine.example"));
 
@@ -188,7 +200,7 @@ describe("OffscreenSessionManager", () => {
       return makeAudioSessionPort();
     };
 
-    const manager = new OffscreenSessionManager(() => 100, createAudioSession);
+    const manager = makeManager(() => 100, createAudioSession);
 
     await manager.startSession(makeStartPayload(1, 220, "one.example"));
     await manager.startSession(makeStartPayload(2, 180, "two.example"));
@@ -219,7 +231,7 @@ describe("OffscreenSessionManager", () => {
       telemetryCallback = callbacks.onTelemetry;
       return makeAudioSessionPort();
     };
-    const manager = new OffscreenSessionManager(() => 200, createAudioSession);
+    const manager = makeManager(() => 200, createAudioSession);
 
     await manager.startSession(makeStartPayload(4, 260, "telemetry.example"));
     runtimeSendMessage.mockClear();
@@ -274,7 +286,7 @@ describe("OffscreenSessionManager", () => {
       return makeAudioSessionPort();
     };
 
-    const manager = new OffscreenSessionManager(() => 300, createAudioSession);
+    const manager = makeManager(() => 300, createAudioSession);
 
     await manager.startSession(makeStartPayload(5, 200, "late.example"));
     runtimeSendMessage.mockClear();
@@ -309,7 +321,7 @@ describe("OffscreenSessionManager", () => {
       .fn()
       .mockReturnValueOnce(firstSession)
       .mockReturnValueOnce(secondSession);
-    const manager = new OffscreenSessionManager(() => 400, createAudioSession);
+    const manager = makeManager(() => 400, createAudioSession);
     const nextSettings = {
       ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
       qualityPreset: "maximum_loudness" as const,
@@ -374,7 +386,7 @@ describe("OffscreenSessionManager", () => {
   });
 
   it("returns a failure when changing gain or metadata for a missing session", async () => {
-    const manager = new OffscreenSessionManager(() => 500, () => makeAudioSessionPort());
+    const manager = makeManager(() => 500, () => makeAudioSessionPort());
 
     await expect(manager.setGain(999, 180)).resolves.toMatchObject({
       ok: false,
@@ -395,7 +407,7 @@ describe("OffscreenSessionManager", () => {
 
   it("updates metadata, gain and protection mode without restarting the session", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 600, () => audioSession);
+    const manager = makeManager(() => 600, () => audioSession);
     const nextSettings = {
       ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
       qualityProtectorMode: "off" as const
@@ -440,7 +452,7 @@ describe("OffscreenSessionManager", () => {
 
   it("skips gain and advanced-setting rewrites when metadata keeps the same processing config", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 605, () => audioSession);
+    const manager = makeManager(() => 605, () => audioSession);
 
     await manager.startSession(makeStartPayload(8, 160, "same.example"));
     audioSession.setGainPercent.mockClear();
@@ -466,7 +478,7 @@ describe("OffscreenSessionManager", () => {
       .fn()
       .mockReturnValueOnce(firstSession)
       .mockReturnValueOnce(secondSession);
-    const manager = new OffscreenSessionManager(() => 700, createAudioSession);
+    const manager = makeManager(() => 700, createAudioSession);
 
     await manager.startSession(makeStartPayload(1, 220, "one.example"));
     await manager.startSession(makeStartPayload(2, 180, "two.example"));
@@ -482,7 +494,7 @@ describe("OffscreenSessionManager", () => {
 
   it("publishes the exact inactive status payload when a session stops", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 720, () => audioSession);
+    const manager = makeManager(() => 720, () => audioSession);
 
     await manager.startSession(makeStartPayload(11, 310, "stop.example"));
     runtimeSendMessage.mockClear();
@@ -503,7 +515,7 @@ describe("OffscreenSessionManager", () => {
 
   it("publishes exact status updates when gain and metadata change on a running session", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 730, () => audioSession);
+    const manager = makeManager(() => 730, () => audioSession);
 
     await manager.startSession(makeStartPayload(12, 200, "gain.example"));
     runtimeSendMessage.mockClear();
@@ -574,7 +586,7 @@ describe("OffscreenSessionManager", () => {
   });
 
   it("keeps stopSession and stopAll silent when the target session does not exist", async () => {
-    const manager = new OffscreenSessionManager(() => 740, () => makeAudioSessionPort());
+    const manager = makeManager(() => 740, () => makeAudioSessionPort());
 
     await expect(manager.stopSession(999)).resolves.toEqual({ ok: true, data: { sessions: [] } });
     await expect(manager.stopAll()).resolves.toEqual({ ok: true, data: { sessions: [] } });
@@ -583,7 +595,7 @@ describe("OffscreenSessionManager", () => {
 
   it("swallows runtime messaging errors while keeping session state updates successful", async () => {
     const audioSession = makeAudioSessionPort();
-    const manager = new OffscreenSessionManager(() => 710, () => audioSession);
+    const manager = makeManager(() => 710, () => audioSession);
 
     runtimeSendMessage.mockReturnValueOnce(Promise.resolve(undefined));
     runtimeSendMessage.mockImplementation(() => {
@@ -602,7 +614,7 @@ describe("OffscreenSessionManager", () => {
 
   it("attaches and swallows promise catches only when runtime.sendMessage returns a catchable promise", async () => {
     const catchSpy = vi.fn(() => Promise.resolve(undefined));
-    const manager = new OffscreenSessionManager(() => 715, () => makeAudioSessionPort());
+    const manager = makeManager(() => 715, () => makeAudioSessionPort());
 
     runtimeSendMessage.mockReset();
     runtimeSendMessage.mockReturnValueOnce({ catch: catchSpy });
@@ -623,7 +635,7 @@ describe("OffscreenSessionManager", () => {
       | ((errorMessage: NonNullable<CaptureSessionState["lastError"]>) => void)
       | undefined;
 
-    const manager = new OffscreenSessionManager(() => 900, (_gainPercent, _settings, callbacks) => {
+    const manager = makeManager(() => 900, (_gainPercent, _settings, callbacks) => {
       onFatalError = callbacks.onFatalError;
       return audioSession;
     });
@@ -669,7 +681,7 @@ describe("OffscreenSessionManager", () => {
 
     runtimeSendMessage.mockImplementation(() => Promise.reject(new Error("sleeping worker")));
 
-    const manager = new OffscreenSessionManager(() => 910, (_gainPercent, _settings, callbacks) => {
+    const manager = makeManager(() => 910, (_gainPercent, _settings, callbacks) => {
       onFatalError = callbacks.onFatalError;
       return audioSession;
     });
