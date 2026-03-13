@@ -14,8 +14,10 @@ test("renders toolbar state for the current view and popup theme", async () => {
 
   expect(markup).toContain('data-action="premium-mock"');
   expect(markup).toContain('aria-disabled="true"');
+  expect(markup).toContain('<span class="popup-toolbar__text">Get Premium</span>');
   expect(markup).toContain('data-action="toggle-popup-theme"');
   expect(markup).toContain(translate(catalog, "popupToolbarThemeDarkLabel"));
   expect(markup).toContain('data-action="open-popup-settings"');
   expect(markup).toContain('aria-pressed="true"');
+  expect(markup.match(/popup-toolbar__text/g)).toHaveLength(1);
 });

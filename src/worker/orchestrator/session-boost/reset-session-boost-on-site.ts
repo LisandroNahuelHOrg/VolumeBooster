@@ -1,4 +1,3 @@
-import { createDefaultBoostSettingsBundle } from "../../../shared/boost-settings";
 import { getDomainFromUrl } from "../../../shared/domain";
 import { message } from "../../../shared/messages";
 import type { WorkerRuntimeState } from "../runtime-state";
@@ -14,7 +13,8 @@ export async function resetSessionBoostOnSite(runtime: WorkerRuntimeState, tabId
 
   const sessionBoostState = await runtime.sessionBoostRepository.getState();
   await runtime.settingsRepository.removeDomainBoostSettingsBundle(domain);
-  sessionBoostState.siteSessionBundles[domain] = createDefaultBoostSettingsBundle();
+  sessionBoostState.globalDraftBundle = null;
+  delete sessionBoostState.siteSessionBundles[domain];
   sessionBoostState.promptDismissed = false;
   await runtime.sessionBoostRepository.setState(sessionBoostState);
   await syncSessionBoostAcrossRuntime(runtime);

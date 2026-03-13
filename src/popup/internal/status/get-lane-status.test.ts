@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { buildPopupViewModel } from "../../model";
+import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../../../shared/audio-settings";
 import { loadLocaleCatalog, translate } from "../../../shared/runtime-i18n";
 import type { WorkerState } from "../../../shared/types";
 import { getLaneStatus } from "./get-lane-status";
@@ -7,8 +8,7 @@ import { getLaneStatus } from "./get-lane-status";
 const baseState: WorkerState = {
   currentTab: null,
   advancedAudioSettings: {
-    qualityPreset: "balanced",
-    qualityProtectorMode: "balanced",
+    ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
     ceilingDb: -1,
     lookaheadMs: 3,
     releaseMs: 120,

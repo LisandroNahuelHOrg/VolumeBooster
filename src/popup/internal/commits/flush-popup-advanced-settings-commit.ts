@@ -3,6 +3,7 @@ import type { WorkerState } from "../../../shared/types";
 import { applyPopupRender } from "../runtime/apply-popup-render";
 import { applyPopupWorkerState } from "../runtime/apply-popup-worker-state";
 import { areAdvancedSettingsEqual } from "../state/are-advanced-settings-equal";
+import { createPopupCommitBoostSettingsBundle } from "./create-popup-commit-boost-settings-bundle";
 import type { PopupCommitContext } from "./popup-commit-context";
 
 export async function flushPopupAdvancedSettingsCommit(
@@ -18,16 +19,30 @@ export async function flushPopupAdvancedSettingsCommit(
   }
 
   const targetSettings = context.state.pendingAdvancedAudioSettings;
+  const currentState = context.state.currentState;
 
   if (!targetSettings || areAdvancedSettingsEqual(targetSettings, context.state.currentState?.advancedAudioSettings)) {
     context.state.pendingAdvancedAudioSettings = null;
     return;
   }
 
+  if (!currentState || typeof currentState.currentTab?.tabId !== "number") {
+    context.state.pendingAdvancedAudioSettings = null;
+    return;
+  }
+
   context.state.advancedCommitInFlight = true;
   const response = await sendMessageSafe<WorkerState>({
-    type: "SET_ADVANCED_AUDIO_SETTINGS",
-    payload: targetSettings
+    type: "SET_SESSION_BOOST_BUNDLE",
+    payload: {
+      tabId: currentState.currentTab.tabId,
+      bundle: createPopupCommitBoostSettingsBundle(
+        currentState,
+        context.state.draftGainPercent,
+        targetSettings,
+        targetSettings
+      )
+    }
   });
   context.state.advancedCommitInFlight = false;
 

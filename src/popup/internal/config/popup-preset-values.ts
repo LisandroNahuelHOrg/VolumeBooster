@@ -1,8 +1,13 @@
 import {
   QUALITY_PRESET_ORDER,
-  QUALITY_PROTECTOR_MODE_ORDER
+  QUALITY_PROTECTOR_MODE_ORDER,
+  VOLUME_NORMALIZATION_MODE_ORDER
 } from "../../../shared/audio-settings";
-import type { AudioQualityProtectorMode, QualityPreset } from "../../../shared/types";
+import type {
+  AudioQualityProtectorMode,
+  QualityPreset,
+  VolumeNormalizationMode
+} from "../../../shared/types";
 
 export const PRESET_VALUES = [
   100, 125, 150, 175, 200,
@@ -12,6 +17,9 @@ export const PRESET_VALUES = [
 ];
 
 export const QUALITY_PROTECTOR_VALUES: AudioQualityProtectorMode[] = [...QUALITY_PROTECTOR_MODE_ORDER];
+export const VOLUME_NORMALIZATION_VALUES: VolumeNormalizationMode[] = [
+  ...VOLUME_NORMALIZATION_MODE_ORDER
+];
 
 export const ADVANCED_PRESET_VALUES: Array<Exclude<QualityPreset, "custom">> =
   QUALITY_PRESET_ORDER.filter(

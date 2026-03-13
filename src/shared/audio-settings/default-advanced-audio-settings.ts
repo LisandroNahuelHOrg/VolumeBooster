@@ -5,6 +5,8 @@ import { DSP_PROFILE_TABLE } from "./dsp-profile-table";
 export const DEFAULT_ADVANCED_AUDIO_SETTINGS: AdvancedAudioSettings = {
   qualityPreset: "balanced",
   qualityProtectorMode: "balanced",
+  volumeNormalizationMode: "off",
+  volumeNormalizationTargetPercent: 100,
   ceilingDb: DSP_PROFILE_TABLE.balanced.ceilingDb,
   lookaheadMs: DSP_PROFILE_TABLE.balanced.lookaheadMs,
   releaseMs: DSP_PROFILE_TABLE.balanced.releaseMs,

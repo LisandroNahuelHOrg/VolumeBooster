@@ -2,6 +2,7 @@ import {
   createDefaultMetrics,
   isProtectionBypassedSettings
 } from "../../../shared/audio-settings";
+import { createLoudnessEstimatorState } from "../../../shared/audio-settings/internal/create-loudness-estimator-state";
 import type { AdvancedAudioSettings } from "../../../shared/types";
 import { MONO_FAUST_ASSET } from "../../faust-assets";
 import type { AudioSessionCallbacks } from "./audio-session-contract";
@@ -27,6 +28,7 @@ export function createAudioSessionState(
     inputAnalyserNode: null,
     latestMetrics: createDefaultMetrics(isProtectionBypassedSettings(advancedAudioSettings)),
     meterIntervalId: null,
+    normalizationLoudnessState: createLoudnessEstimatorState(48000),
     outputAnalyserNode: null,
     sourceNode: null,
     stream: null

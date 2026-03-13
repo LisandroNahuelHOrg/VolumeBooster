@@ -13,9 +13,10 @@ import {
 
 export function applyNativeFallbackRuntimeParameters(
   fallbackGraph: NativeFallbackGraph,
-  runtime: DspRuntimeParameters
+  runtime: DspRuntimeParameters,
+  normalizationGainDb = 0
 ): void {
-  fallbackGraph.preGain.gain.value = dbToGain(runtime.inputDriveDb);
+  fallbackGraph.preGain.gain.value = dbToGain(runtime.inputDriveDb + normalizationGainDb);
   fallbackGraph.lowShelf.type = "lowshelf";
   fallbackGraph.lowShelf.frequency.value = LOW_SHELF_FREQUENCY_HZ;
   fallbackGraph.lowShelf.gain.value =

@@ -1,4 +1,5 @@
 import type { FaustMonoAudioWorkletNode } from "@grame/faustwasm";
+import type { LoudnessEstimatorState } from "../../shared/audio-settings/internal/loudness-estimator-state";
 import type {
   AdvancedAudioSettings,
   DspRuntimeMetrics
@@ -21,5 +22,6 @@ export interface MediaElementSessionState extends MediaElementSessionGraph {
   currentGainPercent: number;
   currentSettings: AdvancedAudioSettings;
   latestMetrics: DspRuntimeMetrics;
+  normalizationLoudnessState: LoudnessEstimatorState;
   processingEnabled: boolean;
 }

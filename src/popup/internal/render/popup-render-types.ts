@@ -34,6 +34,8 @@ export interface PopupMainViewRenderModel {
   laneStatus: LaneStatusDescriptor;
   siteAutoEnabled: boolean;
   globalAutoEnabled: boolean;
+  sessionBoostVisible: boolean;
+  sessionBoostActionBarMarkup: string;
   siteLaneButtonCopy: { action: string; mode: string };
   globalLaneButtonCopy: { action: string; mode: string };
   globalAutoAction: string;
@@ -43,6 +45,13 @@ export interface PopupMainViewRenderModel {
   qualityProtectorSubtitle: string;
   qualityPresetLabel: string;
   qualityPresetSubtitle: string;
+  volumeNormalizationModeLabel: string;
+  volumeNormalizationSubtitle: string;
+  normalizationCorrection: string;
+  normalizationAction: string;
+  normalizationLoad: string;
+  normalizationOffsetScore: string;
+  normalizationOffsetPositionPercent: number;
   protectionAction: string;
   clipEvents: string;
   clipEventsAlert: "danger" | "none";

@@ -5,7 +5,7 @@ import { flushPopupMainMicrotasks } from "./test-support/flush-popup-main-microt
 import { makePopupMainSession } from "./test-support/make-popup-main-session";
 import { makePopupMainState } from "./test-support/make-popup-main-state";
 
-test("retries SET_GAIN when the worker response comes back stale", async () => {
+test("retries SET_SESSION_BOOST_BUNDLE for gain drafts when the worker response comes back stale", async () => {
   const harness = createPopupMainHarness();
   const currentTab = {
     tabId: 91,
@@ -29,21 +29,25 @@ test("retries SET_GAIN when the worker response comes back stale", async () => {
     sessions: [baseSession]
   });
   const staleResponseState = makePopupMainState({
+    boostSettingsBundle: { gainPercent: 100, advancedAudioSettings: idleState.advancedAudioSettings },
+    sessionBoostPromptState: { hasUnsavedChanges: true, dismissed: false },
     currentTab,
     sessions: [{ ...baseSession, gainPercent: 100 }]
   });
   const convergedResponseState = makePopupMainState({
+    boostSettingsBundle: { gainPercent: 250, advancedAudioSettings: idleState.advancedAudioSettings },
+    sessionBoostPromptState: { hasUnsavedChanges: true, dismissed: false },
     currentTab,
     sessions: [{ ...baseSession, gainPercent: 250 }]
   });
   let gainWriteCount = 0;
 
-  harness.sendMessageSafeMock.mockImplementation(async (command: { type: string; payload?: { tabId: number; gainPercent: number } }) => {
+  harness.sendMessageSafeMock.mockImplementation(async (command: { type: string; payload?: unknown }) => {
     if (command.type === "GET_STATE") {
       return { ok: true, data: idleState };
     }
 
-    if (command.type === "SET_GAIN") {
+    if (command.type === "SET_SESSION_BOOST_BUNDLE") {
       gainWriteCount += 1;
       return {
         ok: true,
@@ -67,11 +71,29 @@ test("retries SET_GAIN when the worker response comes back stale", async () => {
   await flushPopupMainMicrotasks();
 
   const gainCalls = harness.sendMessageSafeMock.mock.calls.filter(
-    ([command]) => command.type === "SET_GAIN"
+    ([command]) => command.type === "SET_SESSION_BOOST_BUNDLE"
   );
   expect(gainCalls).toEqual([
-    [{ type: "SET_GAIN", payload: { tabId: 91, gainPercent: 250 } }],
-    [{ type: "SET_GAIN", payload: { tabId: 91, gainPercent: 250 } }]
+    [{
+      type: "SET_SESSION_BOOST_BUNDLE",
+      payload: {
+        tabId: 91,
+        bundle: {
+          gainPercent: 250,
+          advancedAudioSettings: idleState.advancedAudioSettings
+        }
+      }
+    }],
+    [{
+      type: "SET_SESSION_BOOST_BUNDLE",
+      payload: {
+        tabId: 91,
+        bundle: {
+          gainPercent: 250,
+          advancedAudioSettings: idleState.advancedAudioSettings
+        }
+      }
+    }]
   ]);
   expect(document.querySelector<HTMLInputElement>("[data-role='gain-slider']")?.value).toBe("250");
 

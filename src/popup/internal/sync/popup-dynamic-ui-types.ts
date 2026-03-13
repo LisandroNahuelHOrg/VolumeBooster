@@ -4,6 +4,7 @@ import type { PopupMainViewRenderModel, PopupRenderContext } from "../render/pop
 export interface PopupDynamicUiInput {
   viewModel: PopupViewModel;
   renderContext: PopupRenderContext;
+  sessionBoostAcknowledgedAction: string | null;
   sessionCarouselOffset: number;
 }
 
@@ -30,12 +31,18 @@ export interface PopupDynamicUiModel {
   laneStatusDisplayKey: string;
   siteLaneDisplayKey: string;
   globalLaneDisplayKey: string;
+  sessionBoostVisible: boolean;
+  sessionBoostAcknowledgedAction: string | null;
   protectionTelemetryDisplayKey: string;
+  normalizationTelemetryDisplayKey: string;
   sessionCards: PopupDynamicSessionCardModel[];
 }
 
 export interface PopupUiSyncRuntime {
   lastProtectorTelemetryUiAt: number;
   lastProtectorTelemetryDisplayKey: string;
+  lastNormalizationTelemetryUiAt: number;
+  lastNormalizationTelemetryDisplayKey: string;
   lastLaneStatusDisplayKey: string;
+  lastSessionBoostVisible: boolean;
 }

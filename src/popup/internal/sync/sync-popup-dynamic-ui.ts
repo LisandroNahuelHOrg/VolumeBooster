@@ -8,7 +8,9 @@ import { syncLaneStatusCard } from "./sync-lane-status-card";
 import { syncLiveMeter } from "./sync-live-meter";
 import { syncProtectorTelemetry } from "./sync-protector-telemetry";
 import { syncSessionCards } from "./sync-session-cards";
+import { syncSessionBoostBar } from "./sync-session-boost-bar";
 import { syncSummaryStrip } from "./sync-summary-strip";
+import { syncVolumeNormalizationTelemetry } from "./sync-volume-normalization-telemetry";
 
 export function syncPopupDynamicUi(
   rootElement: HTMLElement,
@@ -28,8 +30,16 @@ export function syncPopupDynamicUi(
   syncGainControl(rootElement, model, animateGainVisuals, domRuntime);
   syncLiveMeter(rootElement, model);
   syncProtectorTelemetry(rootElement, model, syncRuntime);
+  syncVolumeNormalizationTelemetry(rootElement, model, syncRuntime);
   syncAdvancedSettings(rootElement, model);
   syncSessionCards(rootElement, model);
+  syncSessionBoostBar(
+    rootElement,
+    model.sessionBoostVisible,
+    model.sessionBoostAcknowledgedAction,
+    syncRuntime,
+    domRuntime
+  );
 
   if (laneGrid && laneContentAnimations.length > 0) {
     animateBoosterLaneTransition(laneGrid, previousLaneGridHeight, laneContentAnimations, domRuntime);

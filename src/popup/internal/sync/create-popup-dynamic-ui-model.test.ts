@@ -35,6 +35,7 @@ test("derives stable sync data for lane buttons, live meter, and session cards",
   const model = createPopupDynamicUiModel({
     viewModel: buildPopupViewModel(state),
     renderContext: makePopupRenderContext(catalog, { draftGainPercent: 220 }),
+    sessionBoostAcknowledgedAction: null,
     sessionCarouselOffset: 0
   });
 

@@ -10,6 +10,7 @@ const mockedClickHandlers = vi.hoisted(() => ({
   runPopupRootAction: vi.fn(),
   schedulePopupAdvancedSettingsCommit: vi.fn(),
   schedulePopupGainCommit: vi.fn(),
+  startSessionBoostActionFeedback: vi.fn(),
   setPopupDraftAdvancedAudioSettings: vi.fn(),
   setPopupDraftGain: vi.fn(),
   stopPopupCapture: vi.fn()
@@ -22,10 +23,12 @@ vi.mock("../commits/schedule-popup-gain-commit", () => ({ schedulePopupGainCommi
 vi.mock("../commits/set-popup-draft-advanced-audio-settings", () => ({ setPopupDraftAdvancedAudioSettings: mockedClickHandlers.setPopupDraftAdvancedAudioSettings }));
 vi.mock("../commits/set-popup-draft-gain", () => ({ setPopupDraftGain: mockedClickHandlers.setPopupDraftGain }));
 vi.mock("../commands/stop-popup-capture", () => ({ stopPopupCapture: mockedClickHandlers.stopPopupCapture }));
+vi.mock("./start-session-boost-action-feedback", () => ({ startSessionBoostActionFeedback: mockedClickHandlers.startSessionBoostActionFeedback }));
 
 import { dispatchRootClick } from "./dispatch-root-click";
 
 test("routes click targets through the shared popup root click dispatcher", () => {
+  vi.clearAllMocks();
   document.body.innerHTML = `
     <div id="popup-root">
       <button data-session-carousel-nav="next"></button>
@@ -83,6 +86,51 @@ test("routes click targets through the shared popup root click dispatcher", () =
   expect(mockedClickHandlers.stopPopupCapture).toHaveBeenCalledWith(commandContext, 91);
   expect(mockedClickHandlers.runPopupRootAction).toHaveBeenCalledWith(
     "toggle-popup-theme",
+    commandContext
+  );
+});
+
+test("starts the session boost click feedback before routing the action", () => {
+  vi.clearAllMocks();
+  document.body.innerHTML = `
+    <div id="popup-root">
+      <section data-role="session-boost-bar">
+        <button data-action="apply-session-boost-to-site"></button>
+      </section>
+    </div>
+  `;
+  const rootElement = document.querySelector<HTMLDivElement>("#popup-root");
+
+  if (!rootElement) {
+    throw new Error("Missing popup root element.");
+  }
+
+  const state = createPopupRuntimeState();
+  state.currentState = makePopupMainState();
+  const refs = {
+    document,
+    rootElement,
+    settingsRepository: { getPopupTheme: vi.fn(), setPopupTheme: vi.fn() },
+    window
+  };
+  const commandContext = { refs, state };
+  const commitContext = { refs, state };
+  const target = document.querySelector<HTMLButtonElement>('[data-action="apply-session-boost-to-site"]');
+
+  if (!target) {
+    throw new Error("Missing session boost action button.");
+  }
+
+  popupRootClickContextRegistry.set(rootElement, { commandContext, commitContext });
+  rootElement.addEventListener("click", dispatchRootClick);
+  target.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+  expect(mockedClickHandlers.startSessionBoostActionFeedback).toHaveBeenCalledWith(
+    commandContext,
+    "apply-session-boost-to-site"
+  );
+  expect(mockedClickHandlers.runPopupRootAction).toHaveBeenCalledWith(
+    "apply-session-boost-to-site",
     commandContext
   );
 });

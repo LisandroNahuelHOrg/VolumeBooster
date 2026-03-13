@@ -1,3 +1,4 @@
+import { DEFAULT_ADVANCED_AUDIO_SETTINGS } from "../../../shared/audio-settings";
 import { getSessionBoostPromptState } from "./get-session-boost-prompt-state";
 
 describe("getSessionBoostPromptState", () => {
@@ -7,8 +8,7 @@ describe("getSessionBoostPromptState", () => {
         globalDraftBundle: {
           gainPercent: 200,
           advancedAudioSettings: {
-            qualityPreset: "balanced",
-            qualityProtectorMode: "balanced",
+            ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
             ceilingDb: -0.8,
             lookaheadMs: 3,
             releaseMs: 140,
@@ -28,7 +28,7 @@ describe("getSessionBoostPromptState", () => {
           "example.com": {
             gainPercent: 100,
             advancedAudioSettings: {
-              qualityPreset: "balanced",
+              ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
               qualityProtectorMode: "off",
               ceilingDb: -1,
               lookaheadMs: 2,

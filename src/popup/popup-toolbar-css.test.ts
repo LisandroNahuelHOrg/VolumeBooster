@@ -8,10 +8,12 @@ describe("popup toolbar css", () => {
     "utf8"
   );
   const state = readFileSync(fileURLToPath(new URL("./internal/popup-toolbar-state.css", import.meta.url)), "utf8");
+  const main = readFileSync(fileURLToPath(new URL("./main.ts", import.meta.url)), "utf8");
 
   it("keeps the toolbar stylesheet split through a small facade", () => {
     expect(facade).toContain('@import "./internal/popup-toolbar-structure.css";');
     expect(facade).toContain('@import "./internal/popup-toolbar-state.css";');
+    expect(main).toContain('import "./popup-toolbar.css";');
   });
 
   it("expands only the premium button and renders a dedicated text style", () => {

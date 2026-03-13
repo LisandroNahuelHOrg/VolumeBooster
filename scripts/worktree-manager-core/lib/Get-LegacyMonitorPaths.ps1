@@ -4,15 +4,11 @@ function Get-LegacyMonitorPaths {
         [string]$TargetPath
     )
 
-    $portableRoot = Get-ManagerDefaultWorktreeRoot
-    $legacyDefaults = @(
-        $TargetPath
-        (Join-Path $portableRoot $Display)
-    )
-
+    $paths = @($TargetPath)
     if ($IsWindows) {
-        $legacyDefaults += "D:\SpeedSuite-Trees\$Display"
+        $paths += "D:\Local Worktrees\$Display"
+        $paths += "D:\SpeedSuite-Trees\$Display"
     }
 
-    return $legacyDefaults | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    return $paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
 }

@@ -14,6 +14,8 @@ import { easeOutQuad } from "./internal/ease-out-quad";
 import { inferCustomInputDriveMaxDb } from "./internal/infer-custom-input-drive-max-db";
 import { lerp } from "./internal/lerp";
 import { roundTo } from "./internal/round-to";
+import { mapNormalizationTargetPercentToLoudnessDb } from "./map-normalization-target-percent-to-loudness-db";
+import { VOLUME_NORMALIZATION_TABLE } from "./volume-normalization-table";
 
 /** Translates user-facing settings into runtime DSP parameters. */
 export function buildDspRuntimeParameters(
@@ -30,6 +32,10 @@ export function buildDspRuntimeParameters(
   );
   const presetProfile = settings.qualityPreset === "custom" ? null : DSP_PROFILE_TABLE[settings.qualityPreset];
   const inputDriveMaxDb = presetProfile?.inputDriveMaxDb ?? inferCustomInputDriveMaxDb(settings);
+  const normalizationDefinition =
+    settings.volumeNormalizationMode === "off"
+      ? null
+      : VOLUME_NORMALIZATION_TABLE[settings.volumeNormalizationMode];
   const profileTone = presetProfile
     ? {
         toneLowBandGainDb: presetProfile.toneLowBandGainDb,
@@ -49,6 +55,29 @@ export function buildDspRuntimeParameters(
         lerp(0, additionalDriveHeadroomDb, easeOutQuad(extendedBoostIntensity)),
       2
     ),
+    normalization: normalizationDefinition
+      ? {
+          enabled: true,
+          targetLoudnessDb: mapNormalizationTargetPercentToLoudnessDb(
+            settings.volumeNormalizationTargetPercent
+          ),
+          maxBoostDb: normalizationDefinition.maxBoostDb,
+          maxCutDb: normalizationDefinition.maxCutDb,
+          attackMs: normalizationDefinition.attackMs,
+          releaseMs: normalizationDefinition.releaseMs,
+          fullScaleWindowDb: normalizationDefinition.fullScaleWindowDb
+        }
+      : {
+          enabled: false,
+          targetLoudnessDb: mapNormalizationTargetPercentToLoudnessDb(
+            settings.volumeNormalizationTargetPercent
+          ),
+          maxBoostDb: 0,
+          maxCutDb: 0,
+          attackMs: 160,
+          releaseMs: 420,
+          fullScaleWindowDb: 12
+        },
     lookaheadMs: settings.lookaheadMs,
     releaseMs: settings.releaseMs,
     multibandDepth: settings.multibandDepth,

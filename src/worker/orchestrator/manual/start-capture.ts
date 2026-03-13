@@ -46,6 +46,11 @@ export async function startCapture(runtime: WorkerRuntimeState, tabId: number, g
     clipPeak: 0,
     protectionBypassed: isProtectionBypassedSettings(advancedAudioSettings),
     outputPeak: 0,
+    normalizationInputLoudnessDb: null,
+    normalizationAppliedGainDb: 0,
+    normalizationOffsetScore: 0,
+    normalizationAction: "holding",
+    normalizationLoadPercent: 0,
     updatedAt: runtime.now()
   };
 

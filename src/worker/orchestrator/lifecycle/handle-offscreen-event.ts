@@ -30,6 +30,11 @@ export async function handleOffscreenEvent(
       currentSession.clipPeak = incomingMessage.payload.clipPeak;
       currentSession.protectionBypassed = incomingMessage.payload.protectionBypassed;
       currentSession.outputPeak = incomingMessage.payload.outputPeak;
+      currentSession.normalizationInputLoudnessDb = incomingMessage.payload.normalizationInputLoudnessDb;
+      currentSession.normalizationAppliedGainDb = incomingMessage.payload.normalizationAppliedGainDb;
+      currentSession.normalizationOffsetScore = incomingMessage.payload.normalizationOffsetScore;
+      currentSession.normalizationAction = incomingMessage.payload.normalizationAction;
+      currentSession.normalizationLoadPercent = incomingMessage.payload.normalizationLoadPercent;
       currentSession.updatedAt = runtime.now();
       rebuildEffectiveSessions(runtime);
 

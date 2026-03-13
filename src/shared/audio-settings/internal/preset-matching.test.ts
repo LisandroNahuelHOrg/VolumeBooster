@@ -17,6 +17,7 @@ describe("audio-settings/internal preset matching", () => {
     [
       "vocal_presence",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "vocal_presence",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.1,
@@ -29,6 +30,7 @@ describe("audio-settings/internal preset matching", () => {
     [
       "smooth_bright",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "smooth_bright",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.25,
@@ -41,6 +43,7 @@ describe("audio-settings/internal preset matching", () => {
     [
       "warm_cinematic",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "warm_cinematic",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.15,
@@ -53,6 +56,7 @@ describe("audio-settings/internal preset matching", () => {
     [
       "punch_drive",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "punch_drive",
         qualityProtectorMode: "balanced",
         ceilingDb: -0.95,

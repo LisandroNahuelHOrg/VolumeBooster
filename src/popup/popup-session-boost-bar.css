@@ -3,64 +3,108 @@
   bottom: -13px;
   z-index: 8;
   display: grid;
-  gap: 6px;
-  margin: 10px 0 0;
-  padding: 8px;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  overflow: clip;
+  transition:
+    grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-top 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.session-boost-bar.is-visible {
+  grid-template-rows: 1fr;
+  margin-top: 9px;
+}
+.session-boost-bar__panel {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+  padding: 0 8px;
   border-radius: 18px 18px 0 0;
   border: 1px solid color-mix(in srgb, var(--panel-border) 82%, rgba(255, 255, 255, 0.06));
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 92%, rgba(7, 13, 24, 0.78)) 0%, color-mix(in srgb, var(--panel-bg) 97%, rgba(10, 16, 28, 0.92)) 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 92%, rgba(7, 13, 24, 0.78)) 0%, color-mix(in srgb, var(--panel-bg) 97%, rgba(10, 16, 28, 0.92)) 100%);
   box-shadow:
     0 -10px 24px rgba(7, 12, 24, 0.18),
     0 8px 18px rgba(6, 10, 18, 0.16);
   opacity: 0;
   transform: translateY(18px);
   pointer-events: none;
+  will-change: opacity, transform;
   transition:
-    opacity 220ms ease,
-    transform 220ms ease;
+    padding 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-
-.session-boost-bar.is-visible {
+.session-boost-bar.is-visible .session-boost-bar__panel {
+  padding: 6px;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
 }
-
 .session-boost-bar__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
-
 .session-boost-bar__button {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  min-height: 40px;
-  padding: 8px 10px;
+  min-height: 32px;
+  padding: 6px 8px;
   border: 1px solid color-mix(in srgb, var(--panel-border) 80%, rgba(255, 255, 255, 0.08));
   border-radius: 14px;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--card-bg) 92%, rgba(255, 255, 255, 0.04)) 0%, color-mix(in srgb, var(--card-bg) 98%, rgba(0, 0, 0, 0.12)) 100%);
-  color: var(--text-primary);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--panel-bg) 92%, rgba(255, 255, 255, 0.04)) 0%, color-mix(in srgb, var(--panel-bg) 98%, rgba(0, 0, 0, 0.12)) 100%);
+  color: var(--text);
   box-shadow: 0 6px 14px rgba(8, 12, 20, 0.1);
+  transition:
+    border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-
 .session-boost-bar__button--dismiss {
   justify-content: center;
 }
-
-.session-boost-bar__icon {
+.session-boost-bar__button.is-acknowledged {
+  border-color: color-mix(in srgb, var(--premium-gold-strong) 56%, var(--panel-border) 44%);
+  background:
+    radial-gradient(circle at 20% 24%, color-mix(in srgb, var(--premium-gold-strong) 26%, transparent 74%), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold) 22%, var(--panel-bg) 78%) 0%, color-mix(in srgb, var(--premium-gold) 10%, var(--panel-bg) 90%) 100%);
+  box-shadow:
+    0 10px 20px color-mix(in srgb, var(--premium-gold-glow) 80%, transparent 20%),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold) 20%, transparent 80%);
+  color: color-mix(in srgb, var(--premium-gold-strong) 60%, var(--text) 40%);
+  transform: translateY(-1px);
+}
+.session-boost-bar__icon,
+.session-boost-bar__icon .ghost-button--lane__icon-badge {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
 }
-
-.session-boost-bar__icon .ghost-button--lane__icon-badge {
+.session-boost-bar__icon {
+  flex: 0 0 auto;
+  transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1), filter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.session-boost-bar__label {
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.02;
+  text-align: left;
+  text-wrap: balance;
+  transition: color 200ms cubic-bezier(0.22, 1, 0.36, 1), filter 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.session-boost-bar__button.is-acknowledged .session-boost-bar__icon,
+.session-boost-bar__button.is-acknowledged .session-boost-bar__label {
+  color: inherit;
+  filter: drop-shadow(0 0 10px var(--premium-gold-glow));
+}
+.session-boost-bar__icon .ghost-button--lane__icon-badge,
+.session-boost-bar__icon .site-favicon {
   width: auto;
   height: auto;
   border: 0;
@@ -68,56 +112,38 @@
   background: none;
   box-shadow: none;
 }
-
-.session-boost-bar__icon .ghost-button--lane__icon {
-  width: 24px;
-  height: 24px;
+.session-boost-bar__icon .ghost-button--lane__icon,
+.session-boost-bar__icon .site-favicon--small {
+  width: 20px;
+  height: 20px;
 }
-
-.session-boost-bar__icon .site-favicon {
-  border: 0;
-  border-radius: 0;
-  background: none;
-  box-shadow: none;
-}
-
 .session-boost-bar__icon .site-favicon::before {
   content: none;
 }
-
-.session-boost-bar__icon .site-favicon--small {
-  width: 24px;
-  height: 24px;
-}
-
 .session-boost-bar__icon .site-favicon__image {
   inset: 0;
   width: 100%;
   height: 100%;
 }
-
 .session-boost-bar__icon .site-favicon__fallback {
-  font-size: 11px;
+  font-size: 9px;
 }
-
-.session-boost-bar__label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.08;
-  text-align: left;
-  text-wrap: balance;
-}
-
-:root[data-popup-theme="light"] .session-boost-bar {
-  background:
-    linear-gradient(180deg, rgba(255, 248, 239, 0.98) 0%, rgba(248, 238, 227, 0.98) 100%);
+:root[data-popup-theme="light"] .session-boost-bar__panel {
+  background: linear-gradient(180deg, rgba(255, 248, 239, 0.98) 0%, rgba(248, 238, 227, 0.98) 100%);
   box-shadow:
     0 -10px 24px rgba(120, 74, 38, 0.08),
     0 8px 16px rgba(120, 74, 38, 0.07);
 }
-
 :root[data-popup-theme="light"] .session-boost-bar__button {
-  background:
-    linear-gradient(180deg, rgba(255, 250, 244, 0.96) 0%, rgba(245, 233, 219, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.96) 0%, rgba(245, 233, 219, 0.96) 100%);
   box-shadow: 0 6px 14px rgba(120, 74, 38, 0.07);
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-boost-bar,
+  .session-boost-bar__panel,
+  .session-boost-bar__button,
+  .session-boost-bar__icon,
+  .session-boost-bar__label {
+    transition: none;
+  }
 }

@@ -64,8 +64,8 @@ $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Ensure-RepoBuildToolingReady.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-RefAheadBehindCounts.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-PathGitTopLevel.ps1")
-. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-ManagerDefaultWorktreeRoot.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-GitHubHeadRef.ps1")
+. (Join-Path $PSScriptRoot "worktree-manager-core\lib\Get-ManagerDefaultRoots.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Invoke-VerifiedProductionBuild.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Remove-DirectoryRobust.ps1")
 . (Join-Path $PSScriptRoot "worktree-manager-core\lib\Test-BaseRefAlignedAfterFetch.ps1")
@@ -148,12 +148,14 @@ if (-not $BackgroundChild -and -not $Foreground) {
 # FUNCTIONS
 # ═══════════════════════════════════════════════════════════════
 function Get-PreferredWorktreeRoot {
+    param([string]$RepoRoot)
+
     $override = "$($env:WORKTREE_MANAGER_WORKTREE_ROOT)".Trim()
     if (-not [string]::IsNullOrWhiteSpace($override)) {
         return $override
     }
 
-    $defaultRoot = Get-ManagerDefaultWorktreeRoot
+    $defaultRoot = (Get-ManagerDefaultRoots -RepoRoot $RepoRoot).WorktreeBase
     New-Item -ItemType Directory -Path $defaultRoot -Force | Out-Null
     return $defaultRoot
 }
@@ -172,12 +174,12 @@ function Get-PreferredMainRepo {
 # ═══════════════════════════════════════════════════════════════
 # CONSTANTS
 # ═══════════════════════════════════════════════════════════════
-$TreeRoot = Get-PreferredWorktreeRoot
 $MainRepo = Get-PreferredMainRepo
+$TreeRoot = Get-PreferredWorktreeRoot -RepoRoot $MainRepo
 $PrimaryRemote = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_PRIMARY_REMOTE)")) { "origin" } else { "$($env:WORKTREE_MANAGER_PRIMARY_REMOTE)".Trim() }
 $BaseBranch = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_BASE_BRANCH)")) { "main" } else { "$($env:WORKTREE_MANAGER_BASE_BRANCH)".Trim() }
 $BaseRef = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_BASE_REF)")) { "$PrimaryRemote/$BaseBranch" } else { "$($env:WORKTREE_MANAGER_BASE_REF)".Trim() }
-$SpeedCacheRoot = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_CACHE_ROOT)")) { Join-Path (Join-Path (Get-ManagerDefaultWorktreeRoot) ".manager-cache") "default" } else { "$($env:WORKTREE_MANAGER_CACHE_ROOT)".Trim() }
+$SpeedCacheRoot = if ([string]::IsNullOrWhiteSpace("$($env:WORKTREE_MANAGER_CACHE_ROOT)")) { Join-Path (Get-ManagerDefaultRoots -RepoRoot $MainRepo).CacheBase "default" } else { "$($env:WORKTREE_MANAGER_CACHE_ROOT)".Trim() }
 $NpmCacheDir = Join-Path $SpeedCacheRoot "npm"
 $TmpDir = Join-Path $SpeedCacheRoot "tmp"
 $NpmGlobalDir = Join-Path $SpeedCacheRoot "npm-global"

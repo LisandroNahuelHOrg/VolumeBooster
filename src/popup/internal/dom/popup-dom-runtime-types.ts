@@ -3,6 +3,8 @@ export interface PopupDomRuntime {
   tooltipRefreshFrame: number | null;
   gainSliderAnimationFrame: number | null;
   gainSliderAnimationTarget: number | null;
+  sessionBoostAcknowledgeTimer: number | null;
+  sessionBoostBarRevealFrame: number | null;
   visualGainPercent: number;
   laneLayoutTransitionTimer: number | null;
 }

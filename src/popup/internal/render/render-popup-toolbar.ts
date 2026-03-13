@@ -33,6 +33,7 @@ export function renderPopupToolbar(renderContext: PopupRenderContext): string {
                 <span class="popup-toolbar__icon" aria-hidden="true">
                   ${POPUP_TOOLBAR_ICON_MARKUP[item.icon]}
                 </span>
+                ${item.visibleLabel ? `<span class="popup-toolbar__text">${escapeHtml(item.visibleLabel)}</span>` : ""}
               </button>
             `
           )

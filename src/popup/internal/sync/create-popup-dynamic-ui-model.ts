@@ -34,11 +34,22 @@ export function createPopupDynamicUiModel(input: PopupDynamicUiInput): PopupDyna
     ].join("|"),
     siteLaneDisplayKey: `${renderModel.siteAutoEnabled}|${renderModel.siteLaneButtonCopy.action}|${renderModel.siteLaneButtonCopy.mode}`,
     globalLaneDisplayKey: `${renderModel.globalAutoEnabled}|${renderModel.globalLaneButtonCopy.action}|${renderModel.globalLaneButtonCopy.mode}`,
+    sessionBoostVisible: renderModel.sessionBoostVisible,
+    sessionBoostAcknowledgedAction: input.sessionBoostAcknowledgedAction,
     protectionTelemetryDisplayKey: [
       input.viewModel.currentSession?.tabId ?? "none",
       input.viewModel.currentSession?.streamState ?? "inactive",
       renderModel.advancedAudioSettings.qualityProtectorMode,
       renderModel.protectionBypassed ? "bypassed" : "protected"
+    ].join("|"),
+    normalizationTelemetryDisplayKey: [
+      input.viewModel.currentSession?.tabId ?? "none",
+      input.viewModel.currentSession?.streamState ?? "inactive",
+      renderModel.advancedAudioSettings.volumeNormalizationMode,
+      renderModel.normalizationOffsetScore,
+      renderModel.normalizationCorrection,
+      renderModel.normalizationAction,
+      renderModel.normalizationLoad
     ].join("|"),
     sessionCards: input.viewModel.activeSessions.map((session) => {
       const visualStatus = getVisualStatus(session, true);

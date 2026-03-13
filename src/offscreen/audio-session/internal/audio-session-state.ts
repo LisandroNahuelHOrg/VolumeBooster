@@ -1,4 +1,5 @@
 import type { FaustMonoAudioWorkletNode } from "@grame/faustwasm";
+import type { LoudnessEstimatorState } from "../../../shared/audio-settings/internal/loudness-estimator-state";
 import type { AdvancedAudioSettings, DspRuntimeMetrics } from "../../../shared/types";
 import type { FaustAssetDescriptor } from "../../faust-assets";
 import type { AudioSessionCallbacks } from "./audio-session-contract";
@@ -29,6 +30,7 @@ export interface AudioSessionState {
   inputAnalyserNode: AnalyserNode | null;
   latestMetrics: DspRuntimeMetrics;
   meterIntervalId: number | null;
+  normalizationLoudnessState: LoudnessEstimatorState;
   outputAnalyserNode: AnalyserNode | null;
   sourceNode: MediaStreamAudioSourceNode | null;
   stream: MediaStream | null;

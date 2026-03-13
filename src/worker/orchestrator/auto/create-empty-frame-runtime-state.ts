@@ -35,6 +35,11 @@ export function createEmptyFrameRuntimeState(
     clipPeak: 0,
     protectionBypassed: false,
     outputPeak: 0,
+    normalizationInputLoudnessDb: null,
+    normalizationAppliedGainDb: 0,
+    normalizationOffsetScore: 0,
+    normalizationAction: "holding",
+    normalizationLoadPercent: 0,
     lastError: update.lastError
   };
 }

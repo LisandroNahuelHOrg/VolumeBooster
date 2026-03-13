@@ -6,6 +6,7 @@ import type {
   DspRuntimeMetrics,
   LevelWarning
 } from "../../../shared/types";
+import type { LoudnessEstimatorState } from "../../../shared/audio-settings/internal/loudness-estimator-state";
 import type { BridgeStatusPayload } from "../../bridge-protocol";
 
 declare global {
@@ -32,6 +33,7 @@ export interface BridgeContextState {
   outputAnalyser: AnalyserNode;
   wetGain: GainNode;
   dryGain: GainNode;
+  normalizationLoudnessState: LoudnessEstimatorState;
   internalNodes: WeakSet<AudioNode>;
   attachedNodes: Set<AudioNode>;
   lastMetrics: DspRuntimeMetrics;

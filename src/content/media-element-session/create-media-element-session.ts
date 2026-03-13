@@ -1,4 +1,8 @@
-import { createDefaultMetrics, isProtectionBypassedSettings } from "../../shared/audio-settings";
+import {
+  createDefaultMetrics,
+  isProtectionBypassedSettings
+} from "../../shared/audio-settings";
+import { createLoudnessEstimatorState } from "../../shared/audio-settings/internal/create-loudness-estimator-state";
 import type { AdvancedAudioSettings } from "../../shared/types";
 import type { MediaElementSession } from "./media-element-session-contract";
 import type { MediaElementSessionState } from "./media-element-session-state";
@@ -27,6 +31,7 @@ export async function createMediaElementSession(
     currentGainPercent: gainPercent,
     currentSettings: advancedAudioSettings,
     latestMetrics: createDefaultMetrics(isProtectionBypassedSettings(advancedAudioSettings)),
+    normalizationLoudnessState: createLoudnessEstimatorState(audioContext.sampleRate),
     processingEnabled: true
   };
 

@@ -17,6 +17,7 @@ export async function applySessionBoostToSite(runtime: WorkerRuntimeState, tabId
   const bundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, domain);
 
   await runtime.settingsRepository.setDomainBoostSettingsBundle(domain, bundle);
+  sessionBoostState.globalDraftBundle = null;
   delete sessionBoostState.siteSessionBundles[domain];
   await runtime.sessionBoostRepository.setState(sessionBoostState);
   await syncSessionBoostAcrossRuntime(runtime);

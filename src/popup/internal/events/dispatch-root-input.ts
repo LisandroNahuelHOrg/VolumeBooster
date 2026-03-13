@@ -5,6 +5,9 @@ import { setPopupDraftGain } from "../commits/set-popup-draft-gain";
 import { updatePopupDraftAdvancedSetting } from "../commits/update-popup-draft-advanced-setting";
 import { clearPendingGainTrackJump } from "../dom/clear-pending-gain-track-jump";
 import { shouldAnimateGainTrackJump } from "../dom/should-animate-gain-track-jump";
+import { buildPopupViewModel } from "../../model";
+import { getVisibleAdvancedAudioSettings } from "../state/get-visible-advanced-audio-settings";
+import { setPopupDraftAdvancedAudioSettings } from "../commits/set-popup-draft-advanced-audio-settings";
 import { clearPopupTransientError } from "../runtime/clear-popup-transient-error";
 import { popupRootInputContextRegistry } from "./popup-root-input-context-registry";
 
@@ -37,6 +40,29 @@ export function dispatchRootInput(event: Event): void {
     );
     clearPendingGainTrackJump(context.commitContext.state.popupGainPointerRuntime);
     schedulePopupGainCommit(context.commitContext, false);
+    return;
+  }
+
+  if (target.dataset.role === "normalization-slider") {
+    if (!context.commitContext.state.currentState) {
+      return;
+    }
+
+    clearPopupTransientError(context.commitContext.state);
+    context.commitContext.state.isAdjustingAdvancedSettings = true;
+    setPopupDraftAdvancedAudioSettings(
+      context.commitContext.refs,
+      context.commitContext.state,
+      {
+        ...getVisibleAdvancedAudioSettings(
+          buildPopupViewModel(context.commitContext.state.currentState),
+          context.commitContext.state.draftAdvancedAudioSettings,
+          context.commitContext.state.pendingAdvancedAudioSettings
+        ),
+        volumeNormalizationTargetPercent: Number(target.value)
+      }
+    );
+    schedulePopupAdvancedSettingsCommit(context.commitContext, false);
     return;
   }
 

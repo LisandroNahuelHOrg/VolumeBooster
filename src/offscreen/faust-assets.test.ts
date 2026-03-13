@@ -3,6 +3,8 @@ const faustAssetsHoisted = vi.hoisted(() => {
     name: "prism-premium",
     ui: [
       { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+      { shortname: "controls_normalization_enabled", address: "/controls/normalization_enabled" },
+      { shortname: "controls_normalization_gain_db", address: "/controls/normalization_gain_db" },
       { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
       { shortname: "controls_release_ms", address: "/controls/release_ms" },
       { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
@@ -227,6 +229,8 @@ describe("faust-assets", () => {
           {
             items: [
               { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+              { shortname: "controls_normalization_enabled", address: "/controls/normalization_enabled" },
+              { shortname: "controls_normalization_gain_db", address: "/controls/normalization_gain_db" },
               { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
               { shortname: "controls_release_ms", address: "/controls/release_ms" },
               { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
@@ -263,6 +267,8 @@ describe("faust-assets", () => {
 
     expect(MONO_FAUST_ASSET.controlPaths).toMatchObject({
       inputDriveDb: "/controls/input_drive_db",
+      normalizationEnabled: "/controls/normalization_enabled",
+      normalizationGainDb: "/controls/normalization_gain_db",
       toneLowBandGainDb: "/controls/tone_low_band_gain_db",
       toneMidBandGainDb: "/controls/tone_mid_band_gain_db"
     });

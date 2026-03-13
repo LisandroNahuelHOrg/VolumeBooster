@@ -6,7 +6,7 @@ import { flushPopupMainMicrotasks } from "./test-support/flush-popup-main-microt
 import { makePopupMainSession } from "./test-support/make-popup-main-session";
 import { makePopupMainState } from "./test-support/make-popup-main-state";
 
-test("retries SET_ADVANCED_AUDIO_SETTINGS when the worker response comes back stale", async () => {
+test("retries SET_SESSION_BOOST_BUNDLE for advanced-setting drafts when the worker response comes back stale", async () => {
   const harness = createPopupMainHarness();
   const currentTab = {
     tabId: 91,
@@ -24,11 +24,15 @@ test("retries SET_ADVANCED_AUDIO_SETTINGS when the worker response comes back st
     sessions: [makePopupMainSession({ tabId: 91, gainPercent: 100 })]
   });
   const staleResponseState = makePopupMainState({
+    boostSettingsBundle: { gainPercent: 100, advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS } },
+    sessionBoostPromptState: { hasUnsavedChanges: true, dismissed: false },
     currentTab,
     advancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
     sessions: [makePopupMainSession({ tabId: 91, gainPercent: 100 })]
   });
   const convergedResponseState = makePopupMainState({
+    boostSettingsBundle: { gainPercent: 100, advancedAudioSettings: { ...targetSettings } },
+    sessionBoostPromptState: { hasUnsavedChanges: true, dismissed: false },
     currentTab,
     advancedAudioSettings: { ...targetSettings },
     sessions: [makePopupMainSession({ tabId: 91, gainPercent: 100 })]
@@ -40,7 +44,7 @@ test("retries SET_ADVANCED_AUDIO_SETTINGS when the worker response comes back st
       return { ok: true, data: idleState };
     }
 
-    if (command.type === "SET_ADVANCED_AUDIO_SETTINGS") {
+    if (command.type === "SET_SESSION_BOOST_BUNDLE") {
       advancedWriteCount += 1;
       return {
         ok: true,
@@ -59,16 +63,28 @@ test("retries SET_ADVANCED_AUDIO_SETTINGS when the worker response comes back st
   await flushPopupMainMicrotasks();
 
   const advancedCalls = harness.sendMessageSafeMock.mock.calls.filter(
-    ([command]) => command.type === "SET_ADVANCED_AUDIO_SETTINGS"
+    ([command]) => command.type === "SET_SESSION_BOOST_BUNDLE"
   );
   expect(advancedCalls).toHaveLength(2);
   expect(advancedCalls[0]?.[0]).toEqual({
-    type: "SET_ADVANCED_AUDIO_SETTINGS",
-    payload: targetSettings
+    type: "SET_SESSION_BOOST_BUNDLE",
+    payload: {
+      tabId: 91,
+      bundle: {
+        gainPercent: 100,
+        advancedAudioSettings: targetSettings
+      }
+    }
   });
   expect(advancedCalls[1]?.[0]).toEqual({
-    type: "SET_ADVANCED_AUDIO_SETTINGS",
-    payload: targetSettings
+    type: "SET_SESSION_BOOST_BUNDLE",
+    payload: {
+      tabId: 91,
+      bundle: {
+        gainPercent: 100,
+        advancedAudioSettings: targetSettings
+      }
+    }
   });
   expect(document.querySelector<HTMLElement>("[data-role='advanced-preset-value']")?.textContent?.trim()).not.toBe(
     ""

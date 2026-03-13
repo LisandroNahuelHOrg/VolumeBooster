@@ -2,6 +2,8 @@ import type { FaustDspMeta, LooseFaustDspFactory } from "@grame/faustwasm";
 
 export type DspControlKey =
   | "inputDriveDb"
+  | "normalizationEnabled"
+  | "normalizationGainDb"
   | "lookaheadMs"
   | "releaseMs"
   | "multibandDepth"

@@ -4,6 +4,8 @@ const controllerFaustMetaHoisted = vi.hoisted(() => ({
     compile_options: "-single",
     ui: [
       { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+      { shortname: "controls_normalization_enabled", address: "/controls/normalization_enabled" },
+      { shortname: "controls_normalization_gain_db", address: "/controls/normalization_gain_db" },
       { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
       { shortname: "controls_release_ms", address: "/controls/release_ms" },
       { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
@@ -1175,7 +1177,12 @@ describe("AutoBoosterController", () => {
         clipEvents: 7,
         clipPeak: 1.21,
         protectionBypassed: true,
-        outputPeak: 0.58
+        outputPeak: 0.58,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
   });
@@ -1240,7 +1247,12 @@ describe("AutoBoosterController", () => {
         clipPeak: 1.2,
         protectionBypassed: true,
         inputPeak: 0.91,
-        outputPeak: 0.88
+        outputPeak: 0.88,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       },
       audioContextCount: 2,
       attachedNodeCount: 3,
@@ -1290,7 +1302,12 @@ describe("AutoBoosterController", () => {
         clipEvents: 7,
         clipPeak: 1.2,
         protectionBypassed: true,
-        outputPeak: 0.88
+        outputPeak: 0.88,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
   });
@@ -2294,7 +2311,12 @@ describe("AutoBoosterController", () => {
         clipPeak: 0.61,
         protectionBypassed: false,
         inputPeak: 0.57,
-        outputPeak: 0.42
+        outputPeak: 0.42,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       },
       audioContextCount: 1,
       attachedNodeCount: 1,

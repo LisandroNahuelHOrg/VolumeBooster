@@ -73,7 +73,11 @@ export function applyPopupRender(refs: PopupRuntimeRefs, state: PopupRuntimeStat
   }
 
   syncBoostingBackground(refs.document, Boolean(viewModel.currentSession));
-  const signature = createPopupRenderSignature(viewModel, state.popupUiState, state.transientError);
+  const signature = createPopupRenderSignature(
+    viewModel,
+    state.popupUiState,
+    state.transientError
+  );
 
   if (signature !== state.renderedSignature) {
     snapshot = capturePopupRenderSnapshot(refs);

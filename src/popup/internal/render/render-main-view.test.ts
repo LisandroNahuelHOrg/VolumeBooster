@@ -48,7 +48,46 @@ test("renders the global permission recovery action when host access is missing"
     makePopupRenderContext(catalog),
     0
   );
+  const markup = renderMainView(result.model);
 
-  expect(renderMainView(result.model)).toContain('data-action="request-global-auto-permission"');
-  expect(renderMainView(result.model)).not.toContain('data-role="toggle-current"');
+  expect(markup).toContain('data-action="request-global-auto-permission"');
+  expect(markup).not.toContain('data-role="toggle-current"');
+  expect(markup).toContain('data-role="session-boost-bar"');
+  expect(markup).toContain('aria-hidden="true"');
+  expect(markup).toContain(" inert");
+  expect(markup).not.toContain("session-boost-bar is-visible");
+});
+
+test("renders the session boost action bar when there are unsaved prompt changes", async () => {
+  const catalog = await loadLocaleCatalog("en");
+  const state = makePopupMainState({
+    currentTab: {
+      tabId: 7,
+      title: "Video",
+      url: "https://video.example",
+      domain: "video.example",
+      supported: true,
+      preferredGainPercent: 100,
+      hasStoredPreference: false,
+      autoBoosterScope: "site",
+      autoAttachState: "attached"
+    },
+    boostSettingsBundle: {
+      gainPercent: 100,
+      advancedAudioSettings: makePopupMainState().advancedAudioSettings
+    },
+    sessionBoostPromptState: { hasUnsavedChanges: true, dismissed: false }
+  });
+  const result = createMainViewRenderModel(
+    buildPopupViewModel(state),
+    makePopupRenderContext(catalog),
+    0
+  );
+  const markup = renderMainView(result.model);
+
+  expect(result.model.sessionBoostVisible).toBe(true);
+  expect(markup).toContain('data-role="session-boost-bar"');
+  expect(markup).toContain('data-action="apply-session-boost-to-site"');
+  expect(markup).toContain('data-action="dismiss-session-boost-prompt"');
+  expect(markup).toContain('aria-hidden="true"');
 });

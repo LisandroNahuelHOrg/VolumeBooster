@@ -25,6 +25,11 @@ export function applyAutoLevelUpdate(
     clipPeak: update.clipPeak,
     protectionBypassed: update.protectionBypassed,
     outputPeak: update.outputPeak,
+    normalizationInputLoudnessDb: update.normalizationInputLoudnessDb,
+    normalizationAppliedGainDb: update.normalizationAppliedGainDb,
+    normalizationOffsetScore: update.normalizationOffsetScore,
+    normalizationAction: update.normalizationAction,
+    normalizationLoadPercent: update.normalizationLoadPercent,
     ready: true
   });
   recomputeAutoTabAggregation(runtime, update.tabId);

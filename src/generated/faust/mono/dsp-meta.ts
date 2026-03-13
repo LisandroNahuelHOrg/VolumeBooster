@@ -24,8 +24,8 @@ const metadata = {
     "/usr/share/faust",
     "."
   ],
-  "size": 1581580,
-  "code": "+M+DAVQ8Hw==",
+  "size": 1581588,
+  "code": "mGuEAVQ8Hw==",
   "inputs": 1,
   "outputs": 1,
   "meta": [
@@ -278,10 +278,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/clarity_presence_tilt_db",
-          "varname": "fHslider12",
+          "varname": "fHslider14",
           "shortname": "controls_clarity_presence_tilt_db",
           "address": "/prism-premium-mono/controls_clarity_presence_tilt_db",
-          "index": 524652,
+          "index": 524660,
           "meta": [
             {
               "0": ""
@@ -318,10 +318,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/lookahead_ms",
-          "varname": "fHslider14",
+          "varname": "fHslider16",
           "shortname": "controls_lookahead_ms",
           "address": "/prism-premium-mono/controls_lookahead_ms",
-          "index": 1581540,
+          "index": 1581548,
           "meta": [
             {
               "0": ""
@@ -338,10 +338,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/low_band_makeup_db",
-          "varname": "fHslider6",
+          "varname": "fHslider8",
           "shortname": "controls_low_band_makeup_db",
           "address": "/prism-premium-mono/controls_low_band_makeup_db",
-          "index": 256,
+          "index": 264,
           "meta": [
             {
               "0": ""
@@ -358,10 +358,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/low_band_ratio_bias",
-          "varname": "fHslider7",
+          "varname": "fHslider9",
           "shortname": "controls_low_band_ratio_bias",
           "address": "/prism-premium-mono/controls_low_band_ratio_bias",
-          "index": 260,
+          "index": 268,
           "meta": [
             {
               "0": ""
@@ -375,10 +375,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/low_band_threshold_offset_db",
-          "varname": "fHslider10",
+          "varname": "fHslider12",
           "shortname": "controls_low_band_threshold_offset_db",
           "address": "/prism-premium-mono/controls_low_band_threshold_offset_db",
-          "index": 524580,
+          "index": 524588,
           "meta": [
             {
               "0": ""
@@ -395,10 +395,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/low_band_trim_db",
-          "varname": "fHslider5",
+          "varname": "fHslider7",
           "shortname": "controls_low_band_trim_db",
           "address": "/prism-premium-mono/controls_low_band_trim_db",
-          "index": 252,
+          "index": 260,
           "meta": [
             {
               "0": ""
@@ -415,10 +415,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/mid_high_threshold_offset_db",
-          "varname": "fHslider13",
+          "varname": "fHslider15",
           "shortname": "controls_mid_high_threshold_offset_db",
           "address": "/prism-premium-mono/controls_mid_high_threshold_offset_db",
-          "index": 1049000,
+          "index": 1049008,
           "meta": [
             {
               "0": ""
@@ -435,10 +435,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/multiband_depth",
-          "varname": "fHslider8",
+          "varname": "fHslider10",
           "shortname": "controls_multiband_depth",
           "address": "/prism-premium-mono/controls_multiband_depth",
-          "index": 264,
+          "index": 272,
           "meta": [
             {
               "0": ""
@@ -451,11 +451,48 @@ const metadata = {
         },
         {
           "type": "hslider",
+          "label": "controls/normalization_enabled",
+          "varname": "fHslider5",
+          "shortname": "controls_normalization_enabled",
+          "address": "/prism-premium-mono/controls_normalization_enabled",
+          "index": 68,
+          "meta": [
+            {
+              "0": ""
+            }
+          ],
+          "init": 0,
+          "min": 0,
+          "max": 1,
+          "step": 1
+        },
+        {
+          "type": "hslider",
+          "label": "controls/normalization_gain_db",
+          "varname": "fHslider4",
+          "shortname": "controls_normalization_gain_db",
+          "address": "/prism-premium-mono/controls_normalization_gain_db",
+          "index": 64,
+          "meta": [
+            {
+              "0": ""
+            },
+            {
+              "unit": "dB"
+            }
+          ],
+          "init": 0,
+          "min": -18,
+          "max": 18,
+          "step": 0.01
+        },
+        {
+          "type": "hslider",
           "label": "controls/output_ceiling_db",
-          "varname": "fHslider11",
+          "varname": "fHslider13",
           "shortname": "controls_output_ceiling_db",
           "address": "/prism-premium-mono/controls_output_ceiling_db",
-          "index": 524640,
+          "index": 524648,
           "meta": [
             {
               "0": ""
@@ -489,10 +526,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/output_soft_clip_mix",
-          "varname": "fHslider15",
+          "varname": "fHslider17",
           "shortname": "controls_output_soft_clip_mix",
           "address": "/prism-premium-mono/controls_output_soft_clip_mix",
-          "index": 1581544,
+          "index": 1581552,
           "meta": [
             {
               "0": ""
@@ -523,10 +560,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/release_ms",
-          "varname": "fHslider9",
+          "varname": "fHslider11",
           "shortname": "controls_release_ms",
           "address": "/prism-premium-mono/controls_release_ms",
-          "index": 272,
+          "index": 280,
           "meta": [
             {
               "0": ""
@@ -543,10 +580,10 @@ const metadata = {
         {
           "type": "hslider",
           "label": "controls/tone_low_band_gain_db",
-          "varname": "fHslider4",
+          "varname": "fHslider6",
           "shortname": "controls_tone_low_band_gain_db",
           "address": "/prism-premium-mono/controls_tone_low_band_gain_db",
-          "index": 200,
+          "index": 208,
           "meta": [
             {
               "0": ""

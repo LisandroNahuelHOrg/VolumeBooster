@@ -23,6 +23,8 @@ export function createPopupRuntimeState(): PopupRuntimeState {
       tooltipRefreshFrame: null,
       gainSliderAnimationFrame: null,
       gainSliderAnimationTarget: null,
+      sessionBoostAcknowledgeTimer: null,
+      sessionBoostBarRevealFrame: null,
       visualGainPercent: DEFAULT_GAIN_PERCENT,
       laneLayoutTransitionTimer: null
     },
@@ -37,10 +39,14 @@ export function createPopupRuntimeState(): PopupRuntimeState {
     popupUiSyncRuntime: {
       lastProtectorTelemetryUiAt: 0,
       lastProtectorTelemetryDisplayKey: "",
-      lastLaneStatusDisplayKey: ""
+      lastNormalizationTelemetryUiAt: 0,
+      lastNormalizationTelemetryDisplayKey: "",
+      lastLaneStatusDisplayKey: "",
+      lastSessionBoostVisible: false
     },
     renderedSignature: "",
     rootEventsBound: false,
+    sessionBoostAcknowledgedAction: null,
     sessionCarouselOffset: 0,
     statePollTimer: null,
     transientError: null

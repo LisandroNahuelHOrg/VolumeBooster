@@ -29,6 +29,7 @@ export function syncPopupCurrentViewModel(
         pendingAdvancedAudioSettings: state.pendingAdvancedAudioSettings,
         transientError: state.transientError
       }),
+      sessionBoostAcknowledgedAction: state.sessionBoostAcknowledgedAction,
       sessionCarouselOffset: state.sessionCarouselOffset
     }),
     state.popupUiSyncRuntime,

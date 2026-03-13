@@ -1,4 +1,5 @@
 import { createDefaultMetrics } from "../../../../shared/audio-settings";
+import { createLoudnessEstimatorState } from "../../../../shared/audio-settings/internal/create-loudness-estimator-state";
 import type { BridgeContextState } from "../main-world-runtime-state";
 import { createMainWorldSoftClipCurve } from "./create-main-world-soft-clip-curve";
 import { createMainWorldAnalyser } from "../telemetry/create-main-world-analyser";
@@ -46,6 +47,7 @@ export function createMainWorldBridgeState(context: AudioContext, id: number): B
     outputAnalyser,
     wetGain,
     dryGain,
+    normalizationLoudnessState: createLoudnessEstimatorState(context.sampleRate),
     internalNodes,
     attachedNodes: new Set<AudioNode>(),
     lastMetrics: createDefaultMetrics(true)

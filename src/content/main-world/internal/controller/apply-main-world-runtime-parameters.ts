@@ -29,7 +29,9 @@ export function applyMainWorldRuntimeParameters(
     buildDspRuntimeParameters(controller.state.gainPercent, controller.state.advancedAudioSettings)
   );
 
-  bridgeState.preGain.gain.value = dbToGain(runtime.inputDriveDb);
+  bridgeState.preGain.gain.value = dbToGain(
+    runtime.inputDriveDb + bridgeState.lastMetrics.normalizationAppliedGainDb
+  );
   bridgeState.lowShelf.type = "lowshelf";
   bridgeState.lowShelf.frequency.value = LOW_SHELF_FREQUENCY_HZ;
   bridgeState.lowShelf.gain.value = runtime.toneLowBandGainDb + runtime.lowBandTrimDb + runtime.lowBandMakeupDb;

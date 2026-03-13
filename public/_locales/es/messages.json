@@ -779,6 +779,84 @@
   "warningNone": {
     "message": "Bajo"
   },
+  "normalizationActionCapped": {
+    "message": "Limitado"
+  },
+  "normalizationActionHolding": {
+    "message": "Estable"
+  },
+  "normalizationActionLabel": {
+    "message": "Accion"
+  },
+  "normalizationActionHelpLabel": {
+    "message": "Aprende que significa Accion"
+  },
+  "normalizationActionHelpText": {
+    "message": "Muestra si la normalizacion esta subiendo, bajando, manteniendo o limitada por el modo elegido."
+  },
+  "normalizationActionLowering": {
+    "message": "Bajando"
+  },
+  "normalizationActionRaising": {
+    "message": "Subiendo"
+  },
+  "normalizationCorrectionLabel": {
+    "message": "Correccion"
+  },
+  "normalizationCorrectionHelpLabel": {
+    "message": "Aprende que significa Correccion"
+  },
+  "normalizationCorrectionHelpText": {
+    "message": "Muestra la correccion de ganancia adaptativa aplicada en este momento para mantener el audio cerca del nivel objetivo."
+  },
+  "normalizationLoadLabel": {
+    "message": "Carga"
+  },
+  "normalizationLoadHelpLabel": {
+    "message": "Aprende que significa Carga"
+  },
+  "normalizationLoadHelpText": {
+    "message": "Muestra cuanto del margen disponible del modo actual esta usando la normalizacion en este instante."
+  },
+  "normalizationOffsetLabel": {
+    "message": "Desvio de la fuente"
+  },
+  "volumeNormalizationAggressive": {
+    "message": "Agresivo"
+  },
+  "volumeNormalizationAggressiveSubtitle": {
+    "message": "Empuja mas fuerte los streams bajos y contiene con mas decision los saltos fuertes."
+  },
+  "volumeNormalizationBalanced": {
+    "message": "Balanceado"
+  },
+  "volumeNormalizationBalancedSubtitle": {
+    "message": "Mantiene la reproduccion estable sin reaccionar de mas a la dinamica normal."
+  },
+  "volumeNormalizationOff": {
+    "message": "Apagado"
+  },
+  "volumeNormalizationOffSubtitle": {
+    "message": "Deja el loudness intacto y mantiene solo tu boost manual."
+  },
+  "volumeNormalizationSpeech": {
+    "message": "Voz"
+  },
+  "volumeNormalizationSpeechSubtitle": {
+    "message": "Levanta el dialogo bajo mas rapido y mantiene el contenido hablado mas parejo."
+  },
+  "volumeNormalizationTargetHelpLabel": {
+    "message": "Aprende que significa el loudness objetivo de reproduccion"
+  },
+  "volumeNormalizationTargetHelpText": {
+    "message": "Define el loudness percibido objetivo que la normalizacion intentara mantener entre fuentes mas bajas o mas altas."
+  },
+  "volumeNormalizationTargetLabel": {
+    "message": "Nivel objetivo"
+  },
+  "volumeNormalizationTitle": {
+    "message": "Normalizacion de volumen"
+  },
   "webLabel": {
     "message": "Web"
   }
