@@ -6,11 +6,11 @@ import { isOffscreenCommand } from "../shared/messages";
 import { fail, message } from "../shared/messages";
 import { captureExceptionSafe, initSentryForContext } from "../shared/observability/sentry";
 import { setDocumentLocaleAttributes, t } from "../shared/runtime-i18n";
-import { OffscreenSessionManager } from "./session-manager";
+import { createOffscreenSessionManager } from "./session-manager";
 
 initSentryForContext("offscreen");
 
-const manager = new OffscreenSessionManager();
+const manager = createOffscreenSessionManager();
 setDocumentLocaleAttributes(document);
 document.title = t("offscreenDocumentTitle");
 
