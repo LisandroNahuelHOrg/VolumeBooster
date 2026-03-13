@@ -29,6 +29,11 @@ export function deriveMetricsFromPeaks(
       : previousMetrics.clipPeak,
     protectionBypassed,
     inputPeak: normalizedInputPeak,
-    outputPeak: normalizedOutputPeak
+    outputPeak: normalizedOutputPeak,
+    normalizationInputLoudnessDb: previousMetrics.normalizationInputLoudnessDb,
+    normalizationAppliedGainDb: previousMetrics.normalizationAppliedGainDb,
+    normalizationOffsetScore: previousMetrics.normalizationOffsetScore,
+    normalizationAction: previousMetrics.normalizationAction,
+    normalizationLoadPercent: previousMetrics.normalizationLoadPercent
   };
 }

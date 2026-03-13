@@ -11,6 +11,8 @@ export function areAdvancedSettingsEqual(
   return (
     left.qualityPreset === right.qualityPreset &&
     left.qualityProtectorMode === right.qualityProtectorMode &&
+    left.volumeNormalizationMode === right.volumeNormalizationMode &&
+    left.volumeNormalizationTargetPercent === right.volumeNormalizationTargetPercent &&
     left.ceilingDb === right.ceilingDb &&
     left.lookaheadMs === right.lookaheadMs &&
     left.releaseMs === right.releaseMs &&

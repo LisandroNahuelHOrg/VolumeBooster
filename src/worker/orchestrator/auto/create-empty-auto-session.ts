@@ -26,6 +26,11 @@ export function createEmptyAutoSession(
     clipPeak: 0,
     protectionBypassed: false,
     outputPeak: 0,
+    normalizationInputLoudnessDb: null,
+    normalizationAppliedGainDb: 0,
+    normalizationOffsetScore: 0,
+    normalizationAction: "holding",
+    normalizationLoadPercent: 0,
     updatedAt: runtime.now(),
     lastError: update.lastError
   };

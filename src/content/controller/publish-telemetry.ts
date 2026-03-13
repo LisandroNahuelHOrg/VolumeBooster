@@ -30,7 +30,13 @@ export function publishTelemetry(controller: AutoBoosterControllerInternals): vo
         clipPeak: controller.bridgeTelemetry.metrics.clipPeak,
         protectionBypassed: controller.bridgeTelemetry.metrics.protectionBypassed,
         inputPeak: controller.bridgeTelemetry.level,
-        outputPeak: controller.bridgeTelemetry.metrics.outputPeak
+        outputPeak: controller.bridgeTelemetry.metrics.outputPeak,
+        normalizationInputLoudnessDb:
+          controller.bridgeTelemetry.metrics.normalizationInputLoudnessDb ?? null,
+        normalizationAppliedGainDb: controller.bridgeTelemetry.metrics.normalizationAppliedGainDb ?? 0,
+        normalizationOffsetScore: controller.bridgeTelemetry.metrics.normalizationOffsetScore ?? 0,
+        normalizationAction: controller.bridgeTelemetry.metrics.normalizationAction ?? "holding",
+        normalizationLoadPercent: controller.bridgeTelemetry.metrics.normalizationLoadPercent ?? 0
       }
     });
   }
@@ -40,6 +46,17 @@ export function publishTelemetry(controller: AutoBoosterControllerInternals): vo
     controller.reportStatus();
     return;
   }
+
+  const dominantNormalizationTelemetry = telemetryValues.reduce((best, telemetry) => {
+    if (!best) {
+      return telemetry;
+    }
+
+    return Math.abs(telemetry.metrics.normalizationOffsetScore) >=
+      Math.abs(best.metrics.normalizationOffsetScore)
+      ? telemetry
+      : best;
+  }, telemetryValues[0]);
 
   const payload: AutoSessionLevelPayload = {
     tabId: controller.state.tabId,
@@ -72,7 +89,13 @@ export function publishTelemetry(controller: AutoBoosterControllerInternals): vo
     outputPeak: roundTo(
       Math.max(...telemetryValues.map((telemetry) => telemetry.metrics.outputPeak)),
       4
-    )
+    ),
+    normalizationInputLoudnessDb:
+      dominantNormalizationTelemetry?.metrics.normalizationInputLoudnessDb ?? null,
+    normalizationAppliedGainDb: dominantNormalizationTelemetry?.metrics.normalizationAppliedGainDb ?? 0,
+    normalizationOffsetScore: dominantNormalizationTelemetry?.metrics.normalizationOffsetScore ?? 0,
+    normalizationAction: dominantNormalizationTelemetry?.metrics.normalizationAction ?? "holding",
+    normalizationLoadPercent: dominantNormalizationTelemetry?.metrics.normalizationLoadPercent ?? 0
   };
 
   controller.lastTelemetryAt = Math.max(

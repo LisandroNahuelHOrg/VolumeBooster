@@ -4,6 +4,8 @@ co = library("compressors.lib");
 fi = library("filters.lib");
 
 inputDriveDb = hslider("[0]controls/input_drive_db[unit:dB]", 0, 0, 30, 0.01);
+normalizationEnabled = hslider("[0]controls/normalization_enabled", 0, 0, 1, 1);
+normalizationGainDb = hslider("[0]controls/normalization_gain_db[unit:dB]", 0, -18, 18, 0.01);
 lookaheadMs = hslider("[0]controls/lookahead_ms[unit:ms]", 5, 1, 8, 0.1);
 releaseMs = hslider("[0]controls/release_ms[unit:ms]", 160, 60, 350, 1);
 multibandDepth = hslider("[0]controls/multiband_depth", 45, 0, 100, 1);
@@ -25,6 +27,7 @@ clamp01(x) = min(1.0, max(0.0, x));
 
 protectAmt = clamp01(protectorEnabled);
 limitAmt = clamp01(outputLimiterEnabled);
+normalizationAmt = clamp01(normalizationEnabled);
 driveNorm = min(1.0, inputDriveDb / 18.0);
 depthNorm = multibandDepth / 100.0;
 softNorm = clamp01((outputSoftClipMix / 40.0) * limitAmt);
@@ -87,7 +90,7 @@ channelToneStage =
   :> _;
 
 channelStage =
-  *(db2linear(inputDriveDb))
+  *(db2linear(inputDriveDb + normalizationGainDb * normalizationAmt))
   : fi.highpass(4, 25)
   : channelToneStage
   : _ <: *(1.0 - protectAmt), (channelProtectedTone : *(protectAmt)) :> _;

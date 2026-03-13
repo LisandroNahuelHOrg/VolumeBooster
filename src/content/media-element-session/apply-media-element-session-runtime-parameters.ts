@@ -10,6 +10,14 @@ export function applyMediaElementSessionRuntimeParameters(state: MediaElementSes
   );
 
   state.faustNode.setParamValue(state.asset.controlPaths.inputDriveDb, runtime.inputDriveDb);
+  state.faustNode.setParamValue(
+    state.asset.controlPaths.normalizationEnabled,
+    runtime.normalization.enabled ? 1 : 0
+  );
+  state.faustNode.setParamValue(
+    state.asset.controlPaths.normalizationGainDb,
+    state.latestMetrics.normalizationAppliedGainDb
+  );
   state.faustNode.setParamValue(state.asset.controlPaths.lookaheadMs, runtime.lookaheadMs);
   state.faustNode.setParamValue(state.asset.controlPaths.releaseMs, runtime.releaseMs);
   state.faustNode.setParamValue(state.asset.controlPaths.multibandDepth, runtime.multibandDepth);

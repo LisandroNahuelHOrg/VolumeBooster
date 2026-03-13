@@ -44,6 +44,11 @@ export function buildAggregatedAutoSession(params: {
     clipPeak: params.telemetry.clipPeak,
     protectionBypassed: params.telemetry.protectionBypassed,
     outputPeak: params.telemetry.outputPeak,
+    normalizationInputLoudnessDb: params.telemetry.normalizationInputLoudnessDb,
+    normalizationAppliedGainDb: params.telemetry.normalizationAppliedGainDb,
+    normalizationOffsetScore: params.telemetry.normalizationOffsetScore,
+    normalizationAction: params.telemetry.normalizationAction,
+    normalizationLoadPercent: params.telemetry.normalizationLoadPercent,
     updatedAt: params.now(),
     lastError: params.lastError
   };

@@ -1019,6 +1019,110 @@
     "message": "Low",
     "description": "Risk indicator label used by the popup for warningNone."
   },
+  "normalizationActionCapped": {
+    "message": "Capped",
+    "description": "Live action label shown in the popup normalization card when the correction hits the mode budget."
+  },
+  "normalizationActionHolding": {
+    "message": "Holding",
+    "description": "Live action label shown in the popup normalization card when the current source is close to the target level."
+  },
+  "normalizationActionLabel": {
+    "message": "Action",
+    "description": "Compact telemetry pill label shown in the popup normalization card."
+  },
+  "normalizationActionHelpLabel": {
+    "message": "Learn what Action means",
+    "description": "Accessible label for the normalization action help trigger."
+  },
+  "normalizationActionHelpText": {
+    "message": "Shows whether normalization is currently raising, lowering, holding, or limited by the selected mode.",
+    "description": "Tooltip copy explaining the normalization action telemetry pill."
+  },
+  "normalizationActionLowering": {
+    "message": "Lowering",
+    "description": "Live action label shown in the popup normalization card when the source is louder than the target."
+  },
+  "normalizationActionRaising": {
+    "message": "Raising",
+    "description": "Live action label shown in the popup normalization card when the source is quieter than the target."
+  },
+  "normalizationCorrectionLabel": {
+    "message": "Correction",
+    "description": "Compact telemetry pill label shown in the popup normalization card."
+  },
+  "normalizationCorrectionHelpLabel": {
+    "message": "Learn what Correction means",
+    "description": "Accessible label for the normalization correction help trigger."
+  },
+  "normalizationCorrectionHelpText": {
+    "message": "Displays the adaptive gain correction currently being applied to keep playback near the selected target level.",
+    "description": "Tooltip copy explaining the normalization correction telemetry pill."
+  },
+  "normalizationLoadLabel": {
+    "message": "Load",
+    "description": "Compact telemetry pill label shown in the popup normalization card."
+  },
+  "normalizationLoadHelpLabel": {
+    "message": "Learn what Load means",
+    "description": "Accessible label for the normalization load help trigger."
+  },
+  "normalizationLoadHelpText": {
+    "message": "Shows how much of the current mode's available normalization budget is being used right now.",
+    "description": "Tooltip copy explaining the normalization load telemetry pill."
+  },
+  "normalizationOffsetLabel": {
+    "message": "Source Offset",
+    "description": "Label shown above the -100 to +100 normalization deviation meter in the popup."
+  },
+  "volumeNormalizationAggressive": {
+    "message": "Aggressive",
+    "description": "Popup button and mode label for the strongest normalization profile."
+  },
+  "volumeNormalizationAggressiveSubtitle": {
+    "message": "Push harder on quiet streams and tame louder jumps more decisively.",
+    "description": "Subtitle shown in the popup normalization card when Aggressive mode is selected."
+  },
+  "volumeNormalizationBalanced": {
+    "message": "Balanced",
+    "description": "Popup button and mode label for the default normalization profile."
+  },
+  "volumeNormalizationBalancedSubtitle": {
+    "message": "Keep playback steady without overreacting to normal dynamics.",
+    "description": "Subtitle shown in the popup normalization card when Balanced mode is selected."
+  },
+  "volumeNormalizationOff": {
+    "message": "Off",
+    "description": "Popup button and mode label for disabled normalization."
+  },
+  "volumeNormalizationOffSubtitle": {
+    "message": "Leave loudness untouched and keep only your manual boost settings active.",
+    "description": "Subtitle shown in the popup normalization card when normalization is disabled."
+  },
+  "volumeNormalizationSpeech": {
+    "message": "Speech",
+    "description": "Popup button and mode label for a voice-focused normalization profile."
+  },
+  "volumeNormalizationSpeechSubtitle": {
+    "message": "Lift low dialogue faster while keeping spoken content comfortably even.",
+    "description": "Subtitle shown in the popup normalization card when Speech mode is selected."
+  },
+  "volumeNormalizationTargetHelpLabel": {
+    "message": "Learn what the playback loudness target means",
+    "description": "Accessible label for the normalization target slider help trigger."
+  },
+  "volumeNormalizationTargetHelpText": {
+    "message": "Sets the perceived playback loudness target that normalization will try to hold across quieter and louder sources.",
+    "description": "Tooltip copy explaining the normalization target slider."
+  },
+  "volumeNormalizationTargetLabel": {
+    "message": "Target Level",
+    "description": "Label shown above the normalization target slider in the popup."
+  },
+  "volumeNormalizationTitle": {
+    "message": "Volume Normalization",
+    "description": "Card title shown above the popup normalization modes and live telemetry."
+  },
   "webLabel": {
     "message": "Web",
     "description": "Generic fallback label for a web session with no domain."

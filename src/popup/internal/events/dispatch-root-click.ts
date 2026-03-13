@@ -1,5 +1,9 @@
 import { applyQualityPreset } from "../../../shared/audio-settings";
-import type { AudioQualityProtectorMode, QualityPreset } from "../../../shared/types";
+import type {
+  AudioQualityProtectorMode,
+  QualityPreset,
+  VolumeNormalizationMode
+} from "../../../shared/types";
 import { buildPopupViewModel } from "../../model";
 import { shiftSessionCarouselOffset } from "../../session-carousel";
 import { schedulePopupAdvancedSettingsCommit } from "../commits/schedule-popup-advanced-settings-commit";
@@ -32,6 +36,7 @@ export function dispatchRootClick(event: Event): void {
   const presetButton = target.closest<HTMLButtonElement>("[data-preset]");
   const advancedPresetButton = target.closest<HTMLButtonElement>("[data-advanced-preset]");
   const qualityProtectorButton = target.closest<HTMLButtonElement>("[data-quality-protector]");
+  const volumeNormalizationButton = target.closest<HTMLButtonElement>("[data-volume-normalization]");
   const stopSessionButton = target.closest<HTMLButtonElement>("[data-stop-tab]");
   const actionButton = target.closest<HTMLButtonElement>("[data-action]");
 
@@ -70,7 +75,9 @@ export function dispatchRootClick(event: Event): void {
       context.commitContext.state,
       applyQualityPreset(
         advancedPresetButton.dataset.advancedPreset as Exclude<QualityPreset, "custom">,
-        visibleSettings?.qualityProtectorMode
+        visibleSettings?.qualityProtectorMode,
+        visibleSettings?.volumeNormalizationMode,
+        visibleSettings?.volumeNormalizationTargetPercent
       )
     );
     schedulePopupAdvancedSettingsCommit(context.commitContext, true);
@@ -94,6 +101,28 @@ export function dispatchRootClick(event: Event): void {
         qualityPreset: "custom",
         qualityProtectorMode:
           qualityProtectorButton.dataset.qualityProtector as AudioQualityProtectorMode
+      }
+    );
+    schedulePopupAdvancedSettingsCommit(context.commitContext, true);
+    return;
+  }
+  if (volumeNormalizationButton?.dataset.volumeNormalization) {
+    if (!context.commitContext.state.currentState) {
+      return;
+    }
+
+    clearPopupTransientError(context.commitContext.state);
+    setPopupDraftAdvancedAudioSettings(
+      context.commitContext.refs,
+      context.commitContext.state,
+      {
+        ...getVisibleAdvancedAudioSettings(
+          buildPopupViewModel(context.commitContext.state.currentState),
+          context.commitContext.state.draftAdvancedAudioSettings,
+          context.commitContext.state.pendingAdvancedAudioSettings
+        ),
+        volumeNormalizationMode:
+          volumeNormalizationButton.dataset.volumeNormalization as VolumeNormalizationMode
       }
     );
     schedulePopupAdvancedSettingsCommit(context.commitContext, true);

@@ -8,6 +8,7 @@ import { renderLiveMeter } from "./render-live-meter";
 import { renderOtherSessionsPanel } from "./render-other-sessions-panel";
 import { renderQualityProtectorSection } from "./render-quality-protector-section";
 import { renderUnsupportedBanner } from "./render-unsupported-banner";
+import { renderVolumeNormalizationSection } from "./render-volume-normalization-section";
 import type { PopupMainViewRenderModel } from "./popup-render-types";
 
 export function renderMainView(model: PopupMainViewRenderModel): string {
@@ -25,6 +26,7 @@ export function renderMainView(model: PopupMainViewRenderModel): string {
         <div class="signal-controls-grid signal-controls-grid--standalone">
           ${renderQualityProtectorSection(model)}
           ${renderAdvancedSettingsSection(model)}
+          ${renderVolumeNormalizationSection(model)}
         </div>
         ${model.controlsLocked ? '<div class="booster-controls-stage__overlay" aria-hidden="true"></div>' : ""}
       </div>

@@ -17,6 +17,10 @@ export function applyAudioSessionRuntimeParameters(state: AudioSessionState): vo
   }
 
   if (state.fallbackGraph) {
-    applyNativeFallbackRuntimeParameters(state.fallbackGraph, runtime);
+    applyNativeFallbackRuntimeParameters(
+      state.fallbackGraph,
+      runtime,
+      state.latestMetrics.normalizationAppliedGainDb
+    );
   }
 }

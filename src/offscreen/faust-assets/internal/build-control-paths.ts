@@ -10,6 +10,16 @@ export function buildControlPaths(meta: FaustDspMeta): Record<DspControlKey, str
 
   return {
     inputDriveDb: requireControlPath(addressByShortName, "controls_input_drive_db", meta.name),
+    normalizationEnabled: requireControlPath(
+      addressByShortName,
+      "controls_normalization_enabled",
+      meta.name
+    ),
+    normalizationGainDb: requireControlPath(
+      addressByShortName,
+      "controls_normalization_gain_db",
+      meta.name
+    ),
     lookaheadMs: requireControlPath(addressByShortName, "controls_lookahead_ms", meta.name),
     releaseMs: requireControlPath(addressByShortName, "controls_release_ms", meta.name),
     multibandDepth: requireControlPath(addressByShortName, "controls_multiband_depth", meta.name),

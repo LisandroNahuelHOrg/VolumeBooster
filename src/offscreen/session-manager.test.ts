@@ -4,6 +4,8 @@ const sessionManagerFaustMetaHoisted = vi.hoisted(() => ({
     compile_options: "-single",
     ui: [
       { shortname: "controls_input_drive_db", address: "/controls/input_drive_db" },
+      { shortname: "controls_normalization_enabled", address: "/controls/normalization_enabled" },
+      { shortname: "controls_normalization_gain_db", address: "/controls/normalization_gain_db" },
       { shortname: "controls_lookahead_ms", address: "/controls/lookahead_ms" },
       { shortname: "controls_release_ms", address: "/controls/release_ms" },
       { shortname: "controls_multiband_depth", address: "/controls/multiband_depth" },
@@ -199,7 +201,12 @@ describe("OffscreenSessionManager", () => {
         clipPeak: 1.18,
         protectionBypassed: false,
         inputPeak: 0.9,
-        outputPeak: 0.82
+        outputPeak: 0.82,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
 
@@ -225,7 +232,12 @@ describe("OffscreenSessionManager", () => {
         clipPeak: 1.12,
         protectionBypassed: true,
         inputPeak: 0.88,
-        outputPeak: 0.79
+        outputPeak: 0.79,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
 
@@ -278,7 +290,12 @@ describe("OffscreenSessionManager", () => {
         clipPeak: 1,
         protectionBypassed: false,
         inputPeak: 0.8,
-        outputPeak: 0.75
+        outputPeak: 0.75,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
 

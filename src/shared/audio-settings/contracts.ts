@@ -5,6 +5,15 @@ export interface DspRuntimeParameters {
   boostIntensity: number;
   extendedBoostIntensity: number;
   inputDriveDb: number;
+  normalization: {
+    enabled: boolean;
+    targetLoudnessDb: number;
+    maxBoostDb: number;
+    maxCutDb: number;
+    attackMs: number;
+    releaseMs: number;
+    fullScaleWindowDb: number;
+  };
   lookaheadMs: number;
   releaseMs: number;
   multibandDepth: number;

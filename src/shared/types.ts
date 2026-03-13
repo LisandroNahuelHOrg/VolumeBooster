@@ -27,6 +27,8 @@ export type AudioQualityProtectorMode =
   | "treble_safe"
   | "punch_preserve"
   | "maximum_protection";
+/** Automatic loudness-normalization modes exposed to users. */
+export type VolumeNormalizationMode = "off" | "balanced" | "speech" | "aggressive";
 /** Advanced sound-shaping presets exposed in the popup. */
 export type QualityPreset =
   | "balanced"
@@ -66,11 +68,15 @@ export type EngineLane = "manual_tab_capture" | "auto_media_element";
 export type AutoBoosterScope = "site" | "global";
 /** Effective automatic strategy currently attached on the page. */
 export type AutoActiveStrategy = "none" | "media_element" | "web_audio_bridge" | "hybrid";
+/** Coarse action label surfaced by live normalization telemetry. */
+export type NormalizationAction = "raising" | "lowering" | "holding" | "capped";
 
 /** Persisted advanced DSP settings controlled from the popup. */
 export interface AdvancedAudioSettings {
   qualityPreset: QualityPreset;
   qualityProtectorMode: AudioQualityProtectorMode;
+  volumeNormalizationMode: VolumeNormalizationMode;
+  volumeNormalizationTargetPercent: number;
   ceilingDb: number;
   lookaheadMs: number;
   releaseMs: number;
@@ -91,6 +97,11 @@ export interface DspRuntimeMetrics {
   protectionBypassed: boolean;
   inputPeak: number;
   outputPeak: number;
+  normalizationInputLoudnessDb: number | null;
+  normalizationAppliedGainDb: number;
+  normalizationOffsetScore: number;
+  normalizationAction: NormalizationAction;
+  normalizationLoadPercent: number;
 }
 
 /** Structured i18n message descriptor sent over runtime messaging instead of plain strings. */
@@ -121,6 +132,11 @@ export interface CaptureSessionState {
   clipPeak: number;
   protectionBypassed: boolean;
   outputPeak: number;
+  normalizationInputLoudnessDb?: number | null;
+  normalizationAppliedGainDb?: number;
+  normalizationOffsetScore?: number;
+  normalizationAction?: NormalizationAction;
+  normalizationLoadPercent?: number;
   lastError?: LocalizedMessage;
   updatedAt: number;
 }
@@ -230,6 +246,11 @@ export interface LevelUpdatePayload {
   clipPeak: number;
   protectionBypassed: boolean;
   outputPeak: number;
+  normalizationInputLoudnessDb?: number | null;
+  normalizationAppliedGainDb?: number;
+  normalizationOffsetScore?: number;
+  normalizationAction?: NormalizationAction;
+  normalizationLoadPercent?: number;
 }
 
 /** Session lifecycle update emitted by the offscreen/manual lane. */
@@ -285,6 +306,11 @@ export interface AutoSessionLevelPayload extends AutoFrameIdentity {
   clipPeak: number;
   protectionBypassed: boolean;
   outputPeak: number;
+  normalizationInputLoudnessDb?: number | null;
+  normalizationAppliedGainDb?: number;
+  normalizationOffsetScore?: number;
+  normalizationAction?: NormalizationAction;
+  normalizationLoadPercent?: number;
 }
 
 /** Automatic attach failure payload emitted by the content script. */
@@ -342,6 +368,11 @@ export interface AutoFrameRuntimeState extends AutoBoosterTabState, AutoFrameIde
   clipPeak: number;
   protectionBypassed: boolean;
   outputPeak: number;
+  normalizationInputLoudnessDb?: number | null;
+  normalizationAppliedGainDb?: number;
+  normalizationOffsetScore?: number;
+  normalizationAction?: NormalizationAction;
+  normalizationLoadPercent?: number;
   lastError?: LocalizedMessage;
   bridgeContextCount?: number;
   bridgeAttachedNodeCount?: number;

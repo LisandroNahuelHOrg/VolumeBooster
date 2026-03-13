@@ -78,6 +78,7 @@ describe("audio-settings", () => {
     [
       "vocal_presence",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "vocal_presence",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.1,
@@ -90,6 +91,7 @@ describe("audio-settings", () => {
     [
       "smooth_bright",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "smooth_bright",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.25,
@@ -102,6 +104,7 @@ describe("audio-settings", () => {
     [
       "warm_cinematic",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "warm_cinematic",
         qualityProtectorMode: "balanced",
         ceilingDb: -1.15,
@@ -114,6 +117,7 @@ describe("audio-settings", () => {
     [
       "punch_drive",
       {
+        ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
         qualityPreset: "punch_drive",
         qualityProtectorMode: "balanced",
         ceilingDb: -0.95,
@@ -139,6 +143,7 @@ describe("audio-settings", () => {
     });
 
     expect(sanitized).toEqual({
+      ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
       qualityPreset: "custom",
       qualityProtectorMode: "clarity",
       ceilingDb: -2,
@@ -513,6 +518,7 @@ describe("audio-settings", () => {
 
   it("exposes the exact maximum loudness preset snapshot used by the popup", () => {
     expect(applyQualityPreset("maximum_loudness")).toEqual({
+      ...DEFAULT_ADVANCED_AUDIO_SETTINGS,
       qualityPreset: "maximum_loudness",
       qualityProtectorMode: "balanced",
       ceilingDb: -0.8,

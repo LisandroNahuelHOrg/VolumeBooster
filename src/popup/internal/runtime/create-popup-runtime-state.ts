@@ -39,6 +39,8 @@ export function createPopupRuntimeState(): PopupRuntimeState {
     popupUiSyncRuntime: {
       lastProtectorTelemetryUiAt: 0,
       lastProtectorTelemetryDisplayKey: "",
+      lastNormalizationTelemetryUiAt: 0,
+      lastNormalizationTelemetryDisplayKey: "",
       lastLaneStatusDisplayKey: "",
       lastSessionBoostVisible: false
     },

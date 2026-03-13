@@ -2,6 +2,7 @@ import "./popup.css";
 import "./popup-lane-buttons.css";
 import "./popup-session-boost-bar.css";
 import "./popup-toolbar.css";
+import "./popup-volume-normalization.css";
 
 import { initSentryForContext } from "../shared/observability/sentry";
 import { SettingsRepository } from "../shared/storage";

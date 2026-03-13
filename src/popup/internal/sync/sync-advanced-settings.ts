@@ -33,6 +33,13 @@ export function syncAdvancedSettings(rootElement: HTMLElement, model: PopupDynam
     );
   }
 
+  for (const normalizationButton of rootElement.querySelectorAll<HTMLButtonElement>("[data-volume-normalization]")) {
+    normalizationButton.classList.toggle(
+      "is-active",
+      normalizationButton.dataset.volumeNormalization === advancedAudioSettings.volumeNormalizationMode
+    );
+  }
+
   for (const controlInput of rootElement.querySelectorAll<HTMLInputElement>("[data-role='advanced-slider']")) {
     const key = controlInput.dataset.advancedKey as AdvancedControlKey | undefined;
     const controlCard = controlInput.closest<HTMLElement>(".advanced-control");
@@ -55,13 +62,50 @@ export function syncAdvancedSettings(rootElement: HTMLElement, model: PopupDynam
     }
   }
 
+  const normalizationSlider = rootElement.querySelector<HTMLInputElement>("[data-role='normalization-slider']");
+  const normalizationTargetValue = rootElement.querySelector<HTMLElement>("[data-role='normalization-target-value']");
+
+  if (
+    normalizationSlider &&
+    Number(normalizationSlider.value) !== advancedAudioSettings.volumeNormalizationTargetPercent
+  ) {
+    normalizationSlider.value = String(advancedAudioSettings.volumeNormalizationTargetPercent);
+  }
+
+  if (normalizationSlider) {
+    normalizationSlider
+      .closest<HTMLElement>(".advanced-control")
+      ?.style.setProperty(
+        "--advanced-progress",
+        `${((advancedAudioSettings.volumeNormalizationTargetPercent - 80) / 40) * 100}%`
+      );
+  }
+
+  if (normalizationTargetValue) {
+    normalizationTargetValue.textContent = `${Math.round(
+      advancedAudioSettings.volumeNormalizationTargetPercent
+    )}%`;
+  }
+
   const modeValue = rootElement.querySelector<HTMLElement>("[data-role='quality-protector-mode-value']");
   const modeSubtitle = rootElement.querySelector<HTMLElement>("[data-role='quality-protector-subtitle']");
+  const normalizationModeValue = rootElement.querySelector<HTMLElement>(
+    "[data-role='volume-normalization-mode-value']"
+  );
+  const normalizationSubtitle = rootElement.querySelector<HTMLElement>(
+    "[data-role='volume-normalization-subtitle']"
+  );
 
   if (modeValue) {
     modeValue.textContent = model.renderModel.qualityProtectorModeLabel;
   }
   if (modeSubtitle) {
     modeSubtitle.textContent = model.renderModel.qualityProtectorSubtitle;
+  }
+  if (normalizationModeValue) {
+    normalizationModeValue.textContent = model.renderModel.volumeNormalizationModeLabel;
+  }
+  if (normalizationSubtitle) {
+    normalizationSubtitle.textContent = model.renderModel.volumeNormalizationSubtitle;
   }
 }

@@ -8,6 +8,11 @@ export function createDefaultMetrics(protectionBypassed = false): DspRuntimeMetr
     clipPeak: 0,
     protectionBypassed,
     inputPeak: 0,
-    outputPeak: 0
+    outputPeak: 0,
+    normalizationInputLoudnessDb: null,
+    normalizationAppliedGainDb: 0,
+    normalizationOffsetScore: 0,
+    normalizationAction: "holding",
+    normalizationLoadPercent: 0
   };
 }

@@ -42,6 +42,15 @@ export function createPopupDynamicUiModel(input: PopupDynamicUiInput): PopupDyna
       renderModel.advancedAudioSettings.qualityProtectorMode,
       renderModel.protectionBypassed ? "bypassed" : "protected"
     ].join("|"),
+    normalizationTelemetryDisplayKey: [
+      input.viewModel.currentSession?.tabId ?? "none",
+      input.viewModel.currentSession?.streamState ?? "inactive",
+      renderModel.advancedAudioSettings.volumeNormalizationMode,
+      renderModel.normalizationOffsetScore,
+      renderModel.normalizationCorrection,
+      renderModel.normalizationAction,
+      renderModel.normalizationLoad
+    ].join("|"),
     sessionCards: input.viewModel.activeSessions.map((session) => {
       const visualStatus = getVisualStatus(session, true);
 

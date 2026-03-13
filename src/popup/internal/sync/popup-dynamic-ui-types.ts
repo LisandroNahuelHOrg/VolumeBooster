@@ -34,12 +34,15 @@ export interface PopupDynamicUiModel {
   sessionBoostVisible: boolean;
   sessionBoostAcknowledgedAction: string | null;
   protectionTelemetryDisplayKey: string;
+  normalizationTelemetryDisplayKey: string;
   sessionCards: PopupDynamicSessionCardModel[];
 }
 
 export interface PopupUiSyncRuntime {
   lastProtectorTelemetryUiAt: number;
   lastProtectorTelemetryDisplayKey: string;
+  lastNormalizationTelemetryUiAt: number;
+  lastNormalizationTelemetryDisplayKey: string;
   lastLaneStatusDisplayKey: string;
   lastSessionBoostVisible: boolean;
 }

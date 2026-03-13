@@ -17,6 +17,7 @@ import { globalBoosterButtonAction } from "../status/global-booster-button-actio
 import { isGlobalAutoEnabled } from "../status/is-global-auto-enabled";
 import { isSiteAutoEnabled } from "../status/is-site-auto-enabled";
 import { createSessionBoostActionBarMarkup } from "./create-session-boost-action-bar-markup";
+import { createVolumeNormalizationRenderFields } from "./create-volume-normalization-render-fields";
 import type { PopupMainViewRenderResult, PopupRenderContext } from "./popup-render-types";
 import { resolveSessionBoostBarState } from "../../resolve-session-boost-bar-state";
 
@@ -45,6 +46,11 @@ export function createMainViewRenderModel(
     draftAdvancedAudioSettings: renderContext.draftAdvancedAudioSettings,
     pendingAdvancedAudioSettings: renderContext.pendingAdvancedAudioSettings
   });
+  const volumeNormalizationFields = createVolumeNormalizationRenderFields(
+    currentSession,
+    advancedAudioSettings.volumeNormalizationMode,
+    renderContext
+  );
 
   return {
     model: {
@@ -91,6 +97,7 @@ export function createMainViewRenderModel(
         advancedAudioSettings.qualityPreset,
         renderContext.catalog
       ),
+      ...volumeNormalizationFields,
       protectionAction: formatProtectionAction(
         currentSession?.protectorActionDb ?? 0,
         protectionBypassed,
