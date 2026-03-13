@@ -4,9 +4,11 @@ function Get-LegacyMonitorPaths {
         [string]$TargetPath
     )
 
-    return @(
-        $TargetPath
-        "D:\Local Worktrees\$Display"
-        "D:\SpeedSuite-Trees\$Display"
-    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+    $paths = @($TargetPath)
+    if ($IsWindows) {
+        $paths += "D:\Local Worktrees\$Display"
+        $paths += "D:\SpeedSuite-Trees\$Display"
+    }
+
+    return $paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
 }

@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot "Get-ManagerDefaultRoots.ps1")
+
 function Resolve-ManagerLocalContext {
     param(
         [string]$RepoRootHint,
@@ -17,7 +19,8 @@ function Resolve-ManagerLocalContext {
     }
     $hookPrep = if ([string]::IsNullOrWhiteSpace("$($config.hooks.dependencyPrep)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.dependencyPrep)" }
     $hookShip = if ([string]::IsNullOrWhiteSpace("$($config.hooks.preShip)")) { $null } else { Join-Path $resolvedRepoRoot "$($config.hooks.preShip)" }
-    $worktreeRoot = Join-Path "D:\Local Worktrees" $repoKey
+    $managerRoots = Get-ManagerDefaultRoots -RepoRoot $resolvedRepoRoot
+    $worktreeRoot = Join-Path $managerRoots.WorktreeBase $repoKey
     $scopeLockFile = Join-Path $resolvedRepoRoot ".agent\worktree-scope-lock.$repoKey.json"
 
     return [pscustomobject]@{
