@@ -16,11 +16,11 @@ describe("i18n check lib", () => {
   it("rejects untranslated copies that are not allowlisted", async () => {
     const repoRoot = await createTempRepo({
       en: {
-        extName: withDescription("Prism Volume Booster", "Brand name shown in Chrome."),
+        extName: withDescription("Volume Booster by Premium11", "Brand name shown in Chrome."),
         boostLabel: withDescription("Boost", "Compact label shown next to the main gain meter in the popup.")
       },
       es: {
-        extName: { message: "Prism Volume Booster" },
+        extName: { message: "Volume Booster by Premium11" },
         boostLabel: { message: "Boost" }
       },
       allowlist: ["extName"]

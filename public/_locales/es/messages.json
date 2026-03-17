@@ -30,10 +30,10 @@
     "message": "Página interna utilizada por el arnés de Playwright para restaurar el acceso global cuando Chrome lo limita y para enviar comandos a la extensión."
   },
   "automationBridgeTitle": {
-    "message": "Puente de automatización de Prism"
+    "message": "Puente de automatización de Volume Booster by Premium11"
   },
   "automationDocumentTitle": {
-    "message": "Automatización de Prism"
+    "message": "Automatización de Volume Booster by Premium11"
   },
   "automationRestoreAllSitesAccess": {
     "message": "Restaurar acceso a todos los sitios"
@@ -258,13 +258,13 @@
     "message": "No se puede capturar esta pestaña. Prueba con una página https:// normal."
   },
   "extActionTitle": {
-    "message": "Abrir Prism Volume Booster"
+    "message": "Abrir Volume Booster by Premium11"
   },
   "extDescription": {
     "message": "Sube el volumen de cualquier pestaña de Chrome por encima del máximo normal con una cadena de audio en tiempo real."
   },
   "extName": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "forgetSite": {
     "message": "Dejar de recordar mi configuracion para $DOMAIN$",
@@ -450,19 +450,19 @@
     "message": "Todavía no hay boost guardado para este dominio"
   },
   "offscreenDocumentTitle": {
-    "message": "Procesador de audio de Prism Volume Booster"
+    "message": "Procesador de audio de Volume Booster by Premium11"
   },
   "otherSessionsTitle": {
     "message": "Sesiones activas"
   },
   "popupDocumentTitle": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "popupSubtitle": {
     "message": "Control de ganancia en tiempo real para cualquier pestaña capturable."
   },
   "popupTitle": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "popupSettingsAppearanceDetail": {
     "message": "Usa el toggle de tema de la barra superior para reestilizar este popup al instante y conservar la elección para la próxima vez que lo abras."
@@ -612,7 +612,7 @@
     "message": "Días restantes"
   },
   "popupPremiumSubtitle": {
-    "message": "Administra la licencia offline vitalicia que desbloquea los controles premium dentro de Prism."
+    "message": "Administra la licencia offline vitalicia que desbloquea los controles premium dentro de Volume Booster by Premium11."
   },
   "popupPremiumTitle": {
     "message": "Activación de premium vitalicio"

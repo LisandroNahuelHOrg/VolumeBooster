@@ -221,7 +221,7 @@ describe("runtime i18n", () => {
   });
 
   it("uses the canonical English fallback when chrome.i18n is unavailable", () => {
-    expect(t("automationBridgeTitle", undefined, null)).toBe("Prism Automation Bridge");
+    expect(t("automationBridgeTitle", undefined, null)).toBe("Volume Booster by Premium11 Automation Bridge");
     expect(t("rememberSite", { domain: "youtube.com" }, null)).toBe("Remember my settings for youtube.com");
   });
 

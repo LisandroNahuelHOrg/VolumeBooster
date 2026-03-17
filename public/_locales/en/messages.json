@@ -40,11 +40,11 @@
     "description": "Supporting text shown on the internal automation bridge page."
   },
   "automationBridgeTitle": {
-    "message": "Prism Automation Bridge",
+    "message": "Volume Booster by Premium11 Automation Bridge",
     "description": "Heading shown on the internal extension page used by automation tooling to communicate with the worker."
   },
   "automationDocumentTitle": {
-    "message": "Prism Automation",
+    "message": "Volume Booster by Premium11 Automation",
     "description": "Document title for the internal automation bridge page used by Playwright and other E2E tooling."
   },
   "automationRestoreAllSitesAccess": {
@@ -332,7 +332,7 @@
     "description": "User-facing error copy surfaced in the popup, toast, or extension runtime when this failure occurs: \"This tab cannot be captured. Try a regular https:// page.\"."
   },
   "extActionTitle": {
-    "message": "Open Prism Volume Booster",
+    "message": "Open Volume Booster by Premium11",
     "description": "Tooltip for the toolbar action button."
   },
   "extDescription": {
@@ -340,7 +340,7 @@
     "description": "Extension description shown in Chrome."
   },
   "extName": {
-    "message": "Prism Volume Booster",
+    "message": "Volume Booster by Premium11",
     "description": "Extension name shown in Chrome."
   },
   "forgetSite": {
@@ -586,7 +586,7 @@
     "description": "Standalone UI copy shown in a button, notice, or helper surface: \"No saved boost for this domain yet\"."
   },
   "offscreenDocumentTitle": {
-    "message": "Prism Volume Booster Audio Processor",
+    "message": "Volume Booster by Premium11 Audio Processor",
     "description": "Document title for the hidden offscreen page."
   },
   "otherSessionsTitle": {
@@ -594,7 +594,7 @@
     "description": "Heading shown in the extension UI: \"Active booster sessions\"."
   },
   "popupDocumentTitle": {
-    "message": "Prism Volume Booster",
+    "message": "Volume Booster by Premium11",
     "description": "Document title for the popup page."
   },
   "popupSubtitle": {
@@ -602,8 +602,8 @@
     "description": "Supporting description text for popupSubtitle."
   },
   "popupTitle": {
-    "message": "Prism Volume Booster",
-    "description": "Heading shown in the extension UI: \"Prism Volume Booster\"."
+    "message": "Volume Booster by Premium11",
+    "description": "Heading shown in the extension UI: \"Volume Booster by Premium11\"."
   },
   "popupSettingsAppearanceDetail": {
     "message": "Use the toolbar theme toggle to restyle this popup instantly and keep the choice for the next time you open it.",
@@ -802,7 +802,7 @@
     "description": "Label shown for the remaining premium trial day count."
   },
   "popupPremiumSubtitle": {
-    "message": "Manage the offline lifetime license that unlocks the premium controls inside Prism.",
+    "message": "Manage the offline lifetime license that unlocks the premium controls inside Volume Booster by Premium11.",
     "description": "Supporting copy shown under the premium view title."
   },
   "popupPremiumTitle": {

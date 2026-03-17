@@ -17,7 +17,7 @@ describe("i18n audit lib", () => {
         "const root = document.querySelector('#app');",
         "root.innerHTML = `",
         "  <main>",
-        "    <h1>Prism Automation Bridge</h1>",
+        "    <h1>Volume Booster by Premium11 Automation Bridge</h1>",
         "  </main>",
         "`;"
       ].join("\n"),
@@ -26,7 +26,7 @@ describe("i18n audit lib", () => {
 
     expect(issues).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('contains hardcoded HTML text: "Prism Automation Bridge"')
+        expect.stringContaining('contains hardcoded HTML text: "Volume Booster by Premium11 Automation Bridge"')
       ])
     );
   });
