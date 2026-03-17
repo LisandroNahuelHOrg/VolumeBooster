@@ -51,6 +51,8 @@ export interface PopupRuntimeState {
   loadedLocale: string | null;
   pendingAdvancedAudioSettings: AdvancedAudioSettings | null;
   pendingGainPercent: number | null;
+  premiumEmailDraft: string;
+  premiumLicenseDraft: string;
   popupDomRuntime: PopupDomRuntime;
   popupGainPointerRuntime: PopupGainPointerRuntime;
   popupThemePersistQueue: Promise<void>;

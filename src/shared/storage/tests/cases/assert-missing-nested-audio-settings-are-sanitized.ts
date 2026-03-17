@@ -27,6 +27,7 @@ export async function assertMissingNestedAudioSettingsAreSanitized(): Promise<vo
     },
     autoBoosterMode: "global",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "dark"
+    popupTheme: "dark",
+    premiumLicenseActivation: null
   });
 }

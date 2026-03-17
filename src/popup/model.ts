@@ -4,6 +4,7 @@
  */
 
 import { DEFAULT_GAIN_PERCENT } from "../shared/constants";
+import { DEFAULT_PREMIUM_ENTITLEMENT_STATE } from "../shared/premium-license";
 import type { PopupViewModel, WorkerState } from "../shared/types";
 
 /**
@@ -35,6 +36,7 @@ export function buildPopupViewModel(state: WorkerState): PopupViewModel {
     boostSettingsBundle: state.boostSettingsBundle,
     globalAutoGainPercent: state.globalAutoGainPercent,
     hasGlobalPermission: state.hasGlobalPermission,
+    premiumEntitlement: state.premiumEntitlement ?? DEFAULT_PREMIUM_ENTITLEMENT_STATE,
     sessionBoostPromptState: state.sessionBoostPromptState,
     gainPercent:
       currentSession?.gainPercent ??

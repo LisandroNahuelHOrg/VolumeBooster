@@ -59,5 +59,11 @@ export async function applyPopupWorkerState(
     state.draftAdvancedAudioSettings = { ...nextState.advancedAudioSettings };
   }
 
+  const nextPremiumEntitlement = nextState.premiumEntitlement ?? viewModel.premiumEntitlement;
+
+  if (!state.premiumEmailDraft && nextPremiumEntitlement.email) {
+    state.premiumEmailDraft = nextPremiumEntitlement.email;
+  }
+
   applyPopupRender(refs, state);
 }

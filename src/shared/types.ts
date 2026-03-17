@@ -6,6 +6,10 @@
 
 import type { I18nKey, I18nSubstitutionsFor } from "../generated/i18n-types";
 import type {
+  PersistedPremiumLicenseActivation,
+  PremiumEntitlementState
+} from "./premium-license";
+import type {
   BoostSettingsBundle,
   SessionBoostPromptState
 } from "./boost-settings-bundle";
@@ -180,6 +184,7 @@ export interface WorkerState {
   boostSettingsBundle?: BoostSettingsBundle;
   globalAutoGainPercent: number;
   hasGlobalPermission: boolean;
+  premiumEntitlement?: PremiumEntitlementState;
   sessionBoostPromptState?: SessionBoostPromptState;
   sessions: CaptureSessionState[];
   generatedAt: number;
@@ -197,6 +202,7 @@ export interface PopupViewModel {
   boostSettingsBundle?: BoostSettingsBundle;
   globalAutoGainPercent: number;
   hasGlobalPermission: boolean;
+  premiumEntitlement: PremiumEntitlementState;
   sessionBoostPromptState?: SessionBoostPromptState;
   gainPercent: number;
   sessionCount: number;
@@ -211,6 +217,7 @@ export interface ExtensionSettings {
   autoBoosterMode: AutoBoosterMode;
   globalAutoGainPercent: number;
   popupTheme: PopupTheme;
+  premiumLicenseActivation?: PersistedPremiumLicenseActivation | null;
 }
 
 /** Payload required to bootstrap an offscreen manual capture session. */

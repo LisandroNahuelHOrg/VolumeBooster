@@ -44,6 +44,12 @@ export function createPopupRenderSignature(
       ? { tabId: viewModel.currentManualSession.tabId }
       : null,
     autoBoosterMode: viewModel.autoBoosterMode,
+    premiumEntitlement: viewModel.premiumEntitlement,
+    premiumDrafts: popupUiState.currentView === "premium"
+      ? {
+          email: transientError?.key ? "dirty" : "clean"
+        }
+      : null,
     activeSessions
   });
 }

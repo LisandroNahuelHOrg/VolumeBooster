@@ -8,6 +8,7 @@ export function renderLaneActions(
     | "currentTab"
     | "siteAutoEnabled"
     | "globalAutoEnabled"
+    | "globalAutoLocked"
     | "siteLaneButtonCopy"
     | "globalLaneButtonCopy"
     | "globalAutoAction"
@@ -19,7 +20,7 @@ export function renderLaneActions(
         <span class="ghost-button--lane__play-indicator" aria-hidden="true"><span class="ghost-button--lane__play-icon"></span></span>
         <span class="ghost-button--lane__body">${renderLaneButtonIcon("current-tab")}<span class="ghost-button--lane__copy"><span class="ghost-button--lane__action" data-role="toggle-site-auto-action">${escapeHtml(model.siteLaneButtonCopy.action)}</span><span class="ghost-button--lane__mode" data-role="toggle-site-auto-mode">${escapeHtml(model.siteLaneButtonCopy.mode)}</span></span></span>
       </button>
-      <button class="ghost-button ghost-button--lane ghost-button--lane-global ${model.globalAutoEnabled ? "is-active" : ""}" data-lane-kind="all-sites" data-role="toggle-global-auto" data-action="${model.globalAutoAction}" ${model.currentTab ? "" : "disabled"} type="button">
+      <button class="ghost-button ghost-button--lane ghost-button--lane-global ${model.globalAutoEnabled ? "is-active" : ""} ${model.globalAutoLocked ? "is-premium-locked" : ""}" data-lane-kind="all-sites" data-premium-locked="${model.globalAutoLocked}" data-role="toggle-global-auto" data-action="${model.globalAutoAction}" ${model.currentTab ? "" : "disabled"} type="button">
         <span class="ghost-button--lane__play-indicator" aria-hidden="true"><span class="ghost-button--lane__play-icon"></span></span>
         <span class="ghost-button--lane__body">${renderLaneButtonIcon("all-sites")}<span class="ghost-button--lane__copy"><span class="ghost-button--lane__action" data-role="toggle-global-auto-action">${escapeHtml(model.globalLaneButtonCopy.action)}</span><span class="ghost-button--lane__mode" data-role="toggle-global-auto-mode">${escapeHtml(model.globalLaneButtonCopy.mode)}</span></span></span>
       </button>

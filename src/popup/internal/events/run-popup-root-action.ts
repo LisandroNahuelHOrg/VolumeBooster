@@ -8,11 +8,15 @@ import { enablePopupCurrentTabBooster } from "../commands/enable-popup-current-t
 import { enablePopupGlobalAutoBooster } from "../commands/enable-popup-global-auto-booster";
 import { handlePopupThemeToggle } from "../commands/handle-popup-theme-toggle";
 import { openPopupSettingsView } from "../commands/open-popup-settings-view";
+import { openPopupPremiumView } from "../commands/open-popup-premium-view";
 import { requestPopupGlobalAutoPermission } from "../commands/request-popup-global-auto-permission";
 import { resetPopupSessionBoostOnAllSites } from "../commands/reset-popup-session-boost-on-all-sites";
 import { resetPopupSessionBoostOnSite } from "../commands/reset-popup-session-boost-on-site";
 import { stopPopupSessions } from "../commands/stop-popup-sessions";
 import { togglePopupCurrentSitePreference } from "../commands/toggle-popup-current-site-preference";
+import { closePopupPremiumView } from "../commands/close-popup-premium-view";
+import { activatePopupPremiumLicense } from "../commands/activate-popup-premium-license";
+import { clearPopupPremiumLicense } from "../commands/clear-popup-premium-license";
 import type { PopupCommandContext } from "../commands/popup-command-context";
 
 export function runPopupRootAction(
@@ -22,7 +26,17 @@ export function runPopupRootAction(
   const tabId = context.state.currentState?.currentTab?.tabId;
 
   switch (action) {
-    case "premium-mock":
+    case "open-popup-premium":
+      openPopupPremiumView(context);
+      return;
+    case "close-popup-premium":
+      closePopupPremiumView(context);
+      return;
+    case "activate-premium-license":
+      void activatePopupPremiumLicense(context);
+      return;
+    case "clear-premium-license":
+      void clearPopupPremiumLicense(context);
       return;
     case "toggle-popup-theme":
       handlePopupThemeToggle(context);

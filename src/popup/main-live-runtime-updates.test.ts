@@ -44,7 +44,12 @@ test("refreshes live telemetry and session card content across level and status 
       clipEvents: 2,
       clipPeak: 1.2,
       protectionBypassed: false,
-      outputPeak: 0.97
+      outputPeak: 0.97,
+      normalizationInputLoudnessDb: -27.4,
+      normalizationAppliedGainDb: 4.2,
+      normalizationOffsetScore: -36,
+      normalizationAction: "raising",
+      normalizationLoadPercent: 35
     }
   });
   await flushPopupMainMicrotasks();
@@ -52,6 +57,15 @@ test("refreshes live telemetry and session card content across level and status 
   expect(document.querySelector<HTMLElement>("[data-role='warning-pill']")?.dataset.warning).toBe("danger");
   expect(document.querySelector<HTMLElement>("[data-role='clip-events-value']")?.textContent).toBe("2");
   expect(document.querySelector<HTMLElement>("[data-role='session-meter-fill']")?.style.width).not.toBe("");
+  expect(document.querySelector<HTMLElement>("[data-role='normalization-offset-value']")?.textContent).toBe("-36");
+  expect(document.querySelector<HTMLElement>("[data-role='normalization-correction-value']")?.textContent).toBe(
+    "+4.2 dB"
+  );
+  expect(document.querySelector<HTMLElement>("[data-role='normalization-action-value']")?.textContent).toBe(
+    "Raising"
+  );
+  expect(document.querySelector<HTMLElement>("[data-role='normalization-load-value']")?.textContent).toBe("35%");
+  expect(document.querySelector<HTMLElement>("[data-role='normalization-offset-thumb']")?.style.left).toBe("32%");
 
   harness.getRuntimeMessageListener()?.({
     type: "SESSION_STATUS_UPDATE",

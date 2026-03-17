@@ -1,0 +1,136 @@
+.popup-premium-view {
+  gap: 20px;
+}
+
+.popup-premium-view__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+}
+
+.popup-premium-view__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.popup-premium-view__title {
+  margin: 0;
+}
+
+.popup-premium-view__grid {
+  display: grid;
+  gap: 16px;
+}
+
+.popup-premium-view__activation {
+  gap: 14px;
+}
+
+.popup-premium-view__field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.popup-premium-view__input,
+.popup-premium-view__textarea {
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel-bg) 92%, black 8%);
+  color: var(--text);
+  font: inherit;
+  padding: 12px 14px;
+}
+
+.popup-premium-view__textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.popup-premium-view__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.popup-premium-view__activate {
+  border: 1px solid color-mix(in srgb, var(--premium-gold-strong) 58%, var(--panel-border) 42%);
+  background:
+    radial-gradient(circle at 20% 24%, color-mix(in srgb, var(--premium-gold-strong) 30%, transparent 70%), transparent 38%),
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold) 34%, var(--panel-bg) 66%) 0%, color-mix(in srgb, var(--premium-gold) 16%, var(--panel-bg) 84%) 100%);
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--premium-gold-glow) 82%, transparent 18%),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold) 24%, transparent 76%);
+  color: color-mix(in srgb, var(--premium-gold-strong) 64%, var(--text) 36%);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.popup-premium-view__activate:focus-visible {
+  outline: none;
+  box-shadow:
+    0 12px 24px color-mix(in srgb, var(--premium-gold-glow) 82%, transparent 18%),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold) 24%, transparent 76%),
+    0 0 0 3px color-mix(in srgb, var(--premium-gold-strong) 22%, transparent 78%);
+}
+
+:root[data-popup-theme="light"] .popup-premium-view__activate {
+  color: color-mix(in srgb, #7c5418 78%, #2d2217 22%);
+}
+
+.premium-lock-banner {
+  display: grid;
+  gap: 10px;
+  padding: 12px 13px;
+  border: 1px solid color-mix(in srgb, var(--premium-gold) 36%, transparent 64%);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold) 12%, transparent 88%), transparent),
+    color-mix(in srgb, var(--panel-bg) 92%, var(--premium-gold) 8%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--premium-gold-glow) 32%, transparent 68%);
+}
+
+.premium-lock-banner__copy {
+  display: grid;
+  gap: 6px;
+}
+
+.premium-lock-banner__eyebrow {
+  margin: 0;
+  color: var(--premium-gold-strong);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.premium-lock-banner__detail {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.premium-lock-banner__button {
+  justify-self: start;
+}
+
+.quality-protector.is-premium-locked .quality-protector__modes,
+.advanced-settings.is-premium-locked .advanced-presets,
+.advanced-settings.is-premium-locked .advanced-control-grid,
+.volume-normalization.is-premium-locked .volume-normalization__modes,
+.volume-normalization.is-premium-locked .volume-normalization__target-control,
+.volume-normalization.is-premium-locked .volume-normalization__meter {
+  opacity: 0.76;
+}
+
+.ghost-button--lane.is-premium-locked {
+  border-color: color-mix(in srgb, var(--premium-gold) 38%, transparent 62%);
+  box-shadow:
+    var(--lane-button-shadow),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold-glow) 42%, transparent 58%);
+}
+
+.ghost-button--lane.is-premium-locked .ghost-button--lane__action {
+  color: var(--premium-gold-strong);
+}

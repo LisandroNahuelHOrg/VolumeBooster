@@ -47,6 +47,7 @@ export async function assertPersistedSettingsAreSanitized(): Promise<void> {
     },
     autoBoosterMode: "global",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "light"
+    popupTheme: "light",
+    premiumLicenseActivation: null
   });
 }

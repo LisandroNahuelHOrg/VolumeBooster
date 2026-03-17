@@ -18,6 +18,8 @@ export function createPopupRuntimeState(): PopupRuntimeState {
     loadedLocale: null,
     pendingAdvancedAudioSettings: null,
     pendingGainPercent: null,
+    premiumEmailDraft: "",
+    premiumLicenseDraft: "",
     popupDomRuntime: {
       activeHelpTooltipAnchor: null,
       tooltipRefreshFrame: null,

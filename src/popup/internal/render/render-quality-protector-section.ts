@@ -4,12 +4,14 @@ import { renderTelemetryPillLabel } from "./render-telemetry-pill-label";
 import { escapeHtml } from "../util/escape-html";
 import { translate } from "../../../shared/runtime-i18n";
 import type { PopupMainViewRenderModel } from "./popup-render-types";
+import { renderPremiumLockBanner } from "./render-premium-lock-banner";
 
 export function renderQualityProtectorSection(
   model: Pick<
     PopupMainViewRenderModel,
     | "catalog"
     | "controlsLocked"
+    | "qualityProtectorLocked"
     | "advancedAudioSettings"
     | "qualityProtectorModeLabel"
     | "qualityProtectorSubtitle"
@@ -33,9 +35,10 @@ export function renderQualityProtectorSection(
   ] as const;
 
   return `
-    <section class="quality-protector">
+    <section class="quality-protector ${model.qualityProtectorLocked ? "is-premium-locked" : ""}" data-premium-locked="${model.qualityProtectorLocked}">
       <div class="quality-protector__top"><div class="quality-protector__header"><div class="quality-protector__copy"><span class="slider-label">${escapeHtml(translate(model.catalog, "qualityProtectorTitle"))}</span><strong data-role="quality-protector-mode-value">${escapeHtml(model.qualityProtectorModeLabel)}</strong><p data-role="quality-protector-subtitle">${escapeHtml(model.qualityProtectorSubtitle)}</p></div></div></div>
       <div class="quality-protector__body">
+        ${model.qualityProtectorLocked ? renderPremiumLockBanner(model.catalog) : ""}
         <div class="quality-protector__modes">
           ${QUALITY_PROTECTOR_VALUES.map((mode) => `<button class="ghost-button ghost-button--protector ${model.advancedAudioSettings.qualityProtectorMode === mode ? "is-active" : ""}" data-quality-protector="${mode}" type="button" ${model.controlsLocked ? "disabled" : ""}><span class="ghost-button__label ghost-button__label--compact">${escapeHtml(getQualityProtectorButtonCopy(mode, model.catalog))}</span></button>`).join("")}
         </div>

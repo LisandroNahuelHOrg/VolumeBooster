@@ -1,3 +1,5 @@
+import { DEFAULT_PREMIUM_ENTITLEMENT_STATE } from "../../shared/premium-license";
+import { PremiumTrialRepository } from "../../shared/premium-trial";
 import { SessionBoostRepository } from "../../shared/session-boost";
 import { SettingsRepository } from "../../shared/storage";
 import { createAutoBoosterClient } from "../auto-booster-client";
@@ -9,6 +11,7 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps = {}): WorkerRuntime
   return {
     offscreenClient: deps.offscreenClient ?? createOffscreenClient(),
     settingsRepository: deps.settingsRepository ?? new SettingsRepository(),
+    premiumTrialRepository: deps.premiumTrialRepository ?? new PremiumTrialRepository(),
     sessionBoostRepository: deps.sessionBoostRepository ?? new SessionBoostRepository(),
     now: deps.now ?? (() => Date.now()),
     autoBoosterClient: deps.autoBoosterClient ?? createAutoBoosterClient(),
@@ -24,6 +27,8 @@ export function createWorkerRuntime(deps: WorkerRuntimeDeps = {}): WorkerRuntime
     audibleTabs: new Map(),
     badgePulseTimer: null,
     badgePulseHighlighted: false,
-    autoBoosterMode: "off"
+    autoBoosterMode: "off",
+    premiumTrialRecord: null,
+    premiumEntitlement: DEFAULT_PREMIUM_ENTITLEMENT_STATE
   };
 }

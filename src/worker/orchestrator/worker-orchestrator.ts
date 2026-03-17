@@ -7,6 +7,7 @@ import type {
 import { attachTestInternals } from "./attach-test-internals";
 import { createWorkerRuntime } from "./create-worker-runtime";
 import { bootstrap } from "./lifecycle/bootstrap";
+import { handleAlarm } from "./lifecycle/handle-alarm";
 import { handleBackgroundEvent } from "./lifecycle/handle-background-event";
 import { handleCaptureStatusChanged } from "./lifecycle/handle-capture-status-changed";
 import { handlePopupCommand } from "./lifecycle/handle-popup-command";
@@ -48,6 +49,10 @@ export class WorkerOrchestrator {
 
   async handleBackgroundEvent(incomingMessage: unknown, sender?: chrome.runtime.MessageSender): Promise<void> {
     await handleBackgroundEvent(this.runtime, incomingMessage, sender);
+  }
+
+  async handleAlarm(alarm: chrome.alarms.Alarm): Promise<void> {
+    await handleAlarm(this.runtime, alarm);
   }
 
   async handleTabUpdated(

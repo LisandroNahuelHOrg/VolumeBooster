@@ -25,7 +25,8 @@ export async function assertDomainGainIsClampedBeforeStorage(): Promise<void> {
     },
     autoBoosterMode: "off",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "dark"
+    popupTheme: "dark",
+    premiumLicenseActivation: null
   });
 
   await expect(repository.getDomainGain("kick.com")).resolves.toBeUndefined();

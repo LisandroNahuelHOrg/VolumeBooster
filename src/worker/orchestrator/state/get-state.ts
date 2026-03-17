@@ -1,7 +1,9 @@
 import { buildTabSummary, getDomainFromUrl } from "../../../shared/domain";
+import { sanitizeBoostSettingsBundleForEntitlement } from "../../../shared/premium-license";
 import type { WorkerState } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
 import { syncFromOffscreen } from "../manual/sync-from-offscreen";
+import { resolveWorkerPremiumEntitlement } from "../premium/resolve-worker-premium-entitlement";
 import { getSessionBoostPromptState } from "../session-boost/get-session-boost-prompt-state";
 import { hasStoredSiteBoostSettings } from "../session-boost/has-stored-site-boost-settings";
 import { resolveEffectiveBoostSettingsBundle } from "../session-boost/resolve-effective-boost-settings-bundle";
@@ -12,7 +14,11 @@ export async function getState(runtime: WorkerRuntimeState): Promise<WorkerState
   const sessionBoostState = await runtime.sessionBoostRepository.getState();
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const activeDomain = getDomainFromUrl(activeTab?.url);
-  const boostSettingsBundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, activeDomain);
+  const premiumEntitlement = await resolveWorkerPremiumEntitlement(runtime);
+  const boostSettingsBundle = sanitizeBoostSettingsBundleForEntitlement(
+    resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, activeDomain),
+    premiumEntitlement
+  );
   const activeSession = activeTab?.id ? runtime.sessions.get(activeTab.id) : undefined;
   const autoTabState = activeTab?.id ? runtime.autoTabStates.get(activeTab.id) : undefined;
   const currentTab =
@@ -48,6 +54,7 @@ export async function getState(runtime: WorkerRuntimeState): Promise<WorkerState
     boostSettingsBundle,
     globalAutoGainPercent: settings.globalAutoGainPercent,
     hasGlobalPermission,
+    premiumEntitlement,
     sessionBoostPromptState: getSessionBoostPromptState(sessionBoostState),
     sessions: [...runtime.sessions.values()],
     generatedAt: runtime.now()

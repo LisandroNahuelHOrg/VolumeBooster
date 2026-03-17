@@ -12,9 +12,12 @@ export function createPopupRenderContext(args: {
   loadedLocale: string | null;
   popupTheme: PopupTheme;
   currentView: PopupView;
+  isLifetimePremiumActive: boolean;
   draftGainPercent: number;
   draftAdvancedAudioSettings: AdvancedAudioSettings | null;
   pendingAdvancedAudioSettings: AdvancedAudioSettings | null;
+  premiumEmailDraft: string;
+  premiumLicenseDraft: string;
   transientError: LocalizedMessage | null;
 }): PopupRenderContext {
   return {
@@ -22,9 +25,12 @@ export function createPopupRenderContext(args: {
     loadedLocale: args.loadedLocale,
     popupTheme: args.popupTheme,
     currentView: args.currentView,
+    isLifetimePremiumActive: args.isLifetimePremiumActive,
     draftGainPercent: args.draftGainPercent,
     draftAdvancedAudioSettings: args.draftAdvancedAudioSettings,
     pendingAdvancedAudioSettings: args.pendingAdvancedAudioSettings,
+    premiumEmailDraft: args.premiumEmailDraft,
+    premiumLicenseDraft: args.premiumLicenseDraft,
     transientError: args.transientError
   };
 }

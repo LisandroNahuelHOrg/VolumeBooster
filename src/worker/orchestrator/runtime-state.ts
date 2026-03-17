@@ -1,4 +1,6 @@
 import type { SettingsRepository } from "../../shared/storage";
+import type { PremiumEntitlementState } from "../../shared/premium-license";
+import type { PremiumTrialRepository, PersistedPremiumTrialRecord } from "../../shared/premium-trial";
 import type { SessionBoostRepository } from "../../shared/session-boost";
 import type {
   AutoBoosterMode,
@@ -20,6 +22,7 @@ export type AutoDebugStateSnapshot = WorkerAutoDebugStateSnapshot;
 export interface WorkerRuntimeState {
   offscreenClient: OffscreenClient;
   settingsRepository: SettingsRepository;
+  premiumTrialRepository: PremiumTrialRepository;
   sessionBoostRepository: SessionBoostRepository;
   now: () => number;
   autoBoosterClient: AutoBoosterClient;
@@ -36,11 +39,14 @@ export interface WorkerRuntimeState {
   badgePulseTimer: ReturnType<typeof globalThis.setInterval> | null;
   badgePulseHighlighted: boolean;
   autoBoosterMode: AutoBoosterMode;
+  premiumTrialRecord: PersistedPremiumTrialRecord | null;
+  premiumEntitlement: PremiumEntitlementState;
 }
 
 export interface WorkerRuntimeDeps {
   offscreenClient?: OffscreenClient;
   settingsRepository?: SettingsRepository;
+  premiumTrialRepository?: PremiumTrialRepository;
   sessionBoostRepository?: SessionBoostRepository;
   now?: () => number;
   autoBoosterClient?: AutoBoosterClient;

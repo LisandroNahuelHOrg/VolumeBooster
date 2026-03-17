@@ -11,9 +11,12 @@ export function makePopupRenderContext(
     loadedLocale: "en",
     popupTheme: "dark",
     currentView: "main",
+    isLifetimePremiumActive: false,
     draftGainPercent: 100,
     draftAdvancedAudioSettings: null,
     pendingAdvancedAudioSettings: { ...DEFAULT_ADVANCED_AUDIO_SETTINGS },
+    premiumEmailDraft: "",
+    premiumLicenseDraft: "",
     transientError: null,
     ...overrides
   };

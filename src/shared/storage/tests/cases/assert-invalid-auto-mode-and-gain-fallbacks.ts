@@ -31,6 +31,7 @@ export async function assertInvalidAutoModeAndGainFallbacks(): Promise<void> {
     },
     autoBoosterMode: "off",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "dark"
+    popupTheme: "dark",
+    premiumLicenseActivation: null
   });
 }

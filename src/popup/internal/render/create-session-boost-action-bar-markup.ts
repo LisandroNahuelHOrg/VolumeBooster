@@ -1,3 +1,4 @@
+import { resolvePremiumFeatureAccess } from "../../../shared/premium-license";
 import { translate } from "../../../shared/runtime-i18n";
 import type { PopupViewModel } from "../../../shared/types";
 import { renderSessionBoostActionBar } from "../../render-session-boost-action-bar";
@@ -13,12 +14,24 @@ export function createSessionBoostActionBarMarkup(
     return "";
   }
 
+  const access = resolvePremiumFeatureAccess(viewModel.premiumEntitlement);
+
   return renderSessionBoostActionBar({
     visible: false,
     siteApplyLabel: translate(renderContext.catalog, "sessionBoostApplySite"),
-    allSitesApplyLabel: translate(renderContext.catalog, "sessionBoostApplyAllSites"),
+    allSitesApplyLabel: translate(
+      renderContext.catalog,
+      access.globalSessionBoostLocked
+        ? "sessionBoostApplyAllSitesLocked"
+        : "sessionBoostApplyAllSites"
+    ),
     siteResetLabel: translate(renderContext.catalog, "sessionBoostResetSite"),
-    allSitesResetLabel: translate(renderContext.catalog, "sessionBoostResetAllSites"),
+    allSitesResetLabel: translate(
+      renderContext.catalog,
+      access.globalSessionBoostLocked
+        ? "sessionBoostResetAllSitesLocked"
+        : "sessionBoostResetAllSites"
+    ),
     dismissLabel: translate(renderContext.catalog, "sessionBoostDismiss"),
     siteIconMarkup: renderSiteFavicon(viewModel.currentTab.title, viewModel.currentTab.domain, "small"),
     allSitesIconMarkup: renderLaneButtonIcon("all-sites")

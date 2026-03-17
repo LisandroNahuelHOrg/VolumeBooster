@@ -12,7 +12,7 @@ export type PopupToolbarIconKey = "crown" | "sun" | "moon" | "settings_future";
 
 /** Declarative descriptor used to render a popup toolbar button. */
 export interface PopupToolbarItem {
-  action: "premium-mock" | "toggle-popup-theme" | "open-popup-settings";
+  action: "open-popup-premium" | "toggle-popup-theme" | "open-popup-settings";
   icon: PopupToolbarIconKey;
   label: string;
   visibleLabel?: string;
@@ -40,19 +40,23 @@ export const POPUP_TOOLBAR_ICON_MARKUP: Record<PopupToolbarIconKey, string> = {
 export function getPopupToolbarItems(
   popupTheme: PopupTheme,
   currentView: PopupView,
-  catalog: UiCatalog
+  catalog: UiCatalog,
+  isLifetimePremiumActive = false
 ): PopupToolbarItem[] {
   const isLightTheme = popupTheme === "light";
 
   return [
     {
-      action: "premium-mock",
+      action: "open-popup-premium",
       icon: "crown",
-      label: translate(catalog, "popupToolbarPremiumLabel"),
-      visibleLabel: translate(catalog, "popupToolbarPremiumLabel"),
-      title: translate(catalog, "popupToolbarPremiumComingSoon"),
-      isActive: false,
-      isInert: true
+      label: translate(catalog, isLifetimePremiumActive ? "popupToolbarPremiumActiveLabel" : "popupToolbarPremiumLabel"),
+      visibleLabel: translate(
+        catalog,
+        isLifetimePremiumActive ? "popupToolbarPremiumActiveLabel" : "popupToolbarPremiumLabel"
+      ),
+      title: translate(catalog, "popupToolbarPremiumTitle"),
+      isActive: currentView === "premium",
+      isInert: false
     },
     {
       action: "toggle-popup-theme",

@@ -11,7 +11,8 @@ export function renderPopupToolbar(renderContext: PopupRenderContext): string {
   const items = getPopupToolbarItems(
     renderContext.popupTheme,
     renderContext.currentView,
-    renderContext.catalog
+    renderContext.catalog,
+    renderContext.isLifetimePremiumActive
   );
 
   return `

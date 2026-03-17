@@ -1,15 +1,15 @@
 import { getPopupToolbarItems, POPUP_TOOLBAR_ICON_MARKUP } from "./popup-toolbar";
 
 describe("popup-toolbar", () => {
-  it("keeps premium inert and renders settings as a present toolbar action", () => {
+  it("renders a live premium action and keeps settings as a present toolbar action", () => {
     const items = getPopupToolbarItems("dark", "main", {} as never);
 
     expect(items).toHaveLength(3);
     expect(items[0]).toMatchObject({
-      action: "premium-mock",
+      action: "open-popup-premium",
       icon: "crown",
       visibleLabel: "Get Premium",
-      isInert: true
+      isInert: false
     });
     expect(items[1]?.visibleLabel).toBeUndefined();
     expect(items[2]?.visibleLabel).toBeUndefined();
@@ -18,6 +18,15 @@ describe("popup-toolbar", () => {
       icon: "settings_future",
       isInert: false,
       isActive: false
+    });
+  });
+
+  it("switches the premium label once lifetime premium is active", () => {
+    const items = getPopupToolbarItems("dark", "main", {} as never, true);
+
+    expect(items[0]).toMatchObject({
+      visibleLabel: "Premium Activated",
+      label: "Premium Activated"
     });
   });
 
@@ -34,6 +43,12 @@ describe("popup-toolbar", () => {
     const items = getPopupToolbarItems("dark", "settings", {} as never);
 
     expect(items[2].isActive).toBe(true);
+  });
+
+  it("marks premium as active when the premium activation view is open", () => {
+    const items = getPopupToolbarItems("dark", "premium", {} as never);
+
+    expect(items[0].isActive).toBe(true);
   });
 
   it("keeps stroked toolbar icons unfilled so light mode buttons stay clean", () => {

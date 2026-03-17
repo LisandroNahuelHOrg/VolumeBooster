@@ -6,7 +6,7 @@
 import type { PopupTheme } from "../shared/types";
 
 /** Internal popup views rendered inside the extension action surface. */
-export type PopupView = "main" | "settings";
+export type PopupView = "main" | "premium" | "settings";
 
 /** Minimal persistence surface required by popup theme state helpers. */
 export interface PopupThemePersistence {

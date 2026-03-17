@@ -13,6 +13,7 @@ test("renders the volume normalization card with modes, target slider, meter, an
       volumeNormalizationTargetPercent: 108
     },
     controlsLocked: false,
+    volumeNormalizationLocked: false,
     volumeNormalizationModeLabel: "Speech",
     volumeNormalizationSubtitle: "Boost quiet voices and steady uneven streams.",
     normalizationCorrection: "+3.2 dB",

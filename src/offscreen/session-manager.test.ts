@@ -273,7 +273,12 @@ describe("OffscreenSessionManager", () => {
         clipEvents: 3,
         clipPeak: 1.12,
         protectionBypassed: true,
-        outputPeak: 0.79
+        outputPeak: 0.79,
+        normalizationInputLoudnessDb: null,
+        normalizationAppliedGainDb: 0,
+        normalizationOffsetScore: 0,
+        normalizationAction: "holding",
+        normalizationLoadPercent: 0
       }
     });
   });

@@ -255,6 +255,26 @@
     "message": "Unable to get the current extension state.",
     "description": "User-facing error copy surfaced in the popup, toast, or extension runtime when this failure occurs: \"Unable to get the current extension state.\"."
   },
+  "errorPremiumLicenseEmailRequired": {
+    "message": "Enter the email used for your premium purchase.",
+    "description": "Shown when the user attempts to activate premium without typing the email linked to the purchase."
+  },
+  "errorPremiumLicenseInvalid": {
+    "message": "That premium license is invalid for this email.",
+    "description": "Shown when the typed premium license does not validate for the supplied email."
+  },
+  "errorPremiumLicenseKeyRequired": {
+    "message": "Paste your premium license before activating.",
+    "description": "Shown when the user attempts to activate premium without providing a license key."
+  },
+  "errorPremiumLicenseUnsupported": {
+    "message": "This premium license format is not supported by this extension build.",
+    "description": "Shown when the typed premium license belongs to another product code or another unsupported license format."
+  },
+  "errorPremiumFeatureLocked": {
+    "message": "This control is part of premium. Open Premium to unlock it.",
+    "description": "Shown when a free user tries to use a premium-only control."
+  },
   "errorNoRunningSession": {
     "message": "No running session was found for that tab.",
     "description": "User-facing error copy surfaced in the popup, toast, or extension runtime when this failure occurs: \"No running session was found for that tab.\"."
@@ -641,9 +661,165 @@
     "message": "Get Premium",
     "description": "Visible CTA text and accessible label used by the top popup toolbar button reserved for the future premium flow."
   },
+  "popupToolbarPremiumActiveLabel": {
+    "message": "Premium Activated",
+    "description": "Visible CTA copy shown in the popup toolbar when lifetime premium is already active."
+  },
+  "popupToolbarPremiumTitle": {
+    "message": "Activate or manage your lifetime premium license.",
+    "description": "Tooltip and accessibility copy shown for the live premium activation button in the popup toolbar."
+  },
   "popupToolbarRegionLabel": {
     "message": "Popup quick actions",
     "description": "Accessible region label for the sticky top toolbar inside the popup."
+  },
+  "popupPremiumActivateLabel": {
+    "message": "Activate PREMIUM lifetime",
+    "description": "Primary button label used to validate and store the pasted premium license."
+  },
+  "popupPremiumActivationDetail": {
+    "message": "Paste the license you received after purchase. The extension validates it locally and keeps premium unlocked on this browser.",
+    "description": "Supporting copy shown above the premium activation form."
+  },
+  "popupPremiumActivationHeading": {
+    "message": "Unlock premium with your license",
+    "description": "Heading shown inside the premium activation card."
+  },
+  "popupPremiumActivationTitle": {
+    "message": "Activation",
+    "description": "Eyebrow label shown above the premium activation form."
+  },
+  "popupPremiumBackLabel": {
+    "message": "Back",
+    "description": "Back button label used to return from the premium activation view to the main popup dashboard."
+  },
+  "popupPremiumClearLabel": {
+    "message": "Remove stored license",
+    "description": "Secondary button used to clear the currently stored premium license from the extension."
+  },
+  "popupPremiumEmailLabel": {
+    "message": "Purchase email",
+    "description": "Label shown above the email field in the premium activation form."
+  },
+  "popupPremiumEmailPlaceholder": {
+    "message": "name@example.com",
+    "description": "Placeholder shown inside the premium activation email field."
+  },
+  "popupPremiumEyebrow": {
+    "message": "Premium",
+    "description": "Small eyebrow label shown at the top of the popup premium view."
+  },
+  "popupPremiumLicenseLabel": {
+    "message": "Lifetime license",
+    "description": "Label shown above the multiline premium license input field."
+  },
+  "popupPremiumLicensePlaceholder": {
+    "message": "Paste your offline license here",
+    "description": "Placeholder shown inside the premium license textarea."
+  },
+  "popupPremiumSeatLabel": {
+    "message": "Seat",
+    "description": "Label used to display the activated seat number for the stored premium license."
+  },
+  "popupPremiumStatusActive": {
+    "message": "Premium lifetime is active",
+    "description": "Status title shown when the stored premium license is valid."
+  },
+  "popupPremiumStatusActiveDetail": {
+    "message": "All premium features remain unlocked on this browser with your stored lifetime license.",
+    "description": "Supporting copy shown when a valid premium license is active."
+  },
+  "popupPremiumStatusTrial": {
+    "message": "Your 30-day premium trial is active",
+    "description": "Status title shown when premium is unlocked by the install trial."
+  },
+  "popupPremiumStatusTrialDetail": {
+    "message": "All premium features stay unlocked until the trial ends on this browser or you activate a lifetime license.",
+    "description": "Supporting copy shown when the user is inside the 30-day premium trial."
+  },
+  "popupPremiumStatusFree": {
+    "message": "Premium is not active yet",
+    "description": "Status title shown when no valid premium license is stored."
+  },
+  "popupPremiumStatusFreeDetail": {
+    "message": "Enter your purchase email and license to unlock the full premium toolset offline.",
+    "description": "Supporting copy shown when premium is still inactive."
+  },
+  "popupPremiumStatusExpired": {
+    "message": "Trial expired. Free mode is active",
+    "description": "Status title shown when the trial already ended and no valid premium license is stored."
+  },
+  "popupPremiumStatusExpiredDetail": {
+    "message": "The 30-day premium trial already ended on this browser. Enter a lifetime license to unlock premium again.",
+    "description": "Supporting copy shown when the user falls back to freemium after the trial ends."
+  },
+  "popupPremiumStatusInvalid": {
+    "message": "Stored premium license is invalid",
+    "description": "Status title shown when a stored premium license no longer validates."
+  },
+  "popupPremiumStatusInvalidDetail": {
+    "message": "The stored license no longer validates for this browser or email. Premium stays locked unless your trial is still active.",
+    "description": "Supporting copy shown when a stored premium license is invalid."
+  },
+  "popupPremiumStatusTitle": {
+    "message": "Current status",
+    "description": "Eyebrow label shown above the premium status summary card."
+  },
+  "popupPremiumStoredEmailEmpty": {
+    "message": "No stored email",
+    "description": "Fallback value shown when the extension has no stored premium email."
+  },
+  "popupPremiumStoredEmailLabel": {
+    "message": "Stored email",
+    "description": "Label shown for the stored premium email in the premium status card."
+  },
+  "popupPremiumStoredLicenseStatusLabel": {
+    "message": "Stored license",
+    "description": "Label shown for the stored license validity state in the premium status card."
+  },
+  "popupPremiumStoredLicenseNone": {
+    "message": "None",
+    "description": "Value shown when there is no stored premium license."
+  },
+  "popupPremiumStoredLicenseValid": {
+    "message": "Valid",
+    "description": "Value shown when the stored premium license validates correctly."
+  },
+  "popupPremiumStoredLicenseInvalid": {
+    "message": "Invalid",
+    "description": "Value shown when the stored premium license exists but is invalid."
+  },
+  "popupPremiumStoredLicenseInvalidNotice": {
+    "message": "A stored premium license was found, but it is invalid. Trial access may still keep premium unlocked until it expires.",
+    "description": "Warning shown inside the premium view when an invalid stored license exists."
+  },
+  "popupPremiumStoredTrialEndsLabel": {
+    "message": "Trial ends",
+    "description": "Label shown for the local premium trial expiration date."
+  },
+  "popupPremiumStoredTrialDaysLabel": {
+    "message": "Days left",
+    "description": "Label shown for the remaining premium trial day count."
+  },
+  "popupPremiumSubtitle": {
+    "message": "Manage the offline lifetime license that unlocks the premium controls inside Prism.",
+    "description": "Supporting copy shown under the premium view title."
+  },
+  "popupPremiumTitle": {
+    "message": "Lifetime premium activation",
+    "description": "Main title shown in the popup premium activation view."
+  },
+  "premiumFeatureLockedLabel": {
+    "message": "Premium feature",
+    "description": "Eyebrow shown in lock banners for premium-only controls."
+  },
+  "premiumFeatureLockedDetail": {
+    "message": "Unlock lifetime premium or use your remaining trial time to use this control.",
+    "description": "Supporting copy shown in lock banners for premium-only controls."
+  },
+  "premiumFeatureLockedShort": {
+    "message": "Premium required",
+    "description": "Compact subtitle shown on locked premium CTA surfaces."
   },
   "popupToolbarSettingsLabel": {
     "message": "Open popup settings",
@@ -911,6 +1087,10 @@
     "message": "Apply these settings on all sites",
     "description": "Visible CTA in the popup session boost action bar that saves the current temporary boost bundle globally for every site."
   },
+  "sessionBoostApplyAllSitesLocked": {
+    "message": "Unlock premium to apply on all sites",
+    "description": "Visible CTA shown when the all-sites apply action is locked behind premium."
+  },
   "sessionBoostApplySite": {
     "message": "Apply these settings only on this site",
     "description": "Visible CTA in the popup session boost action bar that saves the current temporary boost bundle only for the current site."
@@ -922,6 +1102,10 @@
   "sessionBoostResetAllSites": {
     "message": "Reset defaults on all sites",
     "description": "Visible CTA in the popup session boost action bar that restores the default boost bundle globally for every site."
+  },
+  "sessionBoostResetAllSitesLocked": {
+    "message": "Unlock premium to reset all sites",
+    "description": "Visible CTA shown when the all-sites reset action is locked behind premium."
   },
   "sessionBoostResetSite": {
     "message": "Reset defaults on this site",

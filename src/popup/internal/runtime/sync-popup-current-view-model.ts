@@ -15,18 +15,25 @@ export function syncPopupCurrentViewModel(
     return;
   }
 
+  const viewModel = buildPopupViewModel(state.currentState);
+  const isLifetimePremiumActive =
+    viewModel.premiumEntitlement.status === "active" && viewModel.premiumEntitlement.source === "license";
+
   syncPopupDynamicUi(
     refs.rootElement,
     createPopupDynamicUiModel({
-      viewModel: buildPopupViewModel(state.currentState),
+      viewModel,
       renderContext: createPopupRenderContext({
         catalog: state.currentCatalog,
         loadedLocale: state.loadedLocale,
         popupTheme: state.popupUiState.popupTheme,
         currentView: state.popupUiState.currentView,
+        isLifetimePremiumActive,
         draftGainPercent: state.draftGainPercent,
         draftAdvancedAudioSettings: state.draftAdvancedAudioSettings,
         pendingAdvancedAudioSettings: state.pendingAdvancedAudioSettings,
+        premiumEmailDraft: state.premiumEmailDraft,
+        premiumLicenseDraft: state.premiumLicenseDraft,
         transientError: state.transientError
       }),
       sessionBoostAcknowledgedAction: state.sessionBoostAcknowledgedAction,

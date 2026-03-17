@@ -5,6 +5,7 @@ import { escapeHtml } from "../util/escape-html";
 import { renderTelemetryPillLabel } from "./render-telemetry-pill-label";
 import { renderNormalizationTargetControl } from "./render-normalization-target-control";
 import type { PopupMainViewRenderModel } from "./popup-render-types";
+import { renderPremiumLockBanner } from "./render-premium-lock-banner";
 
 export function renderVolumeNormalizationSection(
   model: Pick<
@@ -12,6 +13,7 @@ export function renderVolumeNormalizationSection(
     | "advancedAudioSettings"
     | "catalog"
     | "controlsLocked"
+    | "volumeNormalizationLocked"
     | "normalizationAction"
     | "normalizationCorrection"
     | "normalizationLoad"
@@ -21,6 +23,7 @@ export function renderVolumeNormalizationSection(
     | "volumeNormalizationSubtitle"
   >
 ): string {
+  const controlsDisabled = model.controlsLocked || model.volumeNormalizationLocked;
   const telemetry = [
     [
       "normalization-correction-pill",
@@ -49,7 +52,7 @@ export function renderVolumeNormalizationSection(
   ] as const;
 
   return `
-    <section class="advanced-settings advanced-settings--expanded volume-normalization" data-role="volume-normalization">
+    <section class="advanced-settings advanced-settings--expanded volume-normalization ${model.volumeNormalizationLocked ? "is-premium-locked" : ""}" data-premium-locked="${model.volumeNormalizationLocked}" data-role="volume-normalization">
       <div class="advanced-settings__summary advanced-settings__summary--static">
         <div class="advanced-settings__headline">
           <span class="advanced-settings__eyebrow">${escapeHtml(translate(model.catalog, "volumeNormalizationTitle"))}</span>
@@ -58,13 +61,14 @@ export function renderVolumeNormalizationSection(
         </div>
       </div>
       <div class="advanced-settings__body">
+        ${model.volumeNormalizationLocked ? renderPremiumLockBanner(model.catalog) : ""}
         <div class="volume-normalization__modes">
-          ${VOLUME_NORMALIZATION_VALUES.map((mode) => `<button class="ghost-button ghost-button--soft ${model.advancedAudioSettings.volumeNormalizationMode === mode ? "is-active" : ""}" data-volume-normalization="${mode}" type="button" ${model.controlsLocked ? "disabled" : ""}><span class="ghost-button__label ghost-button__label--compact">${escapeHtml(getVolumeNormalizationButtonCopy(mode, model.catalog))}</span></button>`).join("")}
+          ${VOLUME_NORMALIZATION_VALUES.map((mode) => `<button class="ghost-button ghost-button--soft ${model.advancedAudioSettings.volumeNormalizationMode === mode ? "is-active" : ""}" data-volume-normalization="${mode}" type="button" ${controlsDisabled ? "disabled" : ""}><span class="ghost-button__label ghost-button__label--compact">${escapeHtml(getVolumeNormalizationButtonCopy(mode, model.catalog))}</span></button>`).join("")}
         </div>
         ${renderNormalizationTargetControl(
           model.advancedAudioSettings.volumeNormalizationTargetPercent,
           model.catalog,
-          model.controlsLocked
+          controlsDisabled
         )}
         <div class="volume-normalization__meter">
           <div class="volume-normalization__meter-meta">

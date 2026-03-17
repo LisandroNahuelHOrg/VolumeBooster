@@ -20,6 +20,15 @@ export const handleSessionTelemetry = (
   currentSession.state.clipPeak = payload.metrics.clipPeak;
   currentSession.state.protectionBypassed = payload.metrics.protectionBypassed;
   currentSession.state.outputPeak = payload.metrics.outputPeak;
+  currentSession.state.normalizationInputLoudnessDb =
+    payload.metrics.normalizationInputLoudnessDb;
+  currentSession.state.normalizationAppliedGainDb =
+    payload.metrics.normalizationAppliedGainDb;
+  currentSession.state.normalizationOffsetScore =
+    payload.metrics.normalizationOffsetScore;
+  currentSession.state.normalizationAction = payload.metrics.normalizationAction;
+  currentSession.state.normalizationLoadPercent =
+    payload.metrics.normalizationLoadPercent;
   postRuntimeMessage({
     type: "SESSION_LEVEL_UPDATE",
     payload: {
@@ -30,7 +39,12 @@ export const handleSessionTelemetry = (
       clipEvents: payload.metrics.clipEvents,
       clipPeak: payload.metrics.clipPeak,
       protectionBypassed: payload.metrics.protectionBypassed,
-      outputPeak: payload.metrics.outputPeak
+      outputPeak: payload.metrics.outputPeak,
+      normalizationInputLoudnessDb: payload.metrics.normalizationInputLoudnessDb,
+      normalizationAppliedGainDb: payload.metrics.normalizationAppliedGainDb,
+      normalizationOffsetScore: payload.metrics.normalizationOffsetScore,
+      normalizationAction: payload.metrics.normalizationAction,
+      normalizationLoadPercent: payload.metrics.normalizationLoadPercent
     }
   });
 };

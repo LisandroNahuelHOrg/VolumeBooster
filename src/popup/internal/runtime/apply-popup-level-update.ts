@@ -19,5 +19,10 @@ export function applyPopupLevelUpdate(
   session.clipPeak = payload.clipPeak;
   session.protectionBypassed = payload.protectionBypassed;
   session.outputPeak = payload.outputPeak;
+  session.normalizationInputLoudnessDb = payload.normalizationInputLoudnessDb;
+  session.normalizationAppliedGainDb = payload.normalizationAppliedGainDb;
+  session.normalizationOffsetScore = payload.normalizationOffsetScore;
+  session.normalizationAction = payload.normalizationAction;
+  session.normalizationLoadPercent = payload.normalizationLoadPercent;
   return true;
 }

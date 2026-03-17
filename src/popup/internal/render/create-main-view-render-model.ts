@@ -13,9 +13,9 @@ import { formatProtectionLoad } from "../format/format-protection-load";
 import { getClippingSafetyAlert } from "../format/get-clipping-safety-alert";
 import { getVisibleAdvancedAudioSettings } from "../state/get-visible-advanced-audio-settings";
 import { getLaneStatus } from "../status/get-lane-status";
-import { globalBoosterButtonAction } from "../status/global-booster-button-action";
 import { isGlobalAutoEnabled } from "../status/is-global-auto-enabled";
 import { isSiteAutoEnabled } from "../status/is-site-auto-enabled";
+import { createPremiumAccessRenderFields } from "./create-premium-access-render-fields";
 import { createSessionBoostActionBarMarkup } from "./create-session-boost-action-bar-markup";
 import { createVolumeNormalizationRenderFields } from "./create-volume-normalization-render-fields";
 import type { PopupMainViewRenderResult, PopupRenderContext } from "./popup-render-types";
@@ -51,6 +51,7 @@ export function createMainViewRenderModel(
     advancedAudioSettings.volumeNormalizationMode,
     renderContext
   );
+  const premiumAccessRenderFields = createPremiumAccessRenderFields(viewModel, renderContext.catalog);
 
   return {
     model: {
@@ -69,6 +70,10 @@ export function createMainViewRenderModel(
       laneStatus: getLaneStatus(viewModel, renderContext.catalog),
       siteAutoEnabled: isSiteAutoEnabled(viewModel),
       globalAutoEnabled: isGlobalAutoEnabled(viewModel),
+      advancedSettingsLocked: premiumAccessRenderFields.advancedSettingsLocked,
+      qualityProtectorLocked: premiumAccessRenderFields.qualityProtectorLocked,
+      volumeNormalizationLocked: premiumAccessRenderFields.volumeNormalizationLocked,
+      globalAutoLocked: premiumAccessRenderFields.globalAutoLocked,
       sessionBoostVisible: sessionBoostBarState.visible,
       sessionBoostActionBarMarkup: createSessionBoostActionBarMarkup(viewModel, renderContext),
       siteLaneButtonCopy: getLaneButtonCopy(
@@ -76,12 +81,8 @@ export function createMainViewRenderModel(
         isSiteAutoEnabled(viewModel),
         renderContext.catalog
       ),
-      globalLaneButtonCopy: getLaneButtonCopy(
-        "all-sites",
-        isGlobalAutoEnabled(viewModel),
-        renderContext.catalog
-      ),
-      globalAutoAction: globalBoosterButtonAction(viewModel),
+      globalLaneButtonCopy: premiumAccessRenderFields.globalLaneButtonCopy,
+      globalAutoAction: premiumAccessRenderFields.globalAutoAction,
       controlsLocked: !currentTab,
       protectionBypassed,
       qualityProtectorModeLabel: getQualityProtectorModeCopy(

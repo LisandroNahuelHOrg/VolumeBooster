@@ -8,6 +8,15 @@ import { getFixedNow } from "./get-fixed-now";
 export function createTestRuntime(now = 1) {
   const storage = new SettingsRepository(createMemoryStorage().area);
   const sessionBoostRepository = new SessionBoostRepository(createMemoryStorage().area);
+  const premiumTrialRepository = {
+    ensureTrialRecord: vi.fn().mockResolvedValue({
+      version: 1 as const,
+      firstInstalledAt: "2026-03-01T00:00:00.000Z",
+      trialEndsAt: "2026-03-31T00:00:00.000Z",
+      trialConsumed: false,
+      lastSeenAt: "2026-03-16T00:00:00.000Z"
+    })
+  };
   const offscreenClient = {
     getSnapshot: vi.fn().mockResolvedValue([] as CaptureSessionState[]),
     startSession: vi.fn().mockResolvedValue([] as CaptureSessionState[]),
@@ -33,6 +42,7 @@ export function createTestRuntime(now = 1) {
   const runtime = createWorkerRuntime({
     offscreenClient: offscreenClient as never,
     settingsRepository: storage,
+    premiumTrialRepository: premiumTrialRepository as never,
     sessionBoostRepository,
     now: getFixedNow.bind(undefined, now) as () => number,
     autoBoosterClient: autoBoosterClient as never
@@ -41,6 +51,7 @@ export function createTestRuntime(now = 1) {
   return {
     runtime,
     storage,
+    premiumTrialRepository,
     sessionBoostRepository,
     offscreenClient,
     autoBoosterClient
