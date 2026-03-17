@@ -15,7 +15,7 @@ export function registerPermissionsAndQueryTests(): void {
 
     it("queries permissions and injectable tabs through chrome APIs", async () => {
       harness.requestPermission.mockResolvedValueOnce(true);
-      harness.containsPermission.mockResolvedValueOnce(true);
+      harness.containsPermission.mockResolvedValueOnce(false).mockResolvedValueOnce(true).mockResolvedValueOnce(true);
       harness.queryTabs.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
 
       await expect(harness.client.requestGlobalPermission()).resolves.toBe(true);

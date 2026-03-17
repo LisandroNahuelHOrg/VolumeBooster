@@ -4,6 +4,7 @@ import type { WorkerRuntimeState } from "../runtime-state";
 import { activateAutoBoosterForTab } from "../auto/activate-auto-booster-for-tab";
 import { markAutoUnsupported } from "../auto/mark-auto-unsupported";
 import { resetNavigationScopedAutoState } from "../auto/reset-navigation-scoped-auto-state";
+import { resolveRuntimeBoostSettingsBundle } from "../premium/resolve-runtime-boost-settings-bundle";
 import { broadcastState } from "../state/broadcast-state";
 import { replaceManualSessions } from "../manual/replace-manual-sessions";
 
@@ -21,14 +22,14 @@ export async function handleTabUpdated(
 
   if (runtime.manualSessions.has(tabId)) {
     const domain = getDomainFromUrl(tab.url);
-    const advancedAudioSettings = await runtime.settingsRepository.getAdvancedAudioSettings();
+    const runtimeBundle = await resolveRuntimeBoostSettingsBundle(runtime, tab.url);
     const payload: OffscreenMetadataPayload = {
       tabId,
       title: tab.title || tab.url || "",
       url: tab.url,
       domain,
       favIconUrl: tab.favIconUrl,
-      advancedAudioSettings
+      advancedAudioSettings: runtimeBundle.advancedAudioSettings
     };
 
     const snapshot = await runtime.offscreenClient.updateMetadata(payload);

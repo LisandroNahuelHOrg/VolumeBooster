@@ -26,6 +26,12 @@ chrome.runtime.onInstalled.addListener(() => {
   runBackgroundTask(orchestrator.bootstrap(), "install");
 });
 
+chrome.alarms.onAlarm.addListener((alarm) => {
+  runBackgroundTask(orchestrator.handleAlarm(alarm), "alarm", {
+    alarmName: alarm.name
+  });
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (sentrySmokeMirrorEnabled && isSentrySmokeTriggerCommand(message)) {
     captureExceptionSafe(new Error(message.payload.marker), "background", {

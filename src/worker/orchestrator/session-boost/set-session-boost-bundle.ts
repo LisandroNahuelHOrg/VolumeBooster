@@ -1,6 +1,8 @@
 import type { BoostSettingsBundle } from "../../../shared/boost-settings";
 import { getDomainFromUrl } from "../../../shared/domain";
+import { sanitizeBoostSettingsBundleForEntitlement } from "../../../shared/premium-license";
 import type { WorkerRuntimeState } from "../runtime-state";
+import { resolveWorkerPremiumEntitlement } from "../premium/resolve-worker-premium-entitlement";
 import { syncSessionBoostAcrossRuntime } from "./sync-session-boost-across-runtime";
 
 export async function setSessionBoostBundle(
@@ -16,7 +18,10 @@ export async function setSessionBoostBundle(
     delete sessionBoostState.siteSessionBundles[domain];
   }
 
-  sessionBoostState.globalDraftBundle = bundle;
+  sessionBoostState.globalDraftBundle = sanitizeBoostSettingsBundleForEntitlement(
+    bundle,
+    await resolveWorkerPremiumEntitlement(runtime)
+  );
   sessionBoostState.promptDismissed = false;
   await runtime.sessionBoostRepository.setState(sessionBoostState);
   await syncSessionBoostAcrossRuntime(runtime);

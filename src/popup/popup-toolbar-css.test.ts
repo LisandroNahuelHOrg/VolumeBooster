@@ -17,7 +17,9 @@ describe("popup toolbar css", () => {
   });
 
   it("expands only the premium button and renders a dedicated text style", () => {
-    expect(structure).toContain('.popup-toolbar__button[data-popup-toolbar="premium-mock"]');
+    expect(structure).not.toContain("position: sticky;");
+    expect(structure).not.toContain("top: 0;");
+    expect(structure).toContain('.popup-toolbar__button[data-popup-toolbar="open-popup-premium"]');
     expect(structure).toContain("width: auto;");
     expect(structure).toContain("padding: 0 14px;");
     expect(structure).toContain(".popup-toolbar__text");

@@ -24,7 +24,10 @@ export function dispatchRootChange(event: Event): void {
     return;
   }
 
-  if (target.dataset.role === "advanced-slider") {
+  if (
+    target.dataset.role === "advanced-slider" ||
+    target.dataset.role === "normalization-slider"
+  ) {
     context.commitContext.state.isAdjustingAdvancedSettings = false;
     void flushPopupAdvancedSettingsCommit(context.commitContext);
   }

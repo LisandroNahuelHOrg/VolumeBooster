@@ -1,6 +1,6 @@
 import {
-  sanitizeAdvancedAudioSettings
-} from "../../../shared/audio-settings";
+  sanitizeAdvancedAudioSettingsForEntitlement
+} from "../../../shared/premium-license";
 import type { AdvancedAudioSettings } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
 import { syncConfiguredAutoTabs } from "../auto/sync-configured-auto-tabs";
@@ -11,15 +11,17 @@ export async function setAdvancedAudioSettings(
   runtime: WorkerRuntimeState,
   partialSettings: Partial<AdvancedAudioSettings>
 ): Promise<void> {
-  const persistedSettings = await runtime.settingsRepository.setAdvancedAudioSettings(
-    sanitizeAdvancedAudioSettings({
-      ...(await runtime.settingsRepository.getAdvancedAudioSettings()),
-      ...partialSettings
-    })
+  const persistedSettings =
+    await runtime.settingsRepository.setAdvancedAudioSettings(partialSettings);
+  const effectiveRuntimeSettings = sanitizeAdvancedAudioSettingsForEntitlement(
+    persistedSettings,
+    runtime.premiumEntitlement
   );
 
   if (runtime.manualSessions.size > 0) {
-    const snapshot = await runtime.offscreenClient.setAdvancedAudioSettings(persistedSettings);
+    const snapshot = await runtime.offscreenClient.setAdvancedAudioSettings(
+      effectiveRuntimeSettings
+    );
     replaceManualSessions(runtime, snapshot);
   }
 

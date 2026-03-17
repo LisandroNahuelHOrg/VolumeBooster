@@ -24,7 +24,8 @@ export async function assertDefaultsWhenStorageIsEmptyOrInvalid(): Promise<void>
     },
     autoBoosterMode: "off",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "dark"
+    popupTheme: "dark",
+    premiumLicenseActivation: null
   });
 
   await expect(invalidRepository.getSettings()).resolves.toEqual({
@@ -35,6 +36,7 @@ export async function assertDefaultsWhenStorageIsEmptyOrInvalid(): Promise<void>
     },
     autoBoosterMode: "off",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: "dark"
+    popupTheme: "dark",
+    premiumLicenseActivation: null
   });
 }

@@ -5,8 +5,8 @@ import { message } from "../../../shared/messages";
 import type { CaptureSessionState } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
 import { pauseAutoLaneForManual } from "../auto/pause-auto-lane-for-manual";
+import { resolveRuntimeBoostSettingsBundle } from "../premium/resolve-runtime-boost-settings-bundle";
 import { resumeAutoLaneIfNeeded } from "../auto/resume-auto-lane-if-needed";
-import { resolveEffectiveBoostSettingsBundle } from "../session-boost/resolve-effective-boost-settings-bundle";
 import { broadcastState } from "../state/broadcast-state";
 import { rebuildEffectiveSessions } from "../state/rebuild-effective-sessions";
 import { replaceManualSessions } from "./replace-manual-sessions";
@@ -23,9 +23,7 @@ export async function startCapture(runtime: WorkerRuntimeState, tabId: number, g
   }
 
   const domain = getDomainFromUrl(targetTab.url);
-  const settings = await runtime.settingsRepository.getSettings();
-  const sessionBoostState = await runtime.sessionBoostRepository.getState();
-  const resolvedBundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, domain);
+  const resolvedBundle = await resolveRuntimeBoostSettingsBundle(runtime, targetTab.url);
   const nextGain = clampGainPercent(gainPercent ?? resolvedBundle.gainPercent);
   const advancedAudioSettings = resolvedBundle.advancedAudioSettings;
   const provisionalSession: CaptureSessionState = {

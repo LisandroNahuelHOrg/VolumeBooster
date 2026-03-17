@@ -1,0 +1,127 @@
+.popup-premium-status-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.popup-premium-status-card:not(.popup-premium-status-card--lifetime) .panel__title,
+.popup-premium-status-card:not(.popup-premium-status-card--lifetime) .popup-settings-card__facts dt {
+  color: color-mix(in srgb, var(--text) 34%, var(--muted) 66%);
+}
+
+.popup-premium-status-card--lifetime {
+  border-color: color-mix(in srgb, var(--premium-gold-strong) 40%, var(--line) 60%);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--premium-gold) 12%, transparent 88%), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold) 12%, var(--settings-card-bg) 88%), color-mix(in srgb, var(--premium-gold) 4%, var(--settings-card-bg) 96%));
+  box-shadow:
+    var(--settings-card-shadow),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold) 18%, transparent 82%),
+    0 18px 34px color-mix(in srgb, var(--premium-gold-glow) 22%, transparent 78%);
+}
+
+.popup-premium-status-card--lifetime::before,
+.popup-premium-status-card--lifetime::after,
+.popup-premium-status-badge--lifetime::before,
+.popup-premium-status-badge--lifetime::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.popup-premium-status-card--lifetime::before {
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--premium-gold-strong) 7%, transparent 93%), transparent 26%, transparent 74%, color-mix(in srgb, var(--premium-gold) 8%, transparent 92%)),
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold-strong) 10%, transparent 90%), transparent 34%);
+  opacity: 0.9;
+}
+
+.popup-premium-status-card--lifetime::after {
+  inset: -22%;
+  border-radius: inherit;
+  background: radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--premium-gold-glow) 100%, white 0%) 0%, transparent 44%);
+  filter: blur(18px);
+  opacity: 0.4;
+  animation: popup-premium-status-breathe 3000ms cubic-bezier(0.42, 0, 0.2, 1) infinite;
+}
+
+.popup-premium-status-card--lifetime .panel__title,
+.popup-premium-status-card--lifetime .popup-settings-card__facts dt {
+  color: color-mix(in srgb, var(--premium-gold-strong) 72%, var(--muted) 28%);
+}
+
+.popup-premium-status-badge--lifetime {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: start;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--premium-gold-strong) 66%, white 34%);
+  border-radius: 999px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 24% 26%, rgba(255, 255, 255, 0.72), transparent 24%),
+    linear-gradient(180deg, color-mix(in srgb, var(--premium-gold-strong) 34%, white 66%) 0%, color-mix(in srgb, var(--premium-gold) 88%, #d48d1f 12%) 58%, color-mix(in srgb, var(--premium-gold) 72%, #8e5c11 28%) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    0 0 0 1px color-mix(in srgb, var(--premium-gold) 18%, transparent 82%),
+    0 12px 28px color-mix(in srgb, var(--premium-gold-glow) 72%, transparent 28%);
+  animation: popup-premium-status-breathe 3000ms cubic-bezier(0.42, 0, 0.2, 1) infinite;
+}
+
+.popup-premium-status-badge__label {
+  position: relative;
+  z-index: 1;
+  color: #3c2403;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+
+.popup-premium-status-badge--lifetime::before {
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(255, 252, 233, 0.42), transparent 48%, rgba(116, 69, 9, 0.08) 100%);
+}
+
+.popup-premium-status-badge--lifetime::after {
+  top: -35%;
+  bottom: -35%;
+  left: -140%;
+  width: 56%;
+  z-index: 1;
+  opacity: 0;
+  transform: skewX(-24deg) translateX(0);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 22%, rgba(255, 251, 229, 0.92) 50%, rgba(255, 255, 255, 0.08) 78%, transparent 100%);
+  mix-blend-mode: screen;
+  animation: popup-premium-status-glaze 5s cubic-bezier(0.2, 0, 0.2, 1) infinite;
+}
+
+:root[data-popup-theme="light"] .popup-premium-status-badge__label {
+  color: #6d4511;
+}
+
+@keyframes popup-premium-status-breathe {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.92; }
+  50% { transform: translateY(-1px) scale(1.012); opacity: 1; }
+}
+
+@keyframes popup-premium-status-glaze {
+  0%, 82%, 100% { opacity: 0; transform: skewX(-24deg) translateX(0); }
+  86% { opacity: 0.28; }
+  90% { opacity: 0.96; transform: skewX(-24deg) translateX(360%); }
+  94% { opacity: 0; transform: skewX(-24deg) translateX(460%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popup-premium-status-card--lifetime::after,
+  .popup-premium-status-badge--lifetime,
+  .popup-premium-status-badge--lifetime::after {
+    animation: none;
+  }
+}

@@ -53,14 +53,19 @@ export function applyPopupRender(refs: PopupRuntimeRefs, state: PopupRuntimeStat
   }
 
   const viewModel = buildPopupViewModel(state.currentState);
+  const isLifetimePremiumActive =
+    viewModel.premiumEntitlement.status === "active" && viewModel.premiumEntitlement.source === "license";
   const renderContext = createPopupRenderContext({
     catalog: state.currentCatalog,
     loadedLocale: state.loadedLocale,
     popupTheme: state.popupUiState.popupTheme,
     currentView: state.popupUiState.currentView,
+    isLifetimePremiumActive,
     draftGainPercent: state.draftGainPercent,
     draftAdvancedAudioSettings: state.draftAdvancedAudioSettings,
     pendingAdvancedAudioSettings: state.pendingAdvancedAudioSettings,
+    premiumEmailDraft: state.premiumEmailDraft,
+    premiumLicenseDraft: state.premiumLicenseDraft,
     transientError: state.transientError
   });
   const mainViewRenderResult =
@@ -81,7 +86,11 @@ export function applyPopupRender(refs: PopupRuntimeRefs, state: PopupRuntimeStat
 
   if (signature !== state.renderedSignature) {
     snapshot = capturePopupRenderSnapshot(refs);
-    refs.rootElement.innerHTML = renderPopupMarkup(renderContext, mainViewRenderResult?.model ?? null);
+    refs.rootElement.innerHTML = renderPopupMarkup(
+      renderContext,
+      viewModel,
+      mainViewRenderResult?.model ?? null
+    );
     state.renderedSignature = signature;
   } else {
     snapshot.shouldRestoreUiState = false;

@@ -28,6 +28,7 @@ test("prefers draft advanced settings and derives transient, lane, and carousel 
   const draftSettings: AdvancedAudioSettings = {
     ...state.advancedAudioSettings,
     qualityPreset: "maximum_clarity",
+    qualityProtectorMode: "clarity",
     lookaheadMs: 7.5
   };
   const pendingSettings: AdvancedAudioSettings = {
@@ -49,6 +50,8 @@ test("prefers draft advanced settings and derives transient, lane, and carousel 
   expect(result.model.transientErrorMessage).toBe(translate(catalog, "tabUnavailable"));
   expect(result.model.laneStatus.title).toBe(translate(catalog, "laneGlobalPermissionTitle"));
   expect(result.model.globalAutoAction).toBe("request-global-auto-permission");
+  expect(result.model.qualityPresetLabel).toBe(translate(catalog, "presetMaximumClarity"));
+  expect(result.model.qualityProtectorModeLabel).toBe(translate(catalog, "qualityProtectorClarity"));
   expect(result.model.sessionCarousel.offset).toBe(2);
   expect(result.nextSessionCarouselOffset).toBe(2);
 });

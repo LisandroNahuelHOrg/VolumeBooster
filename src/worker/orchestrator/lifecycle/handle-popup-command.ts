@@ -23,12 +23,21 @@ import { setGain } from "../manual/set-gain";
 import { startCapture } from "../manual/start-capture";
 import { stopAll } from "../manual/stop-all";
 import { stopCapture } from "../manual/stop-capture";
+import { activatePremiumLicense } from "../premium/activate-premium-license";
+import { assertPopupCommandPremiumAccess } from "../premium/assert-popup-command-premium-access";
+import { clearPremiumLicense } from "../premium/clear-premium-license";
 
 export async function handlePopupCommand(
   runtime: WorkerRuntimeState,
   command: PopupCommand
 ): Promise<RuntimeResponse<WorkerState | AutoBoosterDebugState | null>> {
   try {
+    const premiumAccessError = await assertPopupCommandPremiumAccess(runtime, command);
+
+    if (premiumAccessError) {
+      return fail(premiumAccessError);
+    }
+
     switch (command.type) {
       case "GET_STATE":
       case "GET_ADVANCED_AUDIO_SETTINGS":
@@ -93,6 +102,22 @@ export async function handlePopupCommand(
         return ok(await getState(runtime));
       case "SET_ADVANCED_AUDIO_SETTINGS":
         await setAdvancedAudioSettings(runtime, command.payload);
+        return ok(await getState(runtime));
+      case "ACTIVATE_PREMIUM_LICENSE": {
+        const activationError = await activatePremiumLicense(
+          runtime,
+          command.payload.email,
+          command.payload.licenseKey
+        );
+
+        if (activationError) {
+          return fail(activationError);
+        }
+
+        return ok(await getState(runtime));
+      }
+      case "CLEAR_PREMIUM_LICENSE":
+        await clearPremiumLicense(runtime);
         return ok(await getState(runtime));
       case "STOP_CAPTURE":
         await stopCapture(runtime, command.payload.tabId);

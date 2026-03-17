@@ -56,7 +56,7 @@ describe("automation main entrypoint", () => {
     await import("./main");
 
     expect(initSentryForContext).toHaveBeenCalledWith("automation");
-    expect(document.title).toBe("Prism Automation");
+    expect(document.title).toBe("Volume Booster by Premium11 Automation");
     expect(document.documentElement.lang).toBe("en");
     expect(document.documentElement.dir).toBe("ltr");
     expect(document.querySelector("[data-action='request-global-permission']")).not.toBeNull();

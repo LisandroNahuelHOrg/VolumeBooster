@@ -10,18 +10,40 @@ import { getVisibleAdvancedAudioSettings } from "../state/get-visible-advanced-a
 import { setPopupDraftAdvancedAudioSettings } from "../commits/set-popup-draft-advanced-audio-settings";
 import { clearPopupTransientError } from "../runtime/clear-popup-transient-error";
 import { popupRootInputContextRegistry } from "./popup-root-input-context-registry";
+import { shouldOpenPremiumForRootInput } from "./should-open-premium-for-root-input";
+import { runPopupRootAction } from "./run-popup-root-action";
 
 export function dispatchRootInput(event: Event): void {
   const target = event.target;
   const currentTarget = event.currentTarget;
 
-  if (!(target instanceof HTMLInputElement) || !currentTarget) {
+  if (
+    !(
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement
+    ) ||
+    !currentTarget
+  ) {
     return;
   }
 
   const context = popupRootInputContextRegistry.get(currentTarget);
 
   if (!context) {
+    return;
+  }
+
+  const premiumUnlocked = context.commitContext.state.currentState
+    ? buildPopupViewModel(context.commitContext.state.currentState).premiumEntitlement.isPremiumUnlocked
+    : false;
+
+  if (target.dataset.role === "premium-email") {
+    context.commitContext.state.premiumEmailDraft = target.value;
+    return;
+  }
+
+  if (target.dataset.role === "premium-license") {
+    context.commitContext.state.premiumLicenseDraft = target.value;
     return;
   }
 
@@ -40,6 +62,14 @@ export function dispatchRootInput(event: Event): void {
     );
     clearPendingGainTrackJump(context.commitContext.state.popupGainPointerRuntime);
     schedulePopupGainCommit(context.commitContext, false);
+    return;
+  }
+
+  if (shouldOpenPremiumForRootInput(premiumUnlocked, target)) {
+    runPopupRootAction("open-popup-premium", {
+      refs: context.commitContext.refs,
+      state: context.commitContext.state
+    });
     return;
   }
 

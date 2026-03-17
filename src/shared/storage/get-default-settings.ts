@@ -16,6 +16,7 @@ export function getDefaultSettings(): ExtensionSettings {
     },
     autoBoosterMode: "off",
     globalAutoGainPercent: DEFAULT_GAIN_PERCENT,
-    popupTheme: DEFAULT_POPUP_THEME
+    popupTheme: DEFAULT_POPUP_THEME,
+    premiumLicenseActivation: null
   };
 }

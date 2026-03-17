@@ -11,7 +11,10 @@ export async function enableGlobalAutoBooster(
   currentTabId: number,
   gainPercent: number
 ): Promise<void> {
-  const granted = await runtime.autoBoosterClient.requestGlobalPermission();
+  const granted =
+    typeof runtime.autoBoosterClient.hasGlobalPermission === "function"
+      ? await runtime.autoBoosterClient.hasGlobalPermission()
+      : false;
 
   if (!granted) {
     throw message("errorAutoGlobalPermissionDenied");

@@ -1,6 +1,7 @@
 import { DEFAULT_GAIN_PERCENT } from "../../../shared/constants";
 import type { AutoBoosterFrameReadyPayload } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
+import { resolveRuntimeBoostSettingsBundle } from "../premium/resolve-runtime-boost-settings-bundle";
 import { getAutoScopeForTab } from "../state/get-auto-scope-for-tab";
 import { toErrorMessage } from "../state/to-error-message";
 import { createEmptyFrameRuntimeState } from "./create-empty-frame-runtime-state";
@@ -69,12 +70,15 @@ export async function handleAutoFrameReady(
     return;
   }
 
-  const advancedAudioSettings = await runtime.settingsRepository.getAdvancedAudioSettings();
   const gainPercent =
     runtime.autoTabStates.get(tabId)?.gainPercent ??
     (scope === "global"
       ? await runtime.settingsRepository.getGlobalAutoGainPercent()
       : DEFAULT_GAIN_PERCENT);
+  const runtimeBundle = await resolveRuntimeBoostSettingsBundle(
+    runtime,
+    payload.url ?? sender?.url ?? payload.frameUrl
+  );
 
   try {
     await runtime.autoBoosterClient.configure(
@@ -85,7 +89,7 @@ export async function handleAutoFrameReady(
         enabled: true,
         suspended: runtime.manualSessions.has(tabId) || runtime.autoSuppressedTabs.has(tabId),
         gainPercent,
-        advancedAudioSettings
+        advancedAudioSettings: runtimeBundle.advancedAudioSettings
       },
       target
     );

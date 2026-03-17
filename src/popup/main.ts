@@ -1,6 +1,8 @@
 import "./popup.css";
 import "./popup-lane-buttons.css";
 import "./popup-session-boost-bar.css";
+import "./popup-premium-view.css";
+import "./popup-premium-status.css";
 import "./popup-toolbar.css";
 import "./popup-volume-normalization.css";
 

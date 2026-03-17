@@ -14,6 +14,7 @@ import { sanitizeDomainAudioSettings } from "./sanitize-domain-audio-settings";
 import { sanitizeDomainGains } from "./sanitize-domain-gains";
 import { sanitizeGlobalAutoGainPercent } from "./sanitize-global-auto-gain-percent";
 import { sanitizePopupTheme } from "./sanitize-popup-theme";
+import { sanitizePremiumLicenseActivation } from "./sanitize-premium-license-activation";
 
 export async function getSettings(
   this: SettingsRepositoryApi & SettingsRepositoryContext
@@ -35,6 +36,7 @@ export async function getSettings(
     },
     autoBoosterMode: sanitizeAutoBoosterMode(settings.autoBoosterMode),
     globalAutoGainPercent: sanitizeGlobalAutoGainPercent(settings.globalAutoGainPercent),
-    popupTheme: sanitizePopupTheme(settings.popupTheme)
+    popupTheme: sanitizePopupTheme(settings.popupTheme),
+    premiumLicenseActivation: sanitizePremiumLicenseActivation(settings.premiumLicenseActivation)
   };
 }

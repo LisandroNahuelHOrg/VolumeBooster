@@ -4,6 +4,7 @@
  */
 
 import type { BoostSettingsBundle } from "../boost-settings-bundle";
+import type { PersistedPremiumLicenseActivation } from "../premium-license";
 import type { AdvancedAudioSettings, AutoBoosterMode, ExtensionSettings, PopupTheme } from "../types";
 
 export interface StorageAreaLike {
@@ -42,6 +43,9 @@ export interface SettingsRepositoryApi {
   getAutoBoosterMode(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<AutoBoosterMode>;
   getGlobalAutoGainPercent(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<number>;
   getPopupTheme(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<PopupTheme>;
+  getPremiumLicenseActivation(
+    this: SettingsRepositoryApi & SettingsRepositoryContext
+  ): Promise<PersistedPremiumLicenseActivation | null>;
   setAutoBoosterMode(
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     autoBoosterMode: AutoBoosterMode
@@ -58,6 +62,11 @@ export interface SettingsRepositoryApi {
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     popupTheme: PopupTheme
   ): Promise<PopupTheme>;
+  setPremiumLicenseActivation(
+    this: SettingsRepositoryApi & SettingsRepositoryContext,
+    activation: PersistedPremiumLicenseActivation
+  ): Promise<PersistedPremiumLicenseActivation | null>;
+  clearPremiumLicenseActivation(this: SettingsRepositoryApi & SettingsRepositoryContext): Promise<void>;
   setAdvancedAudioSettings(
     this: SettingsRepositoryApi & SettingsRepositoryContext,
     audioSettings: Partial<AdvancedAudioSettings>

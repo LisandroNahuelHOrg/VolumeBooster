@@ -30,10 +30,10 @@
     "message": "Página interna utilizada por el arnés de Playwright para restaurar el acceso global cuando Chrome lo limita y para enviar comandos a la extensión."
   },
   "automationBridgeTitle": {
-    "message": "Puente de automatización de Prism"
+    "message": "Puente de automatización de Volume Booster by Premium11"
   },
   "automationDocumentTitle": {
-    "message": "Automatización de Prism"
+    "message": "Automatización de Volume Booster by Premium11"
   },
   "automationRestoreAllSitesAccess": {
     "message": "Restaurar acceso a todos los sitios"
@@ -200,6 +200,21 @@
   "errorGetState": {
     "message": "No se pudo obtener el estado actual de la extensión."
   },
+  "errorPremiumLicenseEmailRequired": {
+    "message": "Ingresa el email usado en tu compra premium."
+  },
+  "errorPremiumLicenseInvalid": {
+    "message": "Esa licencia premium no es válida para este email."
+  },
+  "errorPremiumLicenseKeyRequired": {
+    "message": "Pega tu licencia premium antes de activarla."
+  },
+  "errorPremiumLicenseUnsupported": {
+    "message": "Este formato de licencia premium no es compatible con esta versión de la extensión."
+  },
+  "errorPremiumFeatureLocked": {
+    "message": "Este control forma parte de Premium. Abre Premium para desbloquearlo."
+  },
   "errorNoRunningSession": {
     "message": "No se encontró una sesión activa para esa pestaña."
   },
@@ -243,13 +258,13 @@
     "message": "No se puede capturar esta pestaña. Prueba con una página https:// normal."
   },
   "extActionTitle": {
-    "message": "Abrir Prism Volume Booster"
+    "message": "Abrir Volume Booster by Premium11"
   },
   "extDescription": {
     "message": "Sube el volumen de cualquier pestaña de Chrome por encima del máximo normal con una cadena de audio en tiempo real."
   },
   "extName": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "forgetSite": {
     "message": "Dejar de recordar mi configuracion para $DOMAIN$",
@@ -435,19 +450,19 @@
     "message": "Todavía no hay boost guardado para este dominio"
   },
   "offscreenDocumentTitle": {
-    "message": "Procesador de audio de Prism Volume Booster"
+    "message": "Procesador de audio de Volume Booster by Premium11"
   },
   "otherSessionsTitle": {
     "message": "Sesiones activas"
   },
   "popupDocumentTitle": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "popupSubtitle": {
     "message": "Control de ganancia en tiempo real para cualquier pestaña capturable."
   },
   "popupTitle": {
-    "message": "Prism Volume Booster"
+    "message": "Volume Booster by Premium11"
   },
   "popupSettingsAppearanceDetail": {
     "message": "Usa el toggle de tema de la barra superior para reestilizar este popup al instante y conservar la elección para la próxima vez que lo abras."
@@ -491,8 +506,125 @@
   "popupToolbarPremiumLabel": {
     "message": "Obtener Premium"
   },
+  "popupToolbarPremiumActiveLabel": {
+    "message": "Premium activado"
+  },
+  "popupToolbarPremiumTitle": {
+    "message": "Activa o administra tu licencia premium vitalicia."
+  },
   "popupToolbarRegionLabel": {
     "message": "Acciones rápidas del popup"
+  },
+  "popupPremiumActivateLabel": {
+    "message": "Activar PREMIUM vitalicio"
+  },
+  "popupPremiumActivationDetail": {
+    "message": "Pega la licencia que recibiste tras la compra. La extensión la valida localmente y mantiene premium desbloqueado en este navegador."
+  },
+  "popupPremiumActivationHeading": {
+    "message": "Desbloquea premium con tu licencia"
+  },
+  "popupPremiumActivationTitle": {
+    "message": "Activación"
+  },
+  "popupPremiumBackLabel": {
+    "message": "Volver"
+  },
+  "popupPremiumClearLabel": {
+    "message": "Quitar licencia guardada"
+  },
+  "popupPremiumEmailLabel": {
+    "message": "Email de compra"
+  },
+  "popupPremiumEmailPlaceholder": {
+    "message": "nombre@ejemplo.com"
+  },
+  "popupPremiumEyebrow": {
+    "message": "Licencia"
+  },
+  "popupPremiumLicenseLabel": {
+    "message": "Licencia vitalicia"
+  },
+  "popupPremiumLicensePlaceholder": {
+    "message": "Pega aquí tu licencia offline"
+  },
+  "popupPremiumSeatLabel": {
+    "message": "Asiento"
+  },
+  "popupPremiumStatusActive": {
+    "message": "Premium vitalicio está activo"
+  },
+  "popupPremiumStatusActiveDetail": {
+    "message": "Todas las funciones premium siguen desbloqueadas en este navegador con tu licencia vitalicia guardada."
+  },
+  "popupPremiumStatusTrial": {
+    "message": "Tu prueba premium de 30 días está activa"
+  },
+  "popupPremiumStatusTrialDetail": {
+    "message": "Todas las funciones premium seguirán desbloqueadas hasta que termine la prueba en este navegador o actives una licencia vitalicia."
+  },
+  "popupPremiumStatusFree": {
+    "message": "Premium todavía no está activo"
+  },
+  "popupPremiumStatusFreeDetail": {
+    "message": "Ingresa tu email de compra y tu licencia para desbloquear offline todas las funciones premium."
+  },
+  "popupPremiumStatusExpired": {
+    "message": "La prueba terminó. El modo gratis está activo"
+  },
+  "popupPremiumStatusExpiredDetail": {
+    "message": "La prueba premium de 30 días ya terminó en este navegador. Ingresa una licencia vitalicia para volver a desbloquear Premium."
+  },
+  "popupPremiumStatusInvalid": {
+    "message": "La licencia premium guardada no es válida"
+  },
+  "popupPremiumStatusInvalidDetail": {
+    "message": "La licencia guardada ya no valida para este navegador o email. Premium queda bloqueado salvo que tu prueba siga activa."
+  },
+  "popupPremiumStatusTitle": {
+    "message": "Estado actual"
+  },
+  "popupPremiumStoredEmailEmpty": {
+    "message": "No hay un email guardado"
+  },
+  "popupPremiumStoredEmailLabel": {
+    "message": "Email guardado"
+  },
+  "popupPremiumStoredLicenseStatusLabel": {
+    "message": "Licencia guardada"
+  },
+  "popupPremiumStoredLicenseNone": {
+    "message": "Ninguna"
+  },
+  "popupPremiumStoredLicenseValid": {
+    "message": "Válida"
+  },
+  "popupPremiumStoredLicenseInvalid": {
+    "message": "Inválida"
+  },
+  "popupPremiumStoredLicenseInvalidNotice": {
+    "message": "Se encontró una licencia premium guardada, pero es inválida. El acceso por prueba puede seguir manteniendo Premium desbloqueado hasta que expire."
+  },
+  "popupPremiumStoredTrialEndsLabel": {
+    "message": "La prueba termina"
+  },
+  "popupPremiumStoredTrialDaysLabel": {
+    "message": "Días restantes"
+  },
+  "popupPremiumSubtitle": {
+    "message": "Administra la licencia offline vitalicia que desbloquea los controles premium dentro de Volume Booster by Premium11."
+  },
+  "popupPremiumTitle": {
+    "message": "Activación de premium vitalicio"
+  },
+  "premiumFeatureLockedLabel": {
+    "message": "Función premium"
+  },
+  "premiumFeatureLockedDetail": {
+    "message": "Desbloquea Premium vitalicio o usa el tiempo restante de tu prueba para usar este control."
+  },
+  "premiumFeatureLockedShort": {
+    "message": "Premium requerido"
   },
   "popupToolbarSettingsLabel": {
     "message": "Abrir ajustes del popup"
@@ -698,6 +830,9 @@
   "sessionBoostApplyAllSites": {
     "message": "Aplicar estas configuraciones en todos los sitios"
   },
+  "sessionBoostApplyAllSitesLocked": {
+    "message": "Desbloquea Premium para aplicar en todos los sitios"
+  },
   "sessionBoostApplySite": {
     "message": "Aplicar estas configuraciones solo en este sitio"
   },
@@ -706,6 +841,9 @@
   },
   "sessionBoostResetAllSites": {
     "message": "Restablecer valores predeterminados en todos los sitios"
+  },
+  "sessionBoostResetAllSitesLocked": {
+    "message": "Desbloquea Premium para restablecer en todos los sitios"
   },
   "sessionBoostResetSite": {
     "message": "Restablecer valores predeterminados en este sitio"

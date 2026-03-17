@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { expect, test, vi } from "vitest";
+import { applyQualityPreset } from "../../../shared/audio-settings";
 import { makePopupMainState } from "../../test-support/make-popup-main-state";
 import { createPopupRuntimeState } from "../runtime/create-popup-runtime-state";
 import { popupRootClickContextRegistry } from "./popup-root-click-context-registry";
@@ -46,7 +47,9 @@ test("routes click targets through the shared popup root click dispatcher", () =
   }
 
   const state = createPopupRuntimeState();
-  state.currentState = makePopupMainState();
+  state.currentState = makePopupMainState({
+    advancedAudioSettings: applyQualityPreset("bass_boost")
+  });
   const refs = {
     document,
     rootElement,
@@ -80,6 +83,15 @@ test("routes click targets through the shared popup root click dispatcher", () =
   expect(mockedClickHandlers.setPopupDraftGain).toHaveBeenCalledWith(refs, state, 175, {
     animateVisuals: true
   });
+  expect(mockedClickHandlers.setPopupDraftAdvancedAudioSettings).toHaveBeenNthCalledWith(
+    2,
+    refs,
+    state,
+    {
+      ...state.currentState.advancedAudioSettings,
+      qualityProtectorMode: "clarity"
+    }
+  );
   expect(mockedClickHandlers.schedulePopupGainCommit).toHaveBeenCalledWith(commitContext, true);
   expect(mockedClickHandlers.setPopupDraftAdvancedAudioSettings).toHaveBeenCalledTimes(2);
   expect(mockedClickHandlers.schedulePopupAdvancedSettingsCommit).toHaveBeenCalledTimes(2);

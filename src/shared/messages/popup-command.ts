@@ -23,5 +23,7 @@ export type PopupCommand =
   | { type: "REMOVE_DOMAIN_GAIN"; payload: { tabId: number } }
   | { type: "GET_ADVANCED_AUDIO_SETTINGS" }
   | { type: "SET_ADVANCED_AUDIO_SETTINGS"; payload: Partial<AdvancedAudioSettings> }
+  | { type: "ACTIVATE_PREMIUM_LICENSE"; payload: { email: string; licenseKey: string } }
+  | { type: "CLEAR_PREMIUM_LICENSE" }
   | { type: "STOP_CAPTURE"; payload: { tabId: number } }
   | { type: "STOP_ALL" };

@@ -1,9 +1,5 @@
 import { applyQualityPreset } from "../../../shared/audio-settings";
-import type {
-  AudioQualityProtectorMode,
-  QualityPreset,
-  VolumeNormalizationMode
-} from "../../../shared/types";
+import type { AudioQualityProtectorMode, QualityPreset, VolumeNormalizationMode } from "../../../shared/types";
 import { buildPopupViewModel } from "../../model";
 import { shiftSessionCarouselOffset } from "../../session-carousel";
 import { schedulePopupAdvancedSettingsCommit } from "../commits/schedule-popup-advanced-settings-commit";
@@ -16,6 +12,7 @@ import { clearPopupTransientError } from "../runtime/clear-popup-transient-error
 import { getVisibleAdvancedAudioSettings } from "../state/get-visible-advanced-audio-settings";
 import { popupRootClickContextRegistry } from "./popup-root-click-context-registry";
 import { runPopupRootAction } from "./run-popup-root-action";
+import { shouldOpenPremiumForRootClick } from "./should-open-premium-for-root-click";
 import { startSessionBoostActionFeedback } from "./start-session-boost-action-feedback";
 
 export function dispatchRootClick(event: Event): void {
@@ -32,6 +29,8 @@ export function dispatchRootClick(event: Event): void {
     return;
   }
 
+  const premiumUnlocked = context.commitContext.state.currentState
+    ? buildPopupViewModel(context.commitContext.state.currentState).premiumEntitlement.isPremiumUnlocked : false;
   const sessionCarouselNav = target.closest<HTMLButtonElement>("[data-session-carousel-nav]");
   const presetButton = target.closest<HTMLButtonElement>("[data-preset]");
   const advancedPresetButton = target.closest<HTMLButtonElement>("[data-advanced-preset]");
@@ -39,6 +38,17 @@ export function dispatchRootClick(event: Event): void {
   const volumeNormalizationButton = target.closest<HTMLButtonElement>("[data-volume-normalization]");
   const stopSessionButton = target.closest<HTMLButtonElement>("[data-stop-tab]");
   const actionButton = target.closest<HTMLButtonElement>("[data-action]");
+
+  if (shouldOpenPremiumForRootClick({
+    premiumUnlocked,
+    advancedPresetButton,
+    qualityProtectorButton,
+    volumeNormalizationButton,
+    actionButton
+  })) {
+    runPopupRootAction("open-popup-premium", context.commandContext);
+    return;
+  }
 
   if (sessionCarouselNav?.dataset.sessionCarouselNav) {
     context.commitContext.state.sessionCarouselOffset = shiftSessionCarouselOffset(
@@ -87,7 +97,6 @@ export function dispatchRootClick(event: Event): void {
     if (!context.commitContext.state.currentState) {
       return;
     }
-
     clearPopupTransientError(context.commitContext.state);
     setPopupDraftAdvancedAudioSettings(
       context.commitContext.refs,
@@ -98,7 +107,6 @@ export function dispatchRootClick(event: Event): void {
           context.commitContext.state.draftAdvancedAudioSettings,
           context.commitContext.state.pendingAdvancedAudioSettings
         ),
-        qualityPreset: "custom",
         qualityProtectorMode:
           qualityProtectorButton.dataset.qualityProtector as AudioQualityProtectorMode
       }
@@ -110,7 +118,6 @@ export function dispatchRootClick(event: Event): void {
     if (!context.commitContext.state.currentState) {
       return;
     }
-
     clearPopupTransientError(context.commitContext.state);
     setPopupDraftAdvancedAudioSettings(
       context.commitContext.refs,
@@ -136,7 +143,6 @@ export function dispatchRootClick(event: Event): void {
     if (actionButton.closest('[data-role="session-boost-bar"]')) {
       startSessionBoostActionFeedback(context.commandContext, actionButton.dataset.action);
     }
-
     runPopupRootAction(actionButton.dataset.action, context.commandContext);
   }
 }

@@ -3,8 +3,8 @@ import { clampGainPercent } from "../../../shared/gain";
 import { message } from "../../../shared/messages";
 import type { AdvancedAudioSettings, AutoBoosterConfigPayload, AutoBoosterScope } from "../../../shared/types";
 import type { AutoTabRuntimeState, WorkerRuntimeState } from "../runtime-state";
+import { resolveRuntimeBoostSettingsBundle } from "../premium/resolve-runtime-boost-settings-bundle";
 import { rebuildEffectiveSessions } from "../state/rebuild-effective-sessions";
-import { resolveEffectiveBoostSettingsBundle } from "../session-boost/resolve-effective-boost-settings-bundle";
 import { toErrorMessage } from "../state/to-error-message";
 import { markAutoUnsupported } from "./mark-auto-unsupported";
 import { shouldKeepAutoLaneInObservingMode } from "./should-keep-auto-lane-in-observing-mode";
@@ -30,9 +30,7 @@ export async function activateAutoBoosterForTab(
   }
 
   const domain = getDomainFromUrl(tab.url);
-  const settings = await runtime.settingsRepository.getSettings();
-  const sessionBoostState = await runtime.sessionBoostRepository.getState();
-  const resolvedBundle = resolveEffectiveBoostSettingsBundle(settings, sessionBoostState, domain);
+  const resolvedBundle = await resolveRuntimeBoostSettingsBundle(runtime, tab.url);
   const gainPercent =
     gainOverride !== undefined
       ? clampGainPercent(gainOverride)

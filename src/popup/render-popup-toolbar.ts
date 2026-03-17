@@ -11,16 +11,20 @@ import { renderPopupToolbar as renderInternalPopupToolbar } from "./internal/ren
 export function renderPopupToolbar(
   popupTheme: PopupTheme,
   currentView: PopupView,
-  catalog: UiCatalog
+  catalog: UiCatalog,
+  isLifetimePremiumActive = false
 ): string {
   return renderInternalPopupToolbar({
     catalog,
     loadedLocale: null,
     popupTheme,
     currentView,
+    isLifetimePremiumActive,
     draftGainPercent: 100,
     draftAdvancedAudioSettings: null,
     pendingAdvancedAudioSettings: null,
+    premiumEmailDraft: "",
+    premiumLicenseDraft: "",
     transientError: null
   });
 }

@@ -14,9 +14,12 @@ export interface PopupRenderContext {
   loadedLocale: string | null;
   popupTheme: PopupTheme;
   currentView: PopupView;
+  isLifetimePremiumActive: boolean;
   draftGainPercent: number;
   draftAdvancedAudioSettings: AdvancedAudioSettings | null;
   pendingAdvancedAudioSettings: AdvancedAudioSettings | null;
+  premiumEmailDraft: string;
+  premiumLicenseDraft: string;
   transientError: LocalizedMessage | null;
 }
 
@@ -34,6 +37,10 @@ export interface PopupMainViewRenderModel {
   laneStatus: LaneStatusDescriptor;
   siteAutoEnabled: boolean;
   globalAutoEnabled: boolean;
+  advancedSettingsLocked: boolean;
+  qualityProtectorLocked: boolean;
+  volumeNormalizationLocked: boolean;
+  globalAutoLocked: boolean;
   sessionBoostVisible: boolean;
   sessionBoostActionBarMarkup: string;
   siteLaneButtonCopy: { action: string; mode: string };

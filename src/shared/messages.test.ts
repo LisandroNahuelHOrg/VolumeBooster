@@ -75,6 +75,8 @@ describe("messages helpers", () => {
       "REMOVE_DOMAIN_GAIN",
       "GET_ADVANCED_AUDIO_SETTINGS",
       "SET_ADVANCED_AUDIO_SETTINGS",
+      "ACTIVATE_PREMIUM_LICENSE",
+      "CLEAR_PREMIUM_LICENSE",
       "STOP_CAPTURE",
       "STOP_ALL"
     ];

@@ -12,12 +12,23 @@ test("renders toolbar state for the current view and popup theme", async () => {
     })
   );
 
-  expect(markup).toContain('data-action="premium-mock"');
-  expect(markup).toContain('aria-disabled="true"');
+  expect(markup).toContain('data-action="open-popup-premium"');
+  expect(markup).toContain('data-popup-toolbar="open-popup-premium"');
   expect(markup).toContain('<span class="popup-toolbar__text">Get Premium</span>');
   expect(markup).toContain('data-action="toggle-popup-theme"');
   expect(markup).toContain(translate(catalog, "popupToolbarThemeDarkLabel"));
   expect(markup).toContain('data-action="open-popup-settings"');
   expect(markup).toContain('aria-pressed="true"');
   expect(markup.match(/popup-toolbar__text/g)).toHaveLength(1);
+});
+
+test("renders the activated premium copy when lifetime premium is active", async () => {
+  const catalog = await loadLocaleCatalog("en");
+  const markup = renderPopupToolbar(
+    makePopupRenderContext(catalog, {
+      isLifetimePremiumActive: true
+    })
+  );
+
+  expect(markup).toContain('<span class="popup-toolbar__text">Premium Activated</span>');
 });

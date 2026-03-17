@@ -2,6 +2,7 @@ import { DEFAULT_GAIN_PERCENT } from "../../../shared/constants";
 import { isSupportedTabUrl } from "../../../shared/domain";
 import type { AutoBoosterConfigPayload } from "../../../shared/types";
 import type { WorkerRuntimeState } from "../runtime-state";
+import { resolveRuntimeBoostSettingsBundle } from "../premium/resolve-runtime-boost-settings-bundle";
 import { getAutoScopeForTab } from "../state/get-auto-scope-for-tab";
 
 export async function pauseAutoLaneForManual(runtime: WorkerRuntimeState, tabId: number): Promise<void> {
@@ -18,7 +19,9 @@ export async function pauseAutoLaneForManual(runtime: WorkerRuntimeState, tabId:
   }
 
   const targetTabId = tab.id;
-  const advancedAudioSettings = await runtime.settingsRepository.getAdvancedAudioSettings();
+  const advancedAudioSettings = (
+    await resolveRuntimeBoostSettingsBundle(runtime, tab.url)
+  ).advancedAudioSettings;
   const gainPercent =
     runtime.autoSessions.get(tabId)?.gainPercent ??
     runtime.manualSessions.get(tabId)?.gainPercent ??

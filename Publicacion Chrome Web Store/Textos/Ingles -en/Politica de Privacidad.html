@@ -1,246 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="project_name" content="Chromium - Volume Booster" />
-    <meta name="brand_name" content="Prism Volume Booster" />
-    <meta name="default_locale" content="en" />
-    <meta name="effective_date" content="2026-03-10" />
-    <meta name="repo_path" content="D:\OfiDrive\0. Programacion\Chromium - Volume Booster" />
-    <meta name="verified_on" content="2026-03-10" />
-    <title>Politica de Privacidad</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-    <style>
-      :root {
-        --bg: #07111f;
-        --ink: #f5f7fb;
-        --muted: #b7c2d4;
-        --panel: rgba(9, 17, 30, 0.82);
-        --line: rgba(148, 163, 184, 0.18);
-        --accent: #68d4ff;
-        --accent-soft: rgba(104, 212, 255, 0.12);
-        --radius: 24px;
-        --shadow: 0 26px 80px rgba(2, 6, 23, 0.45);
-      }
-
-      * { box-sizing: border-box; }
-
-      body {
-        margin: 0;
-        font-family: "Inter", system-ui, sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at top right, rgba(104, 212, 255, 0.16), transparent 22%),
-          radial-gradient(circle at top left, rgba(139, 92, 246, 0.14), transparent 18%),
-          linear-gradient(180deg, #040913, var(--bg));
-      }
-
-      main {
-        width: min(980px, calc(100vw - 40px));
-        margin: 0 auto;
-        padding: 40px 0 72px;
-      }
-
-      .hero,
-      .policy-section {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        box-shadow: var(--shadow);
-        backdrop-filter: blur(18px);
-      }
-
-      .hero {
-        padding: 28px;
-        margin-bottom: 18px;
-        background:
-          linear-gradient(135deg, rgba(104, 212, 255, 0.08), rgba(139, 92, 246, 0.08)),
-          var(--panel);
-      }
-
-      .eyebrow {
-        display: inline-flex;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-        font-size: 0.82rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-      }
-
-      h1,
-      h2 {
-        font-family: "Space Grotesk", sans-serif;
-        letter-spacing: -0.04em;
-      }
-
-      h1 {
-        margin: 14px 0 8px;
-        font-size: clamp(2rem, 4vw, 3rem);
-      }
-
-      h2 {
-        margin: 0 0 10px;
-        font-size: 1.22rem;
-        color: #f8fbff;
-      }
-
-      .lead,
-      .content,
-      .content li {
-        color: var(--muted);
-        line-height: 1.78;
-      }
-
-      .stack {
-        display: grid;
-        gap: 16px;
-      }
-
-      .policy-section {
-        padding: 22px 24px;
-      }
-
-      .content p {
-        margin: 0;
-      }
-
-      .content p + p {
-        margin-top: 14px;
-      }
-
-      @media (max-width: 720px) {
-        main { width: min(100vw - 24px, 980px); padding-top: 24px; }
-        .hero, .policy-section { padding: 18px; }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <section class="hero">
-        <span class="eyebrow">Privacy Policy</span>
-        <h1>Prism Volume Booster</h1>
-        <p class="lead">This Privacy Policy explains how Prism Volume Booster handles information when people install, configure and use the extension in Chrome. It is written to be the final public version referenced by the Chrome Web Store listing and related support surfaces.</p>
-      </section>
-
-      <div class="stack">
-        <section class="policy-section" data-section="Chrome Web Store Privacy Policy URL Requirement">
-          <h2>Chrome Web Store Privacy Policy URL Requirement</h2>
-          <div class="content">
-            <p>Required. Prism Volume Booster handles information connected to browsing activity and extension operation, including current tab context, page titles, domains, saved site preferences and limited technical diagnostics in releases that enable them. Under current Chrome Web Store privacy rules, products with this type of data handling should provide a publicly hosted privacy policy URL in the dashboard.</p>
-            <p>This document is written as the final text intended for that stable public URL. It explains what the extension does, what information it touches, what stays local on the device, what may be transmitted to service providers in limited cases, and what choices users have.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Identity And Scope">
-          <h2>Identity And Scope</h2>
-          <div class="content">
-            <p>This Privacy Policy applies to Prism Volume Booster, including the Chrome extension package, the popup interface, the background runtime, the offscreen audio document used for manual boosting, and the public support channels linked to the product.</p>
-            <p>It covers how we process information when a user installs the extension, boosts audio in Chrome, saves preferences, uses automatic boosting behavior, or reaches out through a public support channel that is associated with the product.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="What The Extension Does">
-          <h2>What The Extension Does</h2>
-          <div class="content">
-            <p>Prism Volume Booster is designed to make quiet Chrome tabs louder, clearer and easier to control. It gives users a manual boosting lane based on tab audio capture, plus an automatic lane for compatible pages, together with saved preferences and advanced sound controls.</p>
-            <p>The product is focused on improving browser playback for videos, streams, lessons, calls and other web media without pretending to do unrelated jobs such as account management, payments or remote media hosting.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Data Categories Processed">
-          <h2>Data Categories Processed</h2>
-          <div class="content">
-            <p>We process the current tab URL, page title, domain, tab identifier, media state and favicon reference when those details are needed to identify, label and control the active booster session.</p>
-            <p>We store local settings such as saved gain values, advanced sound preferences, automatic booster mode and site-specific remembered behavior in the extension's browser storage area.</p>
-            <p>Some releases may also process sanitized technical diagnostics for reliability monitoring. Prism Volume Booster does not intentionally collect payment data, health data, biometric data, precise location data or the full content of personal communications.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Why The Data Is Needed">
-          <h2>Why The Data Is Needed</h2>
-          <div class="content">
-            <p>Tab and page context are used to identify the correct session, show the user which tab is being boosted, determine whether automatic boosting can attach to the current page, and remember site-specific preferences in a way that feels predictable and useful.</p>
-            <p>Local settings are used to restore the user's chosen sound profile, gain level and automatic behavior without forcing the user to start from scratch every time. Sanitized diagnostics, when enabled for a release, are used only to investigate crashes, runtime failures and product reliability issues.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Permissions And Browser Access Used">
-          <h2>Permissions And Browser Access Used</h2>
-          <div class="content">
-            <p>Prism Volume Booster uses <code>activeTab</code> to act on the tab the user chooses to control, <code>tabs</code> to read the tab metadata needed for session handling, <code>scripting</code> to inject the automatic booster runtime on supported pages, <code>storage</code> to save preferences, <code>offscreen</code> to keep the manual audio pipeline alive after capture begins, and <code>tabCapture</code> to capture the current tab audio for the manual booster path.</p>
-            <p>The extension also declares <code>&lt;all_urls&gt;</code> host access so the optional automatic booster can work on compatible sites across the web and apply remembered site-specific behavior wherever the user chooses to use the product. That access is tied to the booster experience and not to unrelated scraping or data brokerage.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Local Processing Vs Transmitted Data">
-          <h2>Local Processing Vs Transmitted Data</h2>
-          <div class="content">
-            <p>Audio boosting happens locally on the user's device inside Chrome. Booster state, gain preferences and advanced sound settings are stored locally in browser storage and are used by the extension to preserve the user's chosen experience.</p>
-            <p>Information may leave the device in limited cases. The extension may request a favicon from DuckDuckGo's favicon endpoint when a page does not provide a usable icon, and some releases may send sanitized technical diagnostics to Sentry when observability is enabled. Prism Volume Booster does not upload captured tab audio for remote processing.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Third Parties And Service Providers">
-          <h2>Third Parties And Service Providers</h2>
-          <div class="content">
-            <p>DuckDuckGo may receive a request for a favicon image when the extension uses its favicon service to display a recognizable icon for a tab or domain. That request is limited to the domain needed for the image lookup.</p>
-            <p>Some releases may enable Sentry for error monitoring and technical diagnostics. When Sentry is enabled, the extension sends sanitized telemetry intended to help us investigate crashes and runtime instability. Sensitive fields such as tab URLs, page titles, favicon URLs and direct request objects are reduced or redacted before transmission.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Retention And Deletion">
-          <h2>Retention And Deletion</h2>
-          <div class="content">
-            <p>Local preferences remain in the extension's storage area until the user changes them, clears extension data or uninstalls the extension. Temporary runtime state used to manage the current audio session is discarded when the relevant session ends.</p>
-            <p>If a release enables Sentry diagnostics, retention for transmitted diagnostic events is governed by the Sentry project configuration used for that release. We do not rely on remote retention for core boosting functionality.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="User Controls">
-          <h2>User Controls</h2>
-          <div class="content">
-            <p>Users can enable or disable boosting, switch modes, adjust sound settings, remove remembered site preferences and stop using the extension at any time. Users can also remove the extension from Chrome, which removes the extension package and its local storage area from the browser.</p>
-            <p>Chrome may also expose host-access controls for the extension through the browser's extension settings. Users who no longer want site-wide automatic behavior can review those controls together with the extension's own in-product settings.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Security">
-          <h2>Security</h2>
-          <div class="content">
-            <p>Prism Volume Booster ships its application runtime inside the packaged extension and does not depend on remotely hosted executable code for its core product behavior. Audio processing is performed locally in the browser environment rather than by sending media to a remote boosting service.</p>
-            <p>When optional diagnostics are enabled, the transmitted payload is intentionally limited and sanitized. Access to tabs, storage and page injection is constrained by the permissions declared in the extension package and used to support the booster experience described in this policy.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Children And Sensitive Data">
-          <h2>Children And Sensitive Data</h2>
-          <div class="content">
-            <p>Prism Volume Booster is not directed to children and is not designed to intentionally collect or infer sensitive personal data categories. The extension is built to improve web audio playback, not to profile users or build sensitive behavioral dossiers.</p>
-            <p>Users should still use caution when playing confidential or sensitive content on shared devices, because browser audio tools operate in the context of the user's own browsing environment.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Contact">
-          <h2>Contact</h2>
-          <div class="content">
-            <p>For privacy or support questions about Prism Volume Booster, please use the public issue tracker at https://github.com/LisandroNahuelHOrg/VolumeBooster/issues or the project page at https://github.com/LisandroNahuelHOrg/VolumeBooster.</p>
-            <p>Those public channels are the current contact paths for privacy-related questions, product issues and support follow-up.</p>
-          </div>
-        </section>
-
-        <section class="policy-section" data-section="Effective Date">
-          <h2>Effective Date</h2>
-          <div class="content">
-            <p>2026-03-10</p>
-          </div>
-        </section>
-      </div>
-    </main>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="project_name" content="Chromium - Volume Booster" />
+  <meta name="brand_name" content="Volume Booster by Premium11" />
+  <meta name="default_locale" content="en" />
+  <meta name="effective_date" content="2026-03-16" />
+  <meta name="verified_on" content="2026-03-16" />
+  <meta name="repo_path" content="D:\OfiDrive\0. Programacion\Chromium - Volume Booster" />
+  <title>Politica de Privacidad</title>
+  <style>:root{--bg:#07111f;--panel:#112132;--line:#27425b;--text:#eef6fd;--muted:#b8cbdd;--brand:#81d4ff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#06101a,#0d1d2c);color:var(--text);font:15px/1.78 Inter,system-ui,sans-serif}main{max-width:980px;margin:auto;padding:28px 16px 56px}.card{background:rgba(17,33,50,.94);border:1px solid var(--line);border-radius:18px;padding:18px;margin:0 0 16px}.eyebrow{display:inline-block;padding:6px 10px;border-radius:999px;background:#153147;color:var(--brand);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}h1,h2{margin:0 0 10px;font-family:Sora,Inter,sans-serif}p{margin:0}.card p+p{margin-top:12px}a,code{color:#bfe6ff}</style>
+</head>
+<body>
+<main>
+  <section class="card"><span class="eyebrow">Privacy Policy</span><h1>Volume Booster by Premium11</h1><p>This Privacy Policy explains how Volume Booster by Premium11 handles information when people install, configure and use the Chrome extension and its connected public support surfaces.</p></section>
+  <section class="card" data-section="Chrome Web Store Privacy Policy URL Requirement"><h2>Chrome Web Store Privacy Policy URL Requirement</h2><p>Volume Booster by Premium11 handles information connected to browsing activity, extension settings, premium activation and technical diagnostics, so the product should be backed by a public privacy-policy URL in the Chrome Web Store dashboard. This document is the final public text intended for that role at <a href="https://www.premium11.com/privacidad">https://www.premium11.com/privacidad</a>.</p></section>
+  <section class="card" data-section="Identity And Scope"><h2>Identity And Scope</h2><p>This Privacy Policy applies to Volume Booster by Premium11, including the extension package, popup, background runtime, offscreen audio document, automatic booster runtime on compatible pages and the public support channel operated through Premium11. It covers how information is handled when a user boosts audio, stores preferences, activates premium or contacts support.</p></section>
+  <section class="card" data-section="What The Extension Does"><h2>What The Extension Does</h2><p>Volume Booster by Premium11 is designed to make quiet Chrome tabs louder, clearer and easier to control. It offers a manual booster for the current tab, an automatic lane for compatible pages, remembered site behavior and premium tools such as distortion protection, sound profiles and volume normalization.</p></section>
+  <section class="card" data-section="Data Categories Processed"><h2>Data Categories Processed</h2><p>The extension processes tab context such as page URL, domain, title, favicon reference, tab identifier and runtime state when those details are needed to label, control and restore booster sessions. It also stores local settings such as gain values, saved site behavior, advanced audio controls, premium purchase email, offline license activation data and 30-day premium trial state in browser-controlled storage.</p><p>Public releases also send sanitized technical diagnostics to Sentry for error monitoring. Volume Booster by Premium11 does not intentionally collect payment card data, precise location data, health data, message contents or captured audio for remote analysis.</p></section>
+  <section class="card" data-section="Why The Data Is Needed"><h2>Why The Data Is Needed</h2><p>Tab and page context let Volume Booster by Premium11 target the correct session, determine whether automatic boosting can attach, show the user what is currently being boosted and restore remembered site-specific behavior. Local premium data is needed to validate lifetime licenses offline on the device and to enforce the built-in 30-day trial accurately across browser storage channels.</p><p>Sanitized Sentry diagnostics are used to investigate crashes, runtime failures, attach errors and reliability issues in public releases. They are not used to profile users or to deliver advertising.</p></section>
+  <section class="card" data-section="Permissions And Browser Access Used"><h2>Permissions And Browser Access Used</h2><p>Volume Booster by Premium11 uses <code>activeTab</code> to act on the tab the user chooses, <code>tabs</code> to read the metadata needed for session control, <code>scripting</code> to inject automatic booster logic on compatible pages, <code>storage</code> to keep local preferences and premium state, <code>offscreen</code> to keep the manual audio engine alive after capture starts, <code>tabCapture</code> to process current-tab audio locally, and <code>alarms</code> to refresh trial expiry at the correct time.</p><p>The extension declares <code>&lt;all_urls&gt;</code> so the optional automatic booster and remembered site behavior can work across compatible sites where the user chooses to use the product.</p></section>
+  <section class="card" data-section="Local Processing Vs Transmitted Data"><h2>Local Processing Vs Transmitted Data</h2><p>Audio boosting runs locally on the user's device inside Chrome. Gain settings, advanced controls, remembered site preferences, trial state, premium purchase email and offline license activation data remain in browser storage controlled by the extension environment.</p><p>Information leaves the device in limited cases. Public releases send sanitized technical diagnostics to Sentry, and the UI may request a site favicon from DuckDuckGo's favicon service when the browser page does not provide a usable icon. Volume Booster by Premium11 does not upload captured tab audio for remote processing.</p></section>
+  <section class="card" data-section="Third Parties And Service Providers"><h2>Third Parties And Service Providers</h2><p>Sentry receives sanitized diagnostic events from public releases of Volume Booster by Premium11 so Premium11 can investigate crashes and runtime instability. The implementation is configured to scrub or redact sensitive URL-like fields, page titles, favicon URLs, request objects and user payloads before transmission.</p><p>DuckDuckGo may receive a domain-based favicon lookup request when Volume Booster by Premium11 uses its favicon endpoint to display a recognizable site icon in the extension UI. Premium11 does not sell user data to these providers.</p></section>
+  <section class="card" data-section="Retention And Deletion"><h2>Retention And Deletion</h2><p>Local preferences, premium activation data and trial state stay in browser storage until the user changes settings, clears extension data or removes the extension. Temporary runtime state is discarded when the related booster session ends.</p><p>Sentry retention for sanitized diagnostics depends on the retention settings configured for the Premium11 Sentry project used by public releases. That remote retention is not required for Volume Booster by Premium11's core boosting functionality.</p></section>
+  <section class="card" data-section="User Controls"><h2>User Controls</h2><p>Users can enable or disable boosting, switch between manual and automatic lanes, adjust sound settings, remove remembered site behavior, clear stored premium activation data and uninstall the extension at any time. Chrome may also expose host-access controls in the browser's extension settings for users who want to limit site-wide behavior further.</p></section>
+  <section class="card" data-section="Security"><h2>Security</h2><p>Volume Booster by Premium11 ships its runtime inside the packaged extension and does not depend on remotely hosted executable code for its core product behavior. Audio processing happens locally, and public-release diagnostics are intentionally limited to sanitized technical error reporting through Sentry.</p><p>Premium11 uses the extension's declared permissions only to support the booster experience described here. The product is not built as a remote browsing monitor or a general-purpose data collection tool.</p></section>
+  <section class="card" data-section="Children And Sensitive Data"><h2>Children And Sensitive Data</h2><p>Volume Booster by Premium11 is not directed to children and is not designed to intentionally collect sensitive categories such as health data, biometric data, financial account details or the content of private communications. The extension's purpose is web-audio control inside Chrome.</p></section>
+  <section class="card" data-section="Contact"><h2>Contact</h2><p>For privacy or support questions about Volume Booster by Premium11, contact Premium11 at <a href="mailto:support@premium11.com">support@premium11.com</a> or visit <a href="https://www.premium11.com/">https://www.premium11.com/</a>. The public privacy-policy URL for this product is <a href="https://www.premium11.com/privacidad">https://www.premium11.com/privacidad</a>.</p></section>
+  <section class="card" data-section="Effective Date"><h2>Effective Date</h2><p>2026-03-16</p></section>
+</main>
+</body>
 </html>

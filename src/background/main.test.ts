@@ -23,8 +23,10 @@ describe("background main entrypoint", () => {
     const handleTabActivated = vi.fn().mockResolvedValue(undefined);
     const handleTabRemoved = vi.fn().mockResolvedValue(undefined);
     const handleCaptureStatusChanged = vi.fn().mockResolvedValue(undefined);
+    const handleAlarm = vi.fn().mockResolvedValue(undefined);
     const onStartupAddListener = vi.fn();
     const onInstalledAddListener = vi.fn();
+    const onAlarmAddListener = vi.fn();
     const onMessageAddListener = vi.fn();
     const onUpdatedAddListener = vi.fn();
     const onActivatedAddListener = vi.fn();
@@ -40,6 +42,7 @@ describe("background main entrypoint", () => {
         handleTabActivated = handleTabActivated;
         handleTabRemoved = handleTabRemoved;
         handleCaptureStatusChanged = handleCaptureStatusChanged;
+        handleAlarm = handleAlarm;
       }
     }));
 
@@ -66,6 +69,9 @@ describe("background main entrypoint", () => {
           onInstalled: { addListener: onInstalledAddListener },
           onMessage: { addListener: onMessageAddListener }
         },
+        alarms: {
+          onAlarm: { addListener: onAlarmAddListener }
+        },
         tabs: {
           onUpdated: { addListener: onUpdatedAddListener },
           onActivated: { addListener: onActivatedAddListener },
@@ -83,6 +89,7 @@ describe("background main entrypoint", () => {
     expect(bootstrap).toHaveBeenCalledTimes(1);
     expect(onStartupAddListener).toHaveBeenCalledTimes(1);
     expect(onInstalledAddListener).toHaveBeenCalledTimes(1);
+    expect(onAlarmAddListener).toHaveBeenCalledTimes(1);
     expect(onMessageAddListener).toHaveBeenCalledTimes(1);
     expect(onUpdatedAddListener).toHaveBeenCalledTimes(1);
     expect(onActivatedAddListener).toHaveBeenCalledTimes(1);
@@ -147,6 +154,9 @@ describe("background main entrypoint", () => {
 
     const startupListener = onStartupAddListener.mock.calls[0][0] as () => void;
     const installedListener = onInstalledAddListener.mock.calls[0][0] as () => void;
+    const alarmListener = onAlarmAddListener.mock.calls[0][0] as (
+      alarm: chrome.alarms.Alarm
+    ) => void;
     const updatedListener = onUpdatedAddListener.mock.calls[0][0] as (
       tabId: number,
       changeInfo: { status?: string },
@@ -164,6 +174,8 @@ describe("background main entrypoint", () => {
     startupListener();
     bootstrap.mockRejectedValueOnce(new Error("install failed"));
     installedListener();
+    handleAlarm.mockRejectedValueOnce(new Error("alarm failed"));
+    alarmListener({ name: "premium-trial-expiry" } as chrome.alarms.Alarm);
     handlePopupCommand.mockRejectedValueOnce(new Error("popup failed"));
     const rejectedSendResponse = vi.fn();
     expect(runtimeMessageListener({ type: "GET_STATE" }, {}, rejectedSendResponse)).toBe(true);
@@ -175,6 +187,7 @@ describe("background main entrypoint", () => {
     await Promise.resolve();
 
     expect(handleTabUpdated).toHaveBeenCalledWith(9, { status: "complete" }, { id: 9 });
+    expect(handleAlarm).toHaveBeenCalledWith({ name: "premium-trial-expiry" });
     expect(handleTabActivated).toHaveBeenCalledWith({ tabId: 9 });
     expect(handleTabRemoved).toHaveBeenCalledWith(9);
     expect(handleCaptureStatusChanged).toHaveBeenCalledWith({ tabId: 9, status: "active" });
@@ -182,6 +195,6 @@ describe("background main entrypoint", () => {
       ok: false,
       errorMessage: { key: "errorExtensionActionFailed" }
     });
-    expect(captureExceptionSafe).toHaveBeenCalledTimes(4);
+    expect(captureExceptionSafe).toHaveBeenCalledTimes(5);
   });
 });
